@@ -37,30 +37,17 @@ def _distribution_samples(
     decorrelation = 1.0 - max(min(correlation, 1.0), 0.0)
     center = _clip_probability((0.6 * divergence) + (0.4 * decorrelation))
 
-    support = max(overlap_count, 1)
+    support = max(overlap_count, 2)
     spread = min(0.35, max(0.03, 0.85 / np.sqrt(support)))
-    synthetic = np.array(
-        [
-            _clip_probability(center - spread),
-            _clip_probability(center - (spread * 0.33)),
-            center,
-            _clip_probability(center + (spread * 0.33)),
-            _clip_probability(center + spread),
-        ]
-    )
-    kde = gaussian_kde(synthetic)
-    grid = np.linspace(0.0, 1.0, sample_size)
-    density = kde(grid)
-    density_sum = density.sum()
-    if density_sum <= 0:
-        return np.full(sample_size, center)
-    weights = density / density_sum
-    choice = np.random.default_rng(0).choice(
-        sample_size,
-        size=sample_size,
-        p=weights,
-    )
-    return grid[choice]
+    offsets = np.linspace(-1.0, 1.0, support)
+    observation_risks = np.clip(center + (offsets * spread), 0.0, 1.0)
+
+    if np.allclose(observation_risks, observation_risks[0]):
+        return np.full(sample_size, observation_risks[0])
+
+    kde = gaussian_kde(observation_risks)
+    sampled = kde.resample(sample_size, seed=0).reshape(-1)
+    return np.clip(sampled, 0.0, 1.0)
 
 
 def quantify_station_removal_risk(
@@ -85,9 +72,9 @@ def quantify_station_removal_risk(
                 "risk_band": _risk_band(probability),
                 "assumptions": (
                     "Distributional uncertainty is estimated with "
-                    "scipy.stats.gaussian_kde over a bounded synthetic "
-                    "risk distribution tied to divergence, correlation, "
-                    "and overlap support."
+                    "scipy.stats.gaussian_kde over observation-derived "
+                    "risk samples tied to divergence, correlation, and "
+                    "overlap support."
                 ),
                 "limitations": _limitations(int(row["overlap_count"])),
             }

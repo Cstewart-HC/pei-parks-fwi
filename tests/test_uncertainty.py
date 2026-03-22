@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
+from pea_met_network.redundancy import benchmark_to_stanhope
 from pea_met_network.uncertainty import quantify_station_removal_risk
 
 
@@ -20,6 +23,70 @@ def _sample_similarity_frame() -> pd.DataFrame:
             "mean_abs_diff": [0.15, 0.55, 1.2],
             "correlation": [0.98, 0.83, 0.41],
         }
+    )
+
+
+def _real_observation_benchmark() -> pd.DataFrame:
+    source = Path(
+        "data/raw/peinp/PEINP Weather Station Data 2022-2025"
+    )
+    files = [
+        source
+        / "Cavendish/2023/PEINP_Cav_WeatherStn_Jul2023.csv",
+        source
+        / "Greenwich/2023/PEINP_GR_WeatherStn_Jul2023.csv",
+        source
+        / "North Rustico Wharf/2023/PEINP_NR_WeatherStn_Jul2023.csv",
+        source
+        / "Stanley Bridge Wharf/2023/PEINP_SB_WeatherStn_Jul2023.csv",
+        source
+        / "Tracadie Wharf/2023/PEINP_TR_WeatherStn_July2023.csv",
+    ]
+    station_names = [
+        "cavendish",
+        "greenwich",
+        "north_rustico_wharf",
+        "stanhope",
+        "tracadie_wharf",
+    ]
+
+    frames: list[pd.DataFrame] = []
+    for path, station in zip(files, station_names, strict=True):
+        frame = pd.read_csv(path)
+        temperature_column = next(
+            column
+            for column in frame.columns
+            if column.startswith("Temperature")
+        )
+        timestamps = pd.to_datetime(
+            frame["Date"].astype(str).str.strip()
+            + " "
+            + frame["Time"].astype(str).str.strip(),
+            format="%m/%d/%Y %H:%M:%S %z",
+            utc=True,
+        )
+        frames.append(
+            pd.DataFrame(
+                {
+                    "station": station,
+                    "timestamp_utc": timestamps,
+                    "air_temperature_c": pd.to_numeric(
+                        frame[temperature_column],
+                        errors="coerce",
+                    ),
+                }
+            )
+        )
+
+    combined = pd.concat(frames, ignore_index=True)
+    matrix = combined.pivot_table(
+        index="timestamp_utc",
+        columns="station",
+        values="air_temperature_c",
+        aggfunc="mean",
+    )
+    return benchmark_to_stanhope(matrix, reference_station="stanhope").dropna(
+        subset=["mean_abs_diff", "correlation"]
     )
 
 
@@ -98,4 +165,29 @@ def test_quantify_station_removal_risk_assigns_moderate_band_to_mixed_signal(
     beta_band = risk.loc[risk["station"] == "beta", "risk_band"].iloc[0]
 
     assert beta_band == "moderate"
+
+
+def test_quantify_station_removal_risk_uses_real_observation_samples() -> None:
+    benchmark = _real_observation_benchmark()
+
+    risk = quantify_station_removal_risk(benchmark)
+
+    merged = benchmark.merge(
+        risk,
+        on=["station", "reference_station"],
+        how="inner",
+    ).sort_values("mean_abs_diff")
+    lowest_diff = merged.iloc[0]
+    highest_diff = merged.iloc[-1]
+
+    assert len(merged) >= 2
+    assert benchmark["overlap_count"].min() >= 24
+    assert benchmark["mean_abs_diff"].nunique() > 1
+    assert benchmark["correlation"].nunique() > 1
+    assert lowest_diff["risk_probability"] < highest_diff["risk_probability"]
+    assert lowest_diff["ci_upper"] < highest_diff["ci_upper"]
+    assert risk["assumptions"].str.contains(
+        "observation-derived",
+        case=False,
+    ).all()
 
