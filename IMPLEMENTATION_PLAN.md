@@ -1,43 +1,71 @@
 # Implementation Plan
 
-## Current Milestone
-Phase 4 — Model: Reference + FWI
+## Phase Roadmap
 
-## Current Objective
-Implement cached Stanhope reference ingestion with provenance and anti-429
-behavior as the first bounded step toward reference benchmarking and FWI
-validation.
+| Phase | Name | Status |
+|---|---|---|
+| 1 | Obtain | ✅ done |
+| 2 | Scrub | ✅ done |
+| 3 | Explore | ⬚ not started |
+| 4 | Model: Reference + FWI | 🔄 in progress |
+| 5 | Model: Redundancy | ⬚ not started |
+| 6 | Interpret | ⬚ not started |
 
-## Immediate Next Tasks
+## Current Phase: 4 — Model: Reference + FWI
+
+### Task Queue
+
+Each task has a **gate** — a command the loop must run to verify completion.
+The loop may NOT mark a task done unless its gate exits 0.
+
+#### Active (next up)
+
+- [ ] normalize cached Stanhope hourly data into project reference schema
+  gate: python -c "from pea_met_network.stanhope_cache import normalize_stanhope_hourly; print('ok')"
+  depends: [stanhope-cache-scaffold, stanhope-range-materialization]
+
+#### Completed
+
 - [x] add Stanhope hourly cache fetch scaffolding with local reuse
+  gate: test_stanhope_cache.py::test_fetch_reuses_cache
 - [x] record Stanhope download provenance for cached files
+  gate: test_stanhope_cache.py::test_provenance_written
 - [x] encode anti-429 behavior with coarse monthly fetches and delay hooks
+  gate: test_stanhope_cache.py::test_429_stops_cleanly
 - [x] script bounded multi-month or multi-year Stanhope cache materialization
-- [ ] normalize cached Stanhope hourly data into project reference schema
-
-## Queued Tasks
-- [ ] implement imputation audit framework
-- [ ] encode conservative missing-data handling rules
+  gate: test_stanhope_cache.py passes
 - [x] produce first cleaned hourly and daily datasets
+  gate: test_materialize_resampled.py passes
 - [x] prove real-file normalization-to-resampling path on canonical CSV
+  gate: test_real_resampling_pipeline.py passes
 - [x] add bounded canonical CSV normalization loader
+  gate: test_normalized_loader.py passes
 - [x] expose first-class hourly and daily resampling helpers
-- [ ] script bounded multi-month or multi-year Stanhope cache materialization
-- [ ] normalize cached Stanhope hourly data into project reference schema
+  gate: test_resampling_policy.py passes
+
+#### Queued (not yet started)
+
 - [ ] define FWI-ready cleaned daily contract
-- [x] validate repo-wide lint and tests before milestone commit
+  gate: test existence of specs/fwi-daily-contract.md
+  depends: [normalize-stanhope]
+- [ ] implement FFMC moisture code
+  gate: pytest tests/test_fwi.py::test_ffmc
+  depends: [fwi-daily-contract]
+- [ ] implement DMC moisture code
+  gate: pytest tests/test_fwi.py::test_dmc
+  depends: [fwi-daily-contract]
+- [ ] implement DC moisture code
+  gate: pytest tests/test_fwi.py::test_dc
+  depends: [fwi-daily-contract]
+- [ ] implement full FWI chain
+  gate: pytest tests/test_fwi.py
+  depends: [ffmc, dmc, dc]
+- [ ] validate FWI against external reference values
+  gate: pytest tests/test_fwi.py::test_external_reference
+  depends: [fwi-full-chain]
 
-## Validation Expectations
-For current scope:
-- repeated Stanhope requests should reuse local cache when present
-- coarse monthly fetches and explicit delay hooks should minimize API load
-- provenance records should be inspectable for each downloaded cache file
-- rate-limit failures should stop cleanly without partial cache writes
+## Carried-Forward Decisions
 
-## Blockers
-- none currently
-
-## Recent Decisions
 - use OSEMN as project framing, not as a software framework
 - bias toward assignment compliance with sane internal structure
 - use both PCA and clustering for redundancy analysis
@@ -45,27 +73,8 @@ For current scope:
 - treat local cached data as canonical
 - enforce hard line length 80, style target 50
 - enforce McCabe hard cap 15, target less than 10
-- diary entries should use factual + reflective Option C style
-- manual and scheduled loop runs must be observable by default
 - native Python FWI implementation remains the target approach
 
-## Notes to Future Loops
-The ingestion groundwork is now real: audit, manifest loading, schema
-recognition, and cross-family timestamp normalization exist. Build forward
-from that baseline. Do not reopen settled foundation work unless tests or
-artifacts prove a real defect.
+## Blockers
 
-## Pre-autonomy checkpoint
-Completed and verified:
-- initial data inventory and schema audit
-- planning stack and quality rails
-- raw manifest loader and schema recognition
-- timestamp normalization for primary schema family
-- timestamp normalization across remaining schema families
-
-The next sprint should begin with resampling, not more planning.
-
-## Sprint Update (2026-03-22 08:09:54 UTC)
-- Milestone in progress: Phase 4 Stanhope reference ingestion bootstrap.
-- Verified target status: no existing Stanhope ingestion/cache module or tests were present; only spec/docs and legacy source notes existed.
-- Current loop result: added bounded monthly-range Stanhope cache materialization on top of the hourly cache fetch helper, with year-boundary coverage and focused tests.
+None currently.

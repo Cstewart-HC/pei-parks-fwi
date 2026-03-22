@@ -1,7 +1,39 @@
 {
-  "iterations_today": 1,
+  "iteration": 7,
+  "date": "2026-03-22",
   "max_per_day": 10,
-  "last_commit": "e3204b0",
-  "status": "running",
-  "date": "2026-03-22"
+  "phase": 4,
+  "phase_name": "Model: Reference + FWI",
+  "last_commit": "7256469",
+  "last_commit_msg": "model: add Stanhope range materialization",
+  "status": "paused",
+  "blocker": null,
+  "updated_at": "2026-03-22T13:59:11.368980+00:00",
+  "tasks_completed": [
+    "add-stanhope-hourly-cache-fetch",
+    "record-stanhope-download-provenance-for",
+    "encode-anti-429-behavior-with",
+    "script-bounded-multi-month-or",
+    "produce-first-cleaned-hourly-and",
+    "prove-real-file-normalization-to",
+    "add-bounded-canonical-csv-normalization",
+    "expose-first-class-hourly-and"
+  ],
+  "tasks_remaining": [
+    "normalize-cached-stanhope-hourly-data",
+    "define-fwi-ready-cleaned-daily",
+    "implement-ffmc-moisture-code",
+    "implement-dmc-moisture-code",
+    "implement-dc-moisture-code",
+    "implement-full-fwi-chain",
+    "validate-fwi-against-external-reference"
+  ],
+  "next_task": {
+    "description": "normalize cached Stanhope hourly data into project reference schema",
+    "gate": "python -c \"from pea_met_network.stanhope_cache import normalize_stanhope_hourly; print('ok')\"",
+    "depends": [
+      "stanhope-cache-scaffold",
+      "stanhope-range-materialization"
+    ]
+  }
 }

@@ -3,6 +3,22 @@
 ## Goal
 Define safe, high-autonomy operating rules for the Ralph-style build loop.
 
+## Loop Startup Procedure (every iteration)
+
+1. **Run `python scripts/sync_state.py`**
+   This derives ground truth from git history and the implementation plan.
+   Read its stdout to determine: current phase, next task, gate status.
+   Do NOT trust any cached state — sync_state.py IS the source of truth.
+
+2. **Read `IMPLEMENTATION_PLAN.md`**
+   Get full context on the current task, its gate, and dependencies.
+
+3. **Check the gate of the current task BEFORE starting work**
+   If the gate already passes, the task is done — mark it complete in the
+   plan, commit, and move to the next task. Do NOT assume; verify.
+
+4. **Read relevant spec files** if the task references one.
+
 ## Loop Unit
 Each loop must work on one small, concrete unit of progress only.
 Examples:
@@ -16,16 +32,28 @@ Non-examples:
 - build all FWI logic
 - do all redundancy analysis
 
-## Required Loop Inputs
-Every loop must consult at minimum:
-- relevant spec files
-- `docs/working-agreement.md`
-- `docs/phases.md`
-- `IMPLEMENTATION_PLAN.md`
+## Verification Gates (anti-pattern: self-referential trust)
+
+Every task in IMPLEMENTATION_PLAN.md has a `gate` field — a command
+that must exit 0 for the task to be considered done.
+
+The loop may mark a task done ONLY if:
+1. It ran the gate command
+2. The gate exited 0
+
+No diary entry, no checkbox, no "the file exists" observation counts
+as proof. Run the gate.
+
+### Gate tiers (in order of trust)
+| Tier | Mechanism | Trust |
+|---|---|---|
+| Artifact exists | File path check | Low |
+| Artifact valid | Schema/test/checksum | Medium |
+| Behavior correct | Integration test | High |
 
 ## Completion Rule
 Each loop must either:
-- produce a passing commit, or
+- produce a passing commit (gate + ruff + pytest), or
 - stop and report a validated blocker
 
 ## Self-Heal Budget
@@ -53,10 +81,10 @@ Escalate only after retries when issues such as these remain:
 - repository state appears unsafe or inconsistent
 
 ## Validation Backpressure
-Before commit, the loop must run relevant validation:
-- Ruff must pass
-- relevant tests must pass
-- outputs must be coherent for the scope changed
+Before commit, the loop must run:
+- `ruff check .` — must pass
+- `pytest` — must pass
+- the current task's gate — must pass
 
 ## Code Quality Rules
 - style target line length: 50
@@ -66,16 +94,28 @@ Before commit, the loop must run relevant validation:
 - public functions require type hints
 - important logic must not live only in notebook cells
 
-## Plan Hygiene
-The loop must keep `IMPLEMENTATION_PLAN.md` current.
-Completed tasks should be marked clearly.
-Future tasks may be refined but should not churn without reason.
+## State File: ralph-state.json
+
+Machine-maintained by `scripts/sync_state.py` and the pre-commit hook.
+The loop reads it (via sync_state.py output) but should not hand-edit it.
+
+Fields:
+- `phase` / `phase_name` — derived from git history
+- `last_commit` — current HEAD
+- `tasks_completed` / `tasks_remaining` — from IMPLEMENTATION_PLAN.md
+- `next_task` — first unchecked task with gate
+- `status` — "running" or "paused"
+- `blocker` — null or description
+- `date` / `max_per_day` / `iteration` — loop cadence control
 
 ## Diary Requirement
 At the end of each successful loop, append a short diary entry under
 `docs/diary/` using Option C style:
 - factual summary of work completed
 - brief reflective note or uncertainty
+
+The diary is append-only. The loop never reads it for state — it is
+an audit log, not a decision source.
 
 ## Standup Rhythm
 The system is high-autonomy, not fully unsupervised.
@@ -87,7 +127,7 @@ Standup-style check-ins should surface:
 
 ## Sprint Dependency Protocol
 
-### Before any sprint begins work, it MUST verify its prerequisites.
+Before any sprint begins work, it MUST verify its prerequisites.
 
 Each milestone/sprint has an explicit prerequisite list.
 The sprint agent must:
@@ -120,9 +160,8 @@ If a sprint fires before its prerequisites are satisfied:
 - it MUST stop immediately
 - it MUST NOT attempt to implement the missing prerequisites itself
 - it MUST report which sprint should run first
-- this prevents work duplication and conflicting commits
 
-## Repository topology guardrail
+## Repository Topology Guardrail
 
 The repository root must remain clean and predictable.
 
@@ -131,6 +170,7 @@ Allowed root files:
 - `pyproject.toml`
 - `requirements.txt`
 - `.gitignore`
+- `.pre-commit-config.yaml`
 - `IMPLEMENTATION_PLAN.md`
 - `cleaning.py` (only if required for assignment-facing execution)
 
@@ -141,9 +181,7 @@ Allowed root directories:
 - `data/`
 - `notebooks/`
 - `specs/`
+- `scripts/`
 
 All other files or directories at repo root are violations unless the
 working agreement and tests are updated first in the same change.
-
-Validation requirement:
-- the repository shape test must pass before commit

@@ -52,7 +52,7 @@ Allowed at repo root:
 - `.gitignore`
 - `IMPLEMENTATION_PLAN.md`
 - `cleaning.py` (assignment-facing entrypoint, if present)
-- directories: `src/`, `tests/`, `docs/`, `data/`, `notebooks/`, `specs/`
+- directories: `src/`, `tests/`, `docs/`, `data/`, `notebooks/`, `specs/`, `scripts/`
 
 Not allowed at repo root:
 - stray markdown or text files
