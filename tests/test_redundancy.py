@@ -7,6 +7,7 @@ import pandas as pd
 from pea_met_network.redundancy import (
     benchmark_to_stanhope,
     build_station_matrix,
+    build_station_recommendations,
     cluster_station_order,
     pairwise_station_correlation,
     pca_station_loadings,
@@ -69,9 +70,15 @@ def test_pca_station_loadings_returns_station_weights() -> None:
 
     loadings = pca_station_loadings(matrix)
 
-    assert set(loadings.columns) == {"station", "component", "loading"}
+    assert set(loadings.columns) == {
+        "station",
+        "component",
+        "loading",
+        "explained_variance_ratio",
+    }
     assert set(loadings["station"]) == {"alpha", "beta", "stanhope"}
     assert set(loadings["component"]) == {"PC1", "PC2"}
+    assert (loadings["explained_variance_ratio"] >= 0.0).all()
 
 
 def test_cluster_station_order_groups_similar_stations() -> None:
@@ -104,6 +111,23 @@ def test_benchmark_to_stanhope_summarizes_distance_and_overlap() -> None:
     assert alpha_row["correlation"] > 0.99
 
 
+def test_build_station_recommendations_references_uncertainty() -> None:
+    frame = _sample_frame()
+    matrix = build_station_matrix(frame, value_column="air_temperature_c")
+    benchmark = benchmark_to_stanhope(matrix, reference_station="stanhope")
+
+    recommendations = build_station_recommendations(benchmark)
+
+    assert set(recommendations["recommendation"]).issubset(
+        {"keep", "remove", "defer"}
+    )
+    assert "risk_probability" in recommendations.columns
+    assert "ci_lower" in recommendations.columns
+    assert "ci_upper" in recommendations.columns
+    assert recommendations["evidence"].str.contains("uncertainty=").all()
+    assert recommendations["evidence"].str.contains("benchmark").all()
+
+
 def test_write_redundancy_summary_creates_interpretable_artifact(
     tmp_path: Path,
 ) -> None:
@@ -127,3 +151,4 @@ def test_write_redundancy_summary_creates_interpretable_artifact(
     assert "## PCA Loadings" in content
     assert "## Clustering Order" in content
     assert "## Stanhope Benchmark" in content
+    assert "## Recommendations" in content

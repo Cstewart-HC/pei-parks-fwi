@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PCA
+
+from pea_met_network.uncertainty import quantify_station_removal_risk
 
 
 def build_station_matrix(
@@ -31,19 +35,14 @@ def _zscore_columns(matrix: pd.DataFrame) -> pd.DataFrame:
 
 def pca_station_loadings(matrix: pd.DataFrame) -> pd.DataFrame:
     normalized = _zscore_columns(matrix.dropna(axis="index", how="any"))
-    import numpy as np
-
-    _, _, vh = np.linalg.svd(
-        normalized.to_numpy(),
-        full_matrices=False,
-    )
-    component_count = min(2, vh.shape[0])
+    pca = PCA(n_components=min(2, normalized.shape[1]))
+    pca.fit(normalized)
     rows: list[dict[str, object]] = []
-    for component_index in range(component_count):
+    for component_index, component_values in enumerate(pca.components_):
         component = f"PC{component_index + 1}"
         for station, loading in zip(
             normalized.columns,
-            vh[component_index],
+            component_values,
             strict=True,
         ):
             rows.append(
@@ -51,15 +50,34 @@ def pca_station_loadings(matrix: pd.DataFrame) -> pd.DataFrame:
                     "station": station,
                     "component": component,
                     "loading": float(loading),
+                    "explained_variance_ratio": float(
+                        pca.explained_variance_ratio_[component_index]
+                    ),
                 }
             )
     return pd.DataFrame(rows)
 
 
 def cluster_station_order(matrix: pd.DataFrame) -> list[str]:
-    reference = matrix.mean(axis=0)
-    distances = (matrix - reference).abs().mean(axis=0)
-    return distances.sort_values().index.tolist()
+    correlation = pairwise_station_correlation(matrix).fillna(0.0)
+    distance = 1.0 - correlation
+    model = AgglomerativeClustering(
+        metric="precomputed",
+        linkage="average",
+        n_clusters=max(1, min(2, len(distance.columns))),
+    )
+    labels = model.fit_predict(distance)
+    summary = pd.DataFrame(
+        {
+            "station": distance.index,
+            "cluster": labels,
+            "distance_to_stanhope": distance.get("stanhope", 0.0).values,
+        }
+    )
+    ordered = summary.sort_values(
+        ["cluster", "distance_to_stanhope", "station"]
+    )
+    return ordered["station"].tolist()
 
 
 def benchmark_to_stanhope(
@@ -90,6 +108,52 @@ def benchmark_to_stanhope(
     return pd.DataFrame(rows)
 
 
+def _recommendation_from_row(row: pd.Series) -> str:
+    if row["risk_band"] == "high" or row["ci_upper"] >= 0.7:
+        return "keep"
+    if row["correlation"] >= 0.95 and row["risk_band"] == "low":
+        return "remove"
+    return "defer"
+
+
+def build_station_recommendations(
+    benchmark: pd.DataFrame,
+) -> pd.DataFrame:
+    uncertainty = quantify_station_removal_risk(benchmark)
+    merged = benchmark.merge(
+        uncertainty,
+        on=["station", "reference_station"],
+        how="inner",
+    )
+    merged["recommendation"] = merged.apply(
+        _recommendation_from_row,
+        axis=1,
+    )
+    merged["evidence"] = merged.apply(
+        lambda row: (
+            "benchmark correlation="
+            f"{row['correlation']:.3f}; uncertainty="
+            f"{row['risk_band']} "
+            f"({row['ci_lower']:.2f}-{row['ci_upper']:.2f})"
+        ),
+        axis=1,
+    )
+    return merged[
+        [
+            "station",
+            "reference_station",
+            "recommendation",
+            "risk_probability",
+            "ci_lower",
+            "ci_upper",
+            "risk_band",
+            "evidence",
+            "assumptions",
+            "limitations",
+        ]
+    ]
+
+
 def _frame_to_markdown_table(frame: pd.DataFrame) -> str:
     if frame.empty:
         return "(no rows)"
@@ -118,6 +182,7 @@ def write_redundancy_summary(
         matrix,
         reference_station=reference_station,
     )
+    recommendations = build_station_recommendations(benchmark)
 
     sections = [
         "# Redundancy Analysis Summary",
@@ -133,6 +198,9 @@ def write_redundancy_summary(
         "",
         "## Stanhope Benchmark",
         _frame_to_markdown_table(benchmark),
+        "",
+        "## Recommendations",
+        _frame_to_markdown_table(recommendations),
         "",
     ]
     output_path.write_text("\n".join(sections))
