@@ -6,7 +6,7 @@
   "phase_name": "Model: Reference + FWI",
   "status": "paused",
   "blocker": null,
-  "updated_at": "2026-03-22T14:40:08.073411+00:00",
+  "updated_at": "2026-03-22T14:43:26.370052+00:00",
   "tasks": [
     {
       "id": "add-stanhope-hourly-cache-fetch",
@@ -64,7 +64,7 @@
         "add-stanhope-hourly-cache-fetch",
         "script-bounded-stanhope-materialization"
       ],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "define-fwi-daily-contract",
