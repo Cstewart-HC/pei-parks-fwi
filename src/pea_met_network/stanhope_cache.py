@@ -53,6 +53,83 @@ class StanhopeClient:
             return response.read()
 
 
+@dataclass(frozen=True)
+class StanhopeMaterializationResult:
+    year: int
+    month: int
+    cache_path: Path
+    status: str
+
+
+def iter_month_requests(
+    start_year: int,
+    start_month: int,
+    end_year: int,
+    end_month: int,
+) -> list[StanhopeRequest]:
+    if not 1 <= start_month <= 12 or not 1 <= end_month <= 12:
+        raise StanhopeIngestionError("Month must be between 1 and 12.")
+
+    start_key = (start_year, start_month)
+    end_key = (end_year, end_month)
+    if start_key > end_key:
+        raise StanhopeIngestionError(
+            "Start year/month must be before or equal to end year/month."
+        )
+
+    requests: list[StanhopeRequest] = []
+    year = start_year
+    month = start_month
+
+    while (year, month) <= end_key:
+        requests.append(StanhopeRequest(year=year, month=month))
+        month += 1
+        if month == 13:
+            year += 1
+            month = 1
+
+    return requests
+
+
+def materialize_stanhope_hourly_range(
+    start_year: int,
+    start_month: int,
+    end_year: int,
+    end_month: int,
+    *,
+    cache_dir: Path = RAW_CACHE_DIR,
+    client: StanhopeClient | None = None,
+    sleep_seconds: float = REQUEST_DELAY_SECONDS,
+    force: bool = False,
+) -> list[StanhopeMaterializationResult]:
+    results: list[StanhopeMaterializationResult] = []
+
+    for request in iter_month_requests(
+        start_year=start_year,
+        start_month=start_month,
+        end_year=end_year,
+        end_month=end_month,
+    ):
+        cache_path, status = fetch_stanhope_hourly_month(
+            request.year,
+            request.month,
+            cache_dir=cache_dir,
+            client=client,
+            sleep_seconds=sleep_seconds,
+            force=force,
+        )
+        results.append(
+            StanhopeMaterializationResult(
+                year=request.year,
+                month=request.month,
+                cache_path=cache_path,
+                status=status,
+            )
+        )
+
+    return results
+
+
 def build_hourly_url(request: StanhopeRequest) -> str:
     if request.interval != "hourly":
         raise StanhopeIngestionError(

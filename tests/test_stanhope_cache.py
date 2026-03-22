@@ -13,6 +13,8 @@ from pea_met_network.stanhope_cache import (
     StanhopeRequest,
     build_hourly_url,
     fetch_stanhope_hourly_month,
+    iter_month_requests,
+    materialize_stanhope_hourly_range,
 )
 
 
@@ -103,3 +105,48 @@ def test_fetch_stanhope_hourly_month_raises_clean_error_on_429(
 
     assert not (tmp_path / "stanhope_hourly_2024_03.csv").exists()
     assert not (tmp_path / "provenance.json").exists()
+
+
+def test_iter_month_requests_spans_year_boundary() -> None:
+    requests = iter_month_requests(2023, 11, 2024, 2)
+
+    assert [(request.year, request.month) for request in requests] == [
+        (2023, 11),
+        (2023, 12),
+        (2024, 1),
+        (2024, 2),
+    ]
+
+
+def test_iter_month_requests_rejects_inverted_ranges() -> None:
+    with pytest.raises(StanhopeIngestionError, match="before or equal"):
+        iter_month_requests(2024, 3, 2024, 2)
+
+
+def test_materialize_stanhope_hourly_range_fetches_each_month(
+    tmp_path: Path,
+) -> None:
+    client = FakeClient(b"col1,col2\n1,2\n")
+
+    results = materialize_stanhope_hourly_range(
+        2024,
+        3,
+        2024,
+        4,
+        cache_dir=tmp_path,
+        client=client,
+        sleep_seconds=0,
+    )
+
+    statuses = [
+        (result.year, result.month, result.status)
+        for result in results
+    ]
+
+    assert statuses == [
+        (2024, 3, "downloaded"),
+        (2024, 4, "downloaded"),
+    ]
+    assert len(client.calls) == 2
+    assert (tmp_path / "stanhope_hourly_2024_03.csv").exists()
+    assert (tmp_path / "stanhope_hourly_2024_04.csv").exists()

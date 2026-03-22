@@ -12,7 +12,7 @@ validation.
 - [x] add Stanhope hourly cache fetch scaffolding with local reuse
 - [x] record Stanhope download provenance for cached files
 - [x] encode anti-429 behavior with coarse monthly fetches and delay hooks
-- [ ] script bounded multi-month or multi-year Stanhope cache materialization
+- [x] script bounded multi-month or multi-year Stanhope cache materialization
 - [ ] normalize cached Stanhope hourly data into project reference schema
 
 ## Queued Tasks
@@ -68,4 +68,4 @@ The next sprint should begin with resampling, not more planning.
 ## Sprint Update (2026-03-22 08:09:54 UTC)
 - Milestone in progress: Phase 4 Stanhope reference ingestion bootstrap.
 - Verified target status: no existing Stanhope ingestion/cache module or tests were present; only spec/docs and legacy source notes existed.
-- Current loop result: added a bounded hourly cache fetch helper with cache reuse, provenance logging, and explicit HTTP 429 handling.
+- Current loop result: added bounded monthly-range Stanhope cache materialization on top of the hourly cache fetch helper, with year-boundary coverage and focused tests.
