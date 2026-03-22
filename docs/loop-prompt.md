@@ -30,9 +30,11 @@ iteration 18 and not yet committing, you are out of time.
    - If VERDICT=PASS or VERDICT=NONE: proceed with next gap.
    - You do NOT modify this file. Ever.
 
-3. If PHASE_EXIT=PASS:
-   - Phase is complete. Stop. (Phase advancement is handled
-     automatically by sync_state.py on the next run.)
+3. Phase exit is subordinate to validation.
+   - VERDICT=REJECT: fix rejected criteria (regardless of phase exit).
+   - VERDICT=PASS and PHASE_EXIT=PASS: TRUE PASS. Phase is complete. Stop.
+   - VERDICT=PASS and PHASE_EXIT=FAIL: IMPOSSIBLE STATE. Log anomaly, stop.
+   - No validation.json: check PHASE_EXIT only.
 
 4. If a blocker is set in ralph-state.json:
    - Report it. Stop.
