@@ -7,13 +7,20 @@ checks gates, reports current state. The JSON is the single source
 of truth — this script never derives state from git messages.
 
 Usage:
-    python scripts/sync_state.py              Full sync: check gates, report state, write JSON
-    python scripts/sync_state.py --check-only Print state, exit 1 if gate drift detected
-    python scripts/sync_state.py --run-gates  Check all gates, report pass/fail
-    python scripts/sync_state.py --write      Write JSON only (for pre-commit hook)
-    python scripts/sync_state.py --view plan  Generate plan summary from JSON
-    python scripts/sync_state.py --view decisions  Generate decisions log from JSON
-    python scripts/sync_state.py --view status    Generate status summary from JSON
+    python scripts/sync_state.py
+        Full sync: check gates, report state, write JSON
+    python scripts/sync_state.py --check-only
+        Print state, exit 1 if gate drift detected
+    python scripts/sync_state.py --run-gates
+        Check all gates, report pass/fail
+    python scripts/sync_state.py --write
+        Write JSON only (for pre-commit hook)
+    python scripts/sync_state.py --view plan
+        Generate plan summary from JSON
+    python scripts/sync_state.py --view decisions
+        Generate decisions log from JSON
+    python scripts/sync_state.py --view status
+        Generate status summary from JSON
 """
 
 from __future__ import annotations
@@ -110,18 +117,20 @@ def check_all_gates(state: dict) -> list[dict]:
     for task in state.get("tasks", []):
         gate_cmd = task.get("gate", "")
         gate_ok, gate_out = run_gate(gate_cmd)
-        results.append({
-            "id": task["id"],
-            "status": task.get("status", "?"),
-            "gate_passes": gate_ok,
-            "gate_output": gate_out,
-            "gate_cmd": gate_cmd,
-        })
+        results.append(
+            {
+                "id": task["id"],
+                "status": task.get("status", "?"),
+                "gate_passes": gate_ok,
+                "gate_output": gate_out,
+                "gate_cmd": gate_cmd,
+            }
+        )
     return results
 
 
 def detect_drift(state: dict) -> list[str]:
-    """Check for gate drift: done tasks with failing gates, pending with passing."""
+    """Check for state/gate drift."""
     drift = []
     results = check_all_gates(state)
     for r in results:
@@ -135,8 +144,7 @@ def detect_drift(state: dict) -> list[str]:
 
 
 def auto_correct_drift(state: dict) -> bool:
-    """Correct drift: mark done tasks with failing gates back to pending,
-    and pending tasks with passing gates to done. Returns True if changes made."""
+    """Correct task status drift from current gate results."""
     results = check_all_gates(state)
     changed = False
     for r in results:
@@ -161,7 +169,7 @@ def render_plan(state: dict) -> str:
     phase_name = phase_info.get("name", "unknown")
     phase_exit = phase_info.get("exit", "")
 
-    lines.append(f"# Implementation Plan (generated)")
+    lines.append("# Implementation Plan (generated)")
     lines.append("")
     lines.append(f"## Current Phase: {phase} — {phase_name}")
     lines.append(f"Exit criteria: {phase_exit}")
@@ -179,14 +187,16 @@ def render_plan(state: dict) -> str:
             p_status = "in progress"
         else:
             p_status = "not started"
-        lines.append(f"| {p_num} | {p_info.get('name', '?')} | {p_status} |")
+        name = p_info.get("name", "?")
+        lines.append(f"| {p_num} | {name} | {p_status} |")
     lines.append("")
 
     lines.append("## Tasks")
     lines.append("")
 
-    done = [t for t in state.get("tasks", []) if t.get("status") == "done"]
-    pending = [t for t in state.get("tasks", []) if t.get("status") == "pending"]
+    tasks = state.get("tasks", [])
+    done = [t for t in tasks if t.get("status") == "done"]
+    pending = [t for t in tasks if t.get("status") == "pending"]
 
     if done:
         lines.append("### Completed")
@@ -209,7 +219,9 @@ def render_plan(state: dict) -> str:
         lines.append("## Decisions")
         lines.append("")
         for d in decisions:
-            lines.append(f"- {d.get('summary', '?')} ({d.get('date', '?')})")
+            summary = d.get("summary", "?")
+            date = d.get("date", "?")
+            lines.append(f"- {summary} ({date})")
         lines.append("")
 
     blocker = state.get("blocker")
@@ -233,7 +245,9 @@ def render_decisions(state: dict) -> str:
         lines.append("No decisions recorded.")
     else:
         for d in decisions:
-            lines.append(f"- **{d.get('summary', '?')}** ({d.get('date', '?')})")
+            summary = d.get("summary", "?")
+            date = d.get("date", "?")
+            lines.append(f"- **{summary}** ({date})")
             if d.get("rationale"):
                 lines.append(f"  Rationale: {d['rationale']}")
             lines.append("")
@@ -249,15 +263,18 @@ def render_status(state: dict) -> str:
     phase_info = phases.get(str(phase), {})
     phase_name = phase_info.get("name", "unknown")
 
-    done = sum(1 for t in state.get("tasks", []) if t.get("status") == "done")
-    pending = sum(1 for t in state.get("tasks", []) if t.get("status") == "pending")
+    tasks = state.get("tasks", [])
+    done = sum(1 for t in tasks if t.get("status") == "done")
+    pending = sum(1 for t in tasks if t.get("status") == "pending")
     total = done + pending
 
     next_task = get_next_task(state)
 
     lines.append(f"Phase: {phase} — {phase_name}")
     lines.append(f"Tasks: {done}/{total} done, {pending} remaining")
-    lines.append(f"Iteration: {state.get('iteration', '?')}/{state.get('max_per_day', '?')}")
+    iteration = state.get("iteration", "?")
+    max_per_day = state.get("max_per_day", "?")
+    lines.append(f"Iteration: {iteration}/{max_per_day}")
     lines.append(f"Status: {state.get('status', '?')}")
 
     blocker = state.get("blocker")
@@ -277,83 +294,61 @@ def render_status(state: dict) -> str:
     return "\n".join(lines)
 
 
-def main() -> None:
-    args = set(sys.argv[1:])
-    check_only = "--check-only" in args
-    run_gates_only = "--run-gates" in args
-    write_only = "--write" in args
+def parse_view_arg(argv: list[str]) -> str | None:
+    """Extract a --view argument from argv."""
+    for index, arg in enumerate(argv):
+        if arg.startswith("--view="):
+            return arg.split("=", 1)[1]
+        if arg == "--view" and len(argv) > index + 1:
+            return argv[index + 1]
+    return None
 
-    # Parse --view flag
-    view_arg = None
-    for a in sys.argv[1:]:
-        if a.startswith("--view="):
-            view_arg = a.split("=", 1)[1]
-        elif a == "--view" and len(sys.argv) > sys.argv.index(a) + 1:
-            view_arg = sys.argv[sys.argv.index(a) + 1]
 
-    state = load_state()
-
-    # --- View modes (human-readable, stdout only) ---
+def handle_view_mode(view_arg: str | None, state: dict) -> bool:
+    """Render a requested view. Return True when handled."""
     if view_arg == "plan":
         print(render_plan(state))
-        return
-    elif view_arg == "decisions":
+        return True
+    if view_arg == "decisions":
         print(render_decisions(state))
-        return
-    elif view_arg == "status":
+        return True
+    if view_arg == "status":
         print(render_status(state))
-        return
+        return True
+    return False
 
-    # --- Write-only mode (pre-commit hook) ---
-    if write_only:
-        changed = auto_correct_drift(state)
-        if changed:
-            save_state(state)
-        return
 
-    # --- Get git context ---
-    head_sha = get_head_sha()
+def handle_check_only(state: dict) -> None:
+    """Run drift detection and exit."""
+    drift = detect_drift(state)
+    if drift:
+        print("DRIFT DETECTED:")
+        for item in drift:
+            print(f"  {item}")
+        sys.exit(1)
 
-    # --- Check-only mode ---
-    if check_only:
-        drift = detect_drift(state)
-        if drift:
-            print("DRIFT DETECTED:")
-            for d in drift:
-                print(f"  {d}")
-            sys.exit(1)
+    print("No drift detected.")
+    sys.exit(0)
+
+
+def handle_run_gates(state: dict, head_sha: str) -> None:
+    """Run all gates and print a compact summary."""
+    print(f"COMMIT={head_sha}")
+    for result in check_all_gates(state):
+        label = f"{result['id']} [{result['status']}]"
+        gate_label = "PASS" if result["gate_passes"] else "FAIL"
+        if result["status"] == "done" and not result["gate_passes"]:
+            print(f"  DRIFT: {label} gate={gate_label}")
+            print(f"    gate: {result['gate_cmd']}")
+            print(f"    output: {result['gate_output']}")
+        elif result["status"] == "pending" and result["gate_passes"]:
+            print(f"  UNMARKED: {label} gate={gate_label}")
         else:
-            print("No drift detected.")
-            sys.exit(0)
+            print(f"  OK: {label} gate={gate_label}")
 
-    # --- Run-gates mode ---
-    if run_gates_only:
-        print(f"COMMIT={head_sha}")
-        for r in check_all_gates(state):
-            label = f"{r['id']} [{r['status']}]"
-            gate_label = "PASS" if r["gate_passes"] else "FAIL"
-            if r["status"] == "done" and not r["gate_passes"]:
-                print(f"  DRIFT: {label} gate={gate_label}")
-                print(f"    gate: {r['gate_cmd']}")
-                print(f"    output: {r['gate_output']}")
-            elif r["status"] == "pending" and r["gate_passes"]:
-                print(f"  UNMARKED: {label} gate={gate_label}")
-            else:
-                print(f"  OK: {label} gate={gate_label}")
-        return
 
-    # --- Full sync (normal loop startup) ---
-    # Auto-correct drift
-    changed = auto_correct_drift(state)
-    if changed:
-        print("DRIFT_CORRECTED: state updated to match gate results")
-
-    # Update iteration
-    state["iteration"] = state.get("iteration", 0) + 1
-    state["status"] = "running"
-    save_state(state)
-
-    # Report state
+def print_sync_report(state: dict, head_sha: str) -> None:
+    """Print the standard sync_state summary fields."""
     phase = state.get("phase", "?")
     phases = state.get("phases", {})
     phase_name = phases.get(str(phase), {}).get("name", "unknown")
@@ -391,6 +386,44 @@ def main() -> None:
     blocker = state.get("blocker")
     if blocker:
         print(f"BLOCKER={blocker}")
+
+
+def main() -> None:
+    argv = sys.argv[1:]
+    args = set(argv)
+    check_only = "--check-only" in args
+    run_gates_only = "--run-gates" in args
+    write_only = "--write" in args
+    view_arg = parse_view_arg(argv)
+
+    state = load_state()
+
+    if handle_view_mode(view_arg, state):
+        return
+
+    if write_only:
+        changed = auto_correct_drift(state)
+        if changed:
+            save_state(state)
+        return
+
+    head_sha = get_head_sha()
+
+    if check_only:
+        handle_check_only(state)
+
+    if run_gates_only:
+        handle_run_gates(state, head_sha)
+        return
+
+    changed = auto_correct_drift(state)
+    if changed:
+        print("DRIFT_CORRECTED: state updated to match gate results")
+
+    state["iteration"] = state.get("iteration", 0) + 1
+    state["status"] = "running"
+    save_state(state)
+    print_sync_report(state, head_sha)
 
 
 if __name__ == "__main__":

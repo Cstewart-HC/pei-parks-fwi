@@ -1,11 +1,11 @@
 {
-  "iteration": 8,
+  "iteration": 9,
   "date": "2026-03-22",
   "max_per_day": 10,
   "phase": 4,
-  "status": "paused",
+  "status": "running",
   "blocker": null,
-  "updated_at": null,
+  "updated_at": "2026-03-22T16:00:07.420870+00:00",
   "phases": {
     "1": {
       "name": "Obtain",
@@ -93,49 +93,66 @@
       "id": "normalize-stanhope-hourly",
       "description": "normalize cached Stanhope hourly data into project reference schema",
       "gate": ".venv/bin/pytest tests/test_stanhope_cache.py -q",
-      "depends": ["add-stanhope-hourly-cache-fetch", "script-bounded-stanhope-materialization"],
+      "depends": [
+        "add-stanhope-hourly-cache-fetch",
+        "script-bounded-stanhope-materialization"
+      ],
       "status": "done"
     },
     {
       "id": "define-fwi-daily-contract",
       "description": "define FWI-ready cleaned daily contract",
       "gate": "test -f specs/fwi-daily-contract.md",
-      "depends": ["normalize-stanhope-hourly"],
-      "status": "pending"
+      "depends": [
+        "normalize-stanhope-hourly"
+      ],
+      "status": "done"
     },
     {
       "id": "implement-ffmc",
       "description": "implement FFMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_ffmc -q",
-      "depends": ["define-fwi-daily-contract"],
+      "depends": [
+        "define-fwi-daily-contract"
+      ],
       "status": "pending"
     },
     {
       "id": "implement-dmc",
       "description": "implement DMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dmc -q",
-      "depends": ["define-fwi-daily-contract"],
+      "depends": [
+        "define-fwi-daily-contract"
+      ],
       "status": "pending"
     },
     {
       "id": "implement-dc",
       "description": "implement DC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dc -q",
-      "depends": ["define-fwi-daily-contract"],
+      "depends": [
+        "define-fwi-daily-contract"
+      ],
       "status": "pending"
     },
     {
       "id": "implement-fwi-chain",
       "description": "implement full FWI chain",
       "gate": ".venv/bin/pytest tests/test_fwi.py -q",
-      "depends": ["implement-ffmc", "implement-dmc", "implement-dc"],
+      "depends": [
+        "implement-ffmc",
+        "implement-dmc",
+        "implement-dc"
+      ],
       "status": "pending"
     },
     {
       "id": "validate-fwi-reference",
       "description": "validate FWI against external reference values",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_external_reference -q",
-      "depends": ["implement-fwi-chain"],
+      "depends": [
+        "implement-fwi-chain"
+      ],
       "status": "pending"
     }
   ],
