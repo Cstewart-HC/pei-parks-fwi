@@ -89,3 +89,13 @@ def test_quantify_station_removal_risk_reports_distributional_assumptions(
 
     assert "gaussian_kde" in assumptions
     assert "distributional" in assumptions.lower()
+
+
+def test_quantify_station_removal_risk_assigns_moderate_band_to_mixed_signal(
+) -> None:
+    risk = quantify_station_removal_risk(_sample_similarity_frame())
+
+    beta_band = risk.loc[risk["station"] == "beta", "risk_band"].iloc[0]
+
+    assert beta_band == "moderate"
+

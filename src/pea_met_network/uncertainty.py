@@ -6,9 +6,9 @@ from scipy.stats import gaussian_kde
 
 
 def _risk_band(probability: float) -> str:
-    if probability < 0.34:
+    if probability < 0.25:
         return "low"
-    if probability < 0.67:
+    if probability < 0.6:
         return "moderate"
     return "high"
 
