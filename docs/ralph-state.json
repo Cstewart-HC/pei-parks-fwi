@@ -3,124 +3,182 @@
   "date": "2026-03-22",
   "max_per_day": 10,
   "phase": 4,
-  "phase_name": "Model: Reference + FWI",
   "status": "paused",
   "blocker": null,
-  "updated_at": "2026-03-22T14:43:26.370052+00:00",
+  "updated_at": null,
+  "phases": {
+    "1": {
+      "name": "Obtain",
+      "exit": "inventory artifact exists, station/file mapping known, schema inconsistencies documented"
+    },
+    "2": {
+      "name": "Scrub",
+      "exit": "cleaned datasets reproducible, QA/QC artifacts exist, imputation policy encoded"
+    },
+    "3": {
+      "name": "Explore",
+      "exit": "notebook runs on cleaned data, exploratory summaries exist"
+    },
+    "4": {
+      "name": "Model: Reference + FWI",
+      "exit": "Stanhope cache exists, moisture codes reproducible, validation artifacts exist"
+    },
+    "5": {
+      "name": "Model: Redundancy",
+      "exit": "redundancy evidence from multiple methods, recommendation logic documented"
+    },
+    "6": {
+      "name": "Interpret",
+      "exit": "uncertainty outputs exist, recommendation supportable, repo runnable by fresh user"
+    }
+  },
   "tasks": [
     {
       "id": "add-stanhope-hourly-cache-fetch",
       "description": "add Stanhope hourly cache fetch scaffolding with local reuse",
       "gate": ".venv/bin/pytest tests/test_stanhope_cache.py::test_fetch_stanhope_hourly_month_reuses_existing_cache -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "record-stanhope-download-provenance",
       "description": "record Stanhope download provenance for cached files",
       "gate": ".venv/bin/pytest tests/test_stanhope_cache.py::test_fetch_stanhope_hourly_month_downloads_and_records_provenance -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "encode-anti-429-behavior",
       "description": "encode anti-429 behavior with coarse monthly fetches and delay hooks",
       "gate": ".venv/bin/pytest tests/test_stanhope_cache.py::test_fetch_stanhope_hourly_month_raises_clean_error_on_429 -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "script-bounded-stanhope-materialization",
       "description": "script bounded multi-month or multi-year Stanhope cache materialization",
       "gate": ".venv/bin/pytest tests/test_stanhope_cache.py -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "produce-cleaned-hourly-daily",
       "description": "produce first cleaned hourly and daily datasets",
       "gate": ".venv/bin/pytest tests/test_materialize_resampled.py -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "prove-real-file-normalization",
       "description": "prove real-file normalization-to-resampling path on canonical CSV",
       "gate": ".venv/bin/pytest tests/test_real_resampling_pipeline.py -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "add-bounded-csv-normalization",
       "description": "add bounded canonical CSV normalization loader",
       "gate": ".venv/bin/pytest tests/test_normalized_loader.py -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "expose-resampling-helpers",
       "description": "expose first-class hourly and daily resampling helpers",
       "gate": ".venv/bin/pytest tests/test_resampling_policy.py -q",
+      "depends": [],
       "status": "done"
     },
     {
       "id": "normalize-stanhope-hourly",
       "description": "normalize cached Stanhope hourly data into project reference schema",
-      "gate": ".venv/bin/python -c \"from pea_met_network.stanhope_cache import normalize_stanhope_hourly; print('ok')\"",
-      "depends": [
-        "add-stanhope-hourly-cache-fetch",
-        "script-bounded-stanhope-materialization"
-      ],
+      "gate": ".venv/bin/pytest tests/test_stanhope_cache.py -q",
+      "depends": ["add-stanhope-hourly-cache-fetch", "script-bounded-stanhope-materialization"],
       "status": "done"
     },
     {
       "id": "define-fwi-daily-contract",
       "description": "define FWI-ready cleaned daily contract",
       "gate": "test -f specs/fwi-daily-contract.md",
-      "depends": [
-        "normalize-stanhope-hourly"
-      ],
+      "depends": ["normalize-stanhope-hourly"],
       "status": "pending"
     },
     {
       "id": "implement-ffmc",
       "description": "implement FFMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_ffmc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": ["define-fwi-daily-contract"],
       "status": "pending"
     },
     {
       "id": "implement-dmc",
       "description": "implement DMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dmc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": ["define-fwi-daily-contract"],
       "status": "pending"
     },
     {
       "id": "implement-dc",
       "description": "implement DC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": ["define-fwi-daily-contract"],
       "status": "pending"
     },
     {
       "id": "implement-fwi-chain",
       "description": "implement full FWI chain",
       "gate": ".venv/bin/pytest tests/test_fwi.py -q",
-      "depends": [
-        "implement-ffmc",
-        "implement-dmc",
-        "implement-dc"
-      ],
+      "depends": ["implement-ffmc", "implement-dmc", "implement-dc"],
       "status": "pending"
     },
     {
       "id": "validate-fwi-reference",
       "description": "validate FWI against external reference values",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_external_reference -q",
-      "depends": [
-        "implement-fwi-chain"
-      ],
+      "depends": ["implement-fwi-chain"],
       "status": "pending"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "d1",
+      "date": "2026-03-22",
+      "summary": "Use OSEMN as project framing, not a software framework"
+    },
+    {
+      "id": "d2",
+      "date": "2026-03-22",
+      "summary": "Bias toward assignment compliance with sane internal structure"
+    },
+    {
+      "id": "d3",
+      "date": "2026-03-22",
+      "summary": "Use both PCA and clustering for redundancy analysis"
+    },
+    {
+      "id": "d4",
+      "date": "2026-03-22",
+      "summary": "Implement full FWI chain if data supports it"
+    },
+    {
+      "id": "d5",
+      "date": "2026-03-22",
+      "summary": "Treat local cached data as canonical"
+    },
+    {
+      "id": "d6",
+      "date": "2026-03-22",
+      "summary": "Enforce hard line length 80, style target 50"
+    },
+    {
+      "id": "d7",
+      "date": "2026-03-22",
+      "summary": "Enforce McCabe hard cap 15, target less than 10"
+    },
+    {
+      "id": "d8",
+      "date": "2026-03-22",
+      "summary": "Native Python FWI implementation remains the target approach"
     }
   ]
 }

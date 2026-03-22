@@ -5,39 +5,42 @@ Define safe, high-autonomy operating rules for the Ralph-style build loop.
 
 ## Single Source of Truth: ralph-state.json
 
-All task state lives in `docs/ralph-state.json`. This is machine-readable.
-No markdown parsing. No diary reads for state.
+All task state, phase, decisions, and loop control live in
+`docs/ralph-state.json`. This is the only file the loop reads for
+state. It is machine-readable JSON.
 
 The JSON contains:
-- `phase` / `phase_name` — derived from git by sync_state.py
-- `tasks[]` — ordered list with `id`, `description`, `gate`, `depends`, `status`
+- `phase` — current phase number (human-set, not derived)
+- `phases` — phase definitions with names and exit criteria
+- `tasks[]` — ordered task list with `id`, `description`, `gate`,
+  `depends`, `status`
+- `decisions[]` — architectural decisions with dates and rationale
 - `status` — "running" or "paused"
 - `blocker` — null or description
 - `date` / `max_per_day` / `iteration` — loop cadence control
 
-`IMPLEMENTATION_PLAN.md` is a human-readable mirror. The loop does NOT
-read it for state. It may read it for context, but all authoritative
-task/gate info comes from the JSON.
+## Human-Readable Views
+
+The JSON can generate markdown views on demand:
+```
+python scripts/sync_state.py --view plan       → task plan summary
+python scripts/sync_state.py --view decisions  → decisions log
+python scripts/sync_state.py --view status     → current state
+```
+These are for human eyes only. Never committed. Never read by the loop.
 
 ## Loop Startup Procedure (every iteration)
 
 1. **Run `python scripts/sync_state.py`**
-   This derives phase from git, reads gates from JSON, checks the next
-   task's gate. Read its stdout to determine everything.
-   Do NOT trust any cached state — sync_state.py IS the source of truth.
+   This reads the JSON, checks all gates, auto-corrects drift,
+   increments the iteration counter, and reports the next task.
+   Its stdout is the only state input the loop needs.
 
-2. **Read `IMPLEMENTATION_PLAN.md`** (optional, for context only)
-   Get background on the current task if needed. Do NOT parse it for
-   task state or gate commands.
+2. **Read `docs/loop-prompt.md`** for the full protocol.
+   This file contains the procedure, anti-patterns, and escalation
+   rules. It is the loop's instruction set.
 
-3. **Check the gate of the current task BEFORE starting work**
-   sync_state.py already ran it. If `GATE_STATUS=ALREADY_PASSES`,
-   mark the task done in ralph-state.json, commit, advance.
-
-4. **Read relevant spec files** if the task references one.
-
-## Loop Unit
-Each loop must work on one small, concrete unit of progress only.
+3. **Read relevant spec files** for context on the current task.
 
 ## Verification Gates (anti-pattern: self-referential trust)
 
@@ -51,10 +54,13 @@ The loop may mark a task done ONLY if:
 No diary entry, no checkbox, no "the file exists" observation counts
 as proof. Run the gate.
 
-### Detecting drift
-Run `python scripts/sync_state.py --run-gates` to check ALL gates.
-Tasks marked `done` whose gates now fail are reported as DRIFT.
-Tasks marked `pending` whose gates already pass are reported as UNMARKED.
+### Auto-correction
+sync_state.py automatically detects and corrects drift:
+- Tasks marked `done` whose gates fail → reset to `pending`
+- Tasks marked `pending` whose gates pass → promoted to `done`
+
+Run `python scripts/sync_state.py --check-only` to audit without writing.
+Run `python scripts/sync_state.py --run-gates` for a full gate report.
 
 ## Completion Rule
 Each loop must either:
