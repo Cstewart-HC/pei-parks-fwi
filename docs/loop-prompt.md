@@ -24,14 +24,20 @@ iteration 18 and not yet committing, you are out of time.
    It will print structured fields including PHASE, PHASE_EXIT,
    PHASE_EXIT_CMD, and a test discovery list.
 
-2. If PHASE_EXIT=PASS:
+2. Read `docs/validation.json`.
+   - If VERDICT=REJECT: read the rejected criteria carefully.
+     Your job this loop is to fix what UnRalph flagged.
+   - If VERDICT=PASS or VERDICT=NONE: proceed with next gap.
+   - You do NOT modify this file. Ever.
+
+3. If PHASE_EXIT=PASS:
    - Phase is complete. Stop. (Phase advancement is handled
      automatically by sync_state.py on the next run.)
 
-3. If a blocker is set in ralph-state.json:
+4. If a blocker is set in ralph-state.json:
    - Report it. Stop.
 
-4. Check WORKING_TREE from sync_state.py output:
+5. Check WORKING_TREE from sync_state.py output:
    - WORKING_TREE=CLEAN: proceed normally.
    - WORKING_TREE=DIRTY: you have leftover work from a previous run.
      Evaluate the uncommitted files. If the work is valid and useful,
@@ -107,7 +113,10 @@ Do not write prose. Do not editorialize. Stick to the template.
 - Do NOT write file-existence gates — test behavior
 - Do NOT batch multiple tasks in one loop
 - Do NOT read the diary for state
+- Do NOT modify docs/validation.json. Ever.
 - Do NOT implement before writing a test
+- Do NOT use heuristics when the spec requires a specific method
+  (e.g., use sklearn clustering, not sorting; use KDE, not weighted scores)
 
 ## Escalation
 

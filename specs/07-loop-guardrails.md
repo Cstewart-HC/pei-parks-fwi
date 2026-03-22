@@ -1,23 +1,40 @@
 # Autonomous Loop Guardrails
 
 ## Goal
-Define safe, high-autonomy operating rules for the Ralph-style build loop.
+Define safe, high-autonomy operating rules for the Ralph-style build loop
+with adversarial validation (tick-tock).
+
+## Architecture: Tick-Tock
+
+Two agents, two roles, two models:
+- **Ralph (TICK)** — builds, tests, commits. Model: gpt-5.3-codex.
+- **UnRalph (TOCK)** — reviews, verifies, rejects weak work. Model: glm-5-turbo.
+
+Different model families = different blind spots. Where one agent might
+accept a shortcut, the other is more likely to catch it.
 
 ## Single Source of Truth: ralph-state.json
 
-All task state, phase, decisions, and loop control live in
+All phase state, decisions, and loop control live in
 `docs/ralph-state.json`. This is the only file the loop reads for
 state. It is machine-readable JSON.
 
 The JSON contains:
 - `phase` — current phase number (human-set, not derived)
-- `phases` — phase definitions with names and exit criteria
-- `tasks[]` — ordered task list with `id`, `description`, `gate`,
-  `depends`, `status`
+- `phases` — phase definitions with names, exit criteria, status
 - `decisions[]` — architectural decisions with dates and rationale
 - `status` — "running" or "paused"
 - `blocker` — null or description
 - `date` / `max_per_day` / `iteration` — loop cadence control
+
+## Validation: validation.json
+
+`docs/validation.json` is the communication channel between Ralph and
+UnRalph.
+
+- **UnRalph writes it.** Ralph reads it (read-only).
+- Contains: verdict (PASS/REJECT), per-criterion evidence, summary.
+- Ralph must address all REJECT criteria before UnRalph will pass.
 
 ## Human-Readable Views
 
@@ -29,46 +46,66 @@ python scripts/sync_state.py --view status     → current state
 ```
 These are for human eyes only. Never committed. Never read by the loop.
 
-## Loop Startup Procedure (every iteration)
+## Loop Startup Procedure (every Ralph iteration)
 
 1. **Run `python scripts/sync_state.py`**
-   This reads the JSON, checks all gates, auto-corrects drift,
-   increments the iteration counter, and reports the next task.
-   Its stdout is the only state input the loop needs.
+   Reads the JSON, discovers tests, reports working tree status,
+   checks phase exit criteria.
 
-2. **Read `docs/loop-prompt.md`** for the full protocol.
-   This file contains the procedure, anti-patterns, and escalation
-   rules. It is the loop's instruction set.
+2. **Read `docs/validation.json`**
+   - VERDICT=REJECT → fix what UnRalph flagged
+   - VERDICT=PASS or NONE → proceed with next gap
 
-3. **Read relevant spec files** for context on the current task.
+3. **Read `docs/loop-prompt.md`** for the full protocol.
+
+4. **Read relevant spec files** for acceptance criteria context.
+
+## Loop Startup Procedure (every UnRalph iteration)
+
+1. **Read `docs/unralph-prompt.md`** for the full protocol.
+2. **Read the spec** for the current phase.
+3. **Read Ralph's code and tests.**
+4. **Check each acceptance criterion** against the implementation.
+5. **Write `docs/validation.json`** with verdict and evidence.
+
+## Acceptance Criteria (human-defined)
+
+Each spec has a machine-verifiable Acceptance Criteria section.
+These are constraints that name specific methods, behaviors, and
+test quality requirements. UnRalph verifies them. Ralph builds to them.
+
+Key principle: a heuristic does not satisfy a criterion that names
+a specific method. "Use sklearn clustering" means sklearn clustering,
+not sorting. "Use KDE" means KDE, not weighted averages.
 
 ## Verification Gates (anti-pattern: self-referential trust)
 
-Every task has a `gate` field in ralph-state.json — a shell command
-that must exit 0 for the task to be considered done.
+Ralph must run verification before committing:
+- `ruff check .` — must pass
+- `pytest` (full suite) — must pass
 
-The loop may mark a task done ONLY if:
-1. It ran the gate command
-2. The gate exited 0
-
-No diary entry, no checkbox, no "the file exists" observation counts
-as proof. Run the gate.
+UnRalph must run verification during review:
+- `pytest tests/ -q` — must pass for PASS verdict
+- Code inspection against acceptance criteria
 
 ### Auto-correction
-sync_state.py automatically detects and corrects drift:
-- Tasks marked `done` whose gates fail → reset to `pending`
-- Tasks marked `pending` whose gates pass → promoted to `done`
+sync_state.py automatically detects drift:
+- Discovers test files and reports their status
+- Checks phase exit criteria
+- Reports working tree state
 
 Run `python scripts/sync_state.py --check-only` to audit without writing.
-Run `python scripts/sync_state.py --run-gates` for a full gate report.
 
 ## Completion Rule
-Each loop must either:
-- produce a passing commit (gate + ruff + pytest), or
+Each Ralph loop must either:
+- produce a passing commit (ruff + pytest), or
 - stop and report a validated blocker
 
+Each UnRalph loop must:
+- produce a validation.json with clear verdict and evidence
+
 ## Self-Heal Budget
-Per loop:
+Per Ralph loop:
 - up to 3 repair attempts for the same failing step
 - up to 2 strategy pivots when the first approach is wrong
 
@@ -76,7 +113,6 @@ Per loop:
 Before commit, the loop must run:
 - `ruff check .` — must pass
 - `pytest` — must pass
-- the current task's gate — must pass
 
 ## Code Quality Rules
 - style target line length: 50
@@ -90,8 +126,5 @@ Append-only audit log under `docs/diary/`. The loop never reads it
 for state — it is an audit log, not a decision source.
 
 ## Standup Rhythm
-Standup-style check-ins should surface:
-- what changed
-- what passed or failed
-- current milestone
-- blockers or decisions needed
+Standup-style check-ins are handled externally (heartbeat),
+not by Ralph or UnRalph. Neither agent delivers summaries.

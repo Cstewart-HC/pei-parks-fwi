@@ -1,11 +1,11 @@
 {
-  "iteration": 19,
+  "iteration": 30,
   "date": "2026-03-22",
   "max_per_day": 20,
   "phase": 5,
   "status": "running",
   "blocker": null,
-  "updated_at": "2026-03-22T18:12:23.217848+00:00",
+  "updated_at": "2026-03-22T16:45:00-03:00",
   "phases": {
     "1": {
       "name": "Obtain",
@@ -30,12 +30,12 @@
     "5": {
       "name": "Model: Redundancy",
       "exit": ".venv/bin/pytest tests/test_redundancy.py -q",
-      "status": "active"
+      "status": "in_progress"
     },
     "6": {
       "name": "Interpret",
       "exit": ".venv/bin/pytest tests/test_uncertainty.py -q",
-      "status": "not_started"
+      "status": "pending"
     }
   },
   "decisions": [
@@ -88,6 +88,21 @@
       "id": "d10",
       "date": "2026-03-22",
       "summary": "Ralph writes tests first (TDD), implementation follows"
+    },
+    {
+      "id": "d11",
+      "date": "2026-03-22",
+      "summary": "Tick-tock adversarial validation: Ralph builds, UnRalph reviews, different models"
+    },
+    {
+      "id": "d12",
+      "date": "2026-03-22",
+      "summary": "Acceptance criteria are human-defined constraints anchored to specific methods"
+    },
+    {
+      "id": "d13",
+      "date": "2026-03-22",
+      "summary": "Phase 5-6 reset: weak implementations (heuristic clustering, no real KDE) must be redone"
     }
   ]
 }
