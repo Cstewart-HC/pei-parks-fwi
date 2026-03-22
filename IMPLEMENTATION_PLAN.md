@@ -1,61 +1,59 @@
-# Implementation Plan — PEI Meteorological Network Optimization
+# Implementation Plan
 
-## Project: DATA-3210 Semester Project
-## Client: Parks Canada Agency (PEI Field Unit)
-## Last Updated: 2026-03-21
+## Current Milestone
+Phase 1 — Obtain
 
----
+## Current Objective
+Create a trustworthy data inventory and schema audit so later pipeline
+work is grounded in the actual files, stations, and date coverage.
 
-## Status: PRE-LAUNCH
+## Immediate Next Tasks
+- [ ] inspect project data layout and identify canonical raw data paths
+- [ ] generate a raw file inventory artifact with station, file type,
+      and path information
+- [ ] map files to stations and approximate date coverage
+- [ ] identify CSV vs Excel-family parsing needs
+- [ ] record major schema unknowns and anomalies
 
-## Completed
-- [x] Project scaffolding
-- [x] Git initialization
-- [x] Research (Ralph loop methodology, ECCC API, FWI libraries)
+## Queued Tasks
+- [ ] scaffold Python package under `src/pea_met_network/`
+- [ ] add project quality config (`pyproject.toml`) with Ruff rules
+- [ ] add initial pytest scaffolding
+- [ ] implement inventory loader utilities
+- [ ] draft cleaning pipeline entrypoint contract
 
-## In Progress
-- [ ] Spec generation (awaiting data + go signal from MrCoins)
+## Validation Expectations
+For current scope:
+- inventory scripts should run reproducibly
+- generated artifacts should be inspectable
+- no cleaning assumptions should be baked in yet
 
-## TODO (ordered by dependency)
-1. Receive student data files (CSVs + Excel)
-2. Receive GitHub remote credentials
-3. Spec generation phase (decompose assignment into implementation topics)
-4. Write PROMPT.md (top-level loop prompt)
-5. Write AGENTS.md (how to build, test, verify)
-6. Write per-topic spec files in specs/
-7. Scaffold data pipeline (cleaning.py)
-8. Scaffold FWI module (src/fwi.py)
-9. Scaffold analysis notebook (analysis.ipynb)
-10. Write initial tests (tests/)
-11. Launch Ralph loop
+## Blockers
+- none currently
 
----
+## Recent Decisions
+- use OSEMN as project framing, not as a software framework
+- bias toward assignment compliance with sane internal structure
+- use both PCA and clustering for redundancy analysis
+- implement full FWI chain if data supports it
+- treat local cached data as canonical
+- enforce hard line length 80, style target 50
+- enforce McCabe hard cap 15, target less than 10
+- diary entries should use factual + reflective Option C style
 
-## Architecture Decisions
-- Language: Python 3.11
-- FWI: cffdrs library (pip install cffdrs)
-- ECCC data: Bulk CSV download with rate limiting
-- Imputation: TBD (will research during spec phase)
-- Redundancy analysis: PCA + K-Means clustering
-- Uncertainty: KDE via scipy
+## Notes to Future Loops
+Do not jump ahead into modeling until inventory and schema understanding
+exist. Early certainty here prevents fake progress later.
 
-## Key Files
-- `IMPLEMENTATION_PLAN.md` — this file (loaded every loop iteration)
-- `PROMPT.md` — top-level prompt for the Ralph loop
-- `AGENTS.md` — build/test/verify instructions
-- `cleaning.py` — data pipeline
-- `analysis.ipynb` — EDA + analysis
-- `src/fwi.py` — FWI calculation module
-- `src/redundancy.py` — PCA/clustering analysis
-- `src/uncertainty.py` — KDE uncertainty quantification
+## Decision Log — 2026-03-22
 
-## Stations
-| Station | Source | Notes |
-|---|---|---|
-| Cavendish | PCA (internal CSVs) | Primary FWI target |
-| Stanley Bridge | PCA (internal CSVs) | |
-| Tracadie | PCA (internal CSVs) | |
-| Greenwich | PCA (internal CSVs) | Primary FWI target |
-| North Rustico | PCA (internal CSVs) | |
-| Stanhope | ECCC (ID: 8300590) | Reference station, external API |
+- Confirmed `cffdrs` is R-only and removed it from Python dependency assumptions.
+- Chosen path: implement FWI natively in `src/pea_met_network/` with small typed functions.
+- `gagreene/cffdrs` will be used as an MIT-licensed Python reference and possible test oracle.
+- `cffdrs/cffdrs_r` will be used as an authoritative behavioral reference only; do not copy from GPL-2 sources into project code.
 
+## Next FWI-related prerequisite tasks
+
+1. Inspect station file schemas and identify the exact columns needed for daily FWI inputs.
+2. Define the cleaned daily dataset contract required by the FWI module.
+3. Add FWI validation fixtures/tests only after the cleaned daily contract exists.
