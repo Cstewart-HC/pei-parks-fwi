@@ -100,39 +100,24 @@
       "status": "done"
     },
     {
-      "id": "define-fwi-daily-contract",
-      "description": "define FWI-ready cleaned daily contract",
-      "gate": "test -f specs/fwi-daily-contract.md",
-      "depends": [
-        "normalize-stanhope-hourly"
-      ],
-      "status": "done"
-    },
-    {
       "id": "implement-ffmc",
       "description": "implement FFMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_ffmc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": [],
       "status": "pending"
     },
     {
       "id": "implement-dmc",
       "description": "implement DMC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dmc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": [],
       "status": "pending"
     },
     {
       "id": "implement-dc",
       "description": "implement DC moisture code",
       "gate": ".venv/bin/pytest tests/test_fwi.py::test_dc -q",
-      "depends": [
-        "define-fwi-daily-contract"
-      ],
+      "depends": [],
       "status": "pending"
     },
     {

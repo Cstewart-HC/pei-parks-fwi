@@ -54,7 +54,7 @@ If any fails:
 
 1. Review `git diff` before committing.
 2. Commit with a conventional prefix: `data:`, `scrub:`, `model:`,
-   `infra:`, `spec:`, `test:`, `chore:`.
+   `infra:`, `test:`, `chore:`.
 3. The pre-commit hook will run sync_state.py automatically.
 
 ## Diary
@@ -81,6 +81,7 @@ Deliver a standup summary (under 300 words) covering:
 - Do NOT batch multiple tasks in one loop
 - Do NOT commit with failing tests
 - Do NOT skip `git diff` review before committing
+- Do NOT create, modify, or author spec files — specs are human decisions, not loop tasks
 - Do NOT read IMPLEMENTATION_PLAN.md (it no longer exists)
 - Do NOT derive phase from git messages yourself (sync_state.py does this)
 - Do NOT read docs/archive/ for anything
