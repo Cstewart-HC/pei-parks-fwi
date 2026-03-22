@@ -1,11 +1,11 @@
 {
-  "iteration": 30,
+  "iteration": 35,
   "date": "2026-03-22",
   "max_per_day": 20,
   "phase": 5,
   "status": "running",
   "blocker": null,
-  "updated_at": "2026-03-22T16:45:00-03:00",
+  "updated_at": "2026-03-22T20:55:17.371004+00:00",
   "phases": {
     "1": {
       "name": "Obtain",
@@ -30,7 +30,7 @@
     "5": {
       "name": "Model: Redundancy",
       "exit": ".venv/bin/pytest tests/test_redundancy.py -q",
-      "status": "in_progress"
+      "status": "active"
     },
     "6": {
       "name": "Interpret",

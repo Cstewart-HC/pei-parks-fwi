@@ -119,27 +119,112 @@ def check_phase_exit(state: dict) -> tuple[bool, str, str]:
     return passes, exit_gate, output
 
 
-def advance_phase_if_done(state: dict) -> bool:
-    """Check if current phase exit passes, advance to next if so."""
-    passes, _, _ = check_phase_exit(state)
-    if not passes:
-        return False
+VALIDATION_FILE = REPO_ROOT / "docs" / "validation.json"
+
+
+def load_validation() -> dict | None:
+    """Load validation.json if it exists."""
+    if VALIDATION_FILE.exists():
+        with open(VALIDATION_FILE) as f:
+            return json.load(f)
+    return None
+
+
+def get_validation_verdict(validation: dict | None) -> str:
+    """Return verdict string: PASS, REJECT, or NONE."""
+    if validation is None:
+        return "NONE"
+    return validation.get("verdict", "NONE").upper()
+
+
+def revert_phase_on_reject(state: dict) -> bool:
+    """If current phase is 'done' but validation says REJECT, revert to active.
+    Returns True if reverted."""
+    validation = load_validation()
+    verdict = get_validation_verdict(validation)
 
     phases = state.get("phases", {})
     current = str(state.get("phase", "?"))
     phase_info = phases.get(current, {})
-    phase_info["status"] = "done"
 
-    # Find next not_started phase
+    # Only revert if validation explicitly rejects
+    if verdict != "REJECT":
+        return False
+
+    # Check if current phase is marked done
+    if phase_info.get("status") == "done":
+        phase_info["status"] = "active"
+        # Also revert phase number if it advanced past the rejected phase
+        # Find the last phase that was marked done
+        for p_num in sorted(phases.keys(), key=int, reverse=True):
+            p_info = phases[p_num]
+            if p_info.get("status") == "done":
+                # Check if there's a rejected phase before or at this one
+                break
+        # Reset current phase to the one that was rejected
+        # The rejected commit's phase should be the one we go back to
+        state["phase"] = int(current)
+        phase_info["status"] = "active"
+        return True
+
+    return False
+
+
+def advance_phase_if_done(state: dict) -> bool:
+    """Check if current phase exit passes AND validation is not REJECT.
+    Returns True if phase advanced.
+    
+    2x2 grid:
+        PP (phase exit PASS + validation PASS) → advance (only true pass)
+        PF (phase exit PASS + validation FAIL) → BLOCK, do not advance
+        FF (phase exit FAIL + validation FAIL) → continue working
+        FP (phase exit FAIL + validation PASS) → IMPOSSIBLE, log anomaly
+    """
+    phases = state.get("phases", {})
+    current = str(state.get("phase", "?"))
+    phase_info = phases.get(current, {})
+
+    # Check phase exit criteria
+    exit_passes, exit_cmd, exit_output = check_phase_exit(state)
+
+    # Check validation
+    validation = load_validation()
+    verdict = get_validation_verdict(validation)
+
+    # FF: phase exit fails — keep working
+    if not exit_passes:
+        if verdict == "PASS":
+            # FP: impossible state — tests fail but validation passes
+            print(f"ANOMALY: FP state detected — phase exit fails but validation is PASS", file=sys.stderr)
+            print(f"  Phase exit: {exit_cmd}", file=sys.stderr)
+        return False
+
+    # Phase exit passes — now check validation
+    if verdict == "REJECT":
+        # PF: false positive — tests pass but spec compliance fails
+        # Do NOT advance. Revert phase status if needed.
+        if phase_info.get("status") == "done":
+            phase_info["status"] = "active"
+        return False
+
+    if verdict == "NONE":
+        # No validation yet — allow advancement (no UnRalph has reviewed)
+        phase_info["status"] = "done"
+        for p_num in sorted(phases.keys(), key=int):
+            if phases[p_num].get("status") == "not_started":
+                state["phase"] = int(p_num)
+                phases[p_num]["status"] = "active"
+                return True
+        phase_info["status"] = "done"
+        return True
+
+    # PP: both pass — true pass, advance
+    phase_info["status"] = "done"
     for p_num in sorted(phases.keys(), key=int):
         if phases[p_num].get("status") == "not_started":
             state["phase"] = int(p_num)
             phases[p_num]["status"] = "active"
-            if current in phases:
-                phases[current]["status"] = "done"
             return True
-
-    # All phases done
     phase_info["status"] = "done"
     return True
 
@@ -318,12 +403,41 @@ def print_sync_report(
     if phase_advanced:
         print("PHASE_ADVANCED=true")
 
+    # Validation state (2x2 grid)
+    validation = load_validation()
+    verdict = get_validation_verdict(validation)
+    if verdict != "NONE":
+        print(f"VALIDATION={verdict}")
+        if verdict == "REJECT":
+            # Summarize failed criteria
+            failed = [c for c in validation.get("criteria", []) if c.get("status") == "FAIL"]
+            print(f"VALIDATION_FAIL_COUNT={len(failed)}")
+            for c in failed:
+                print(f"  FAIL: {c.get('id', '?')} — {c.get('name', '?')}")
+                evidence = c.get("evidence", "")
+                if evidence:
+                    print(f"    {evidence[:200]}")
+    else:
+        print("VALIDATION=NONE")
+
     # Phase exit check
     exit_passes, exit_cmd, exit_output = check_phase_exit(state)
     print(f"PHASE_EXIT={'PASS' if exit_passes else 'FAIL'}")
     print(f"PHASE_EXIT_CMD={exit_cmd}")
     if not exit_passes and exit_output:
         print(f"PHASE_EXIT_OUTPUT={exit_output[:200]}")
+
+    # Compute 2x2 state
+    if verdict == "PASS" and exit_passes:
+        print("VALIDATION_STATE=PP")
+    elif verdict == "REJECT" and exit_passes:
+        print("VALIDATION_STATE=PF")
+    elif verdict == "REJECT" and not exit_passes:
+        print("VALIDATION_STATE=FF")
+    elif verdict == "PASS" and not exit_passes:
+        print("VALIDATION_STATE=FP")
+    else:
+        print(f"VALIDATION_STATE=INDETERMINATE (validation={verdict}, exit={'PASS' if exit_passes else 'FAIL'})")
 
     # Test discovery — what test files exist for this phase
     print("")
@@ -362,6 +476,12 @@ def main() -> None:
 
     if check_only:
         handle_check_only(state)
+
+    # Revert phase if validation says REJECT (fixes PF false positives)
+    reverted = revert_phase_on_reject(state)
+    if reverted:
+        save_state(state)
+        print("PHASE_REVERTED=true (validation REJECT)", file=sys.stderr)
 
     phase_advanced = advance_phase_if_done(state)
 

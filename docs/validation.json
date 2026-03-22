@@ -1,7 +1,44 @@
 {
-  "last_reviewed_commit": null,
-  "verdict": "NONE",
-  "reviewed_at": null,
-  "criteria": [],
-  "summary": "No review performed yet"
+  "last_reviewed_commit": "10fd8338891fd70fdea78873b6048850429ea4e3",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-22T20:50:19+00:00",
+  "criteria": [
+    {
+      "id": "AC-UNC-1",
+      "name": "Probabilistic Method",
+      "status": "FAIL",
+      "evidence": "src/pea_met_network/uncertainty.py computes `risk_probability` as a weighted arithmetic combination of `mean_abs_diff`, `correlation`, and `overlap_count`, then clips and rounds it. It does not use `scipy.stats.gaussian_kde` or any equivalent distributional method, and it returns one scalar probability per station rather than a distribution. The spec explicitly says a weighted heuristic or arithmetic formula does not satisfy this criterion."
+    },
+    {
+      "id": "AC-UNC-2",
+      "name": "Station-Removal Risk",
+      "status": "PASS",
+      "evidence": "src/pea_met_network/uncertainty.py returns per-station rows with `station`, `reference_station`, and `risk_probability`, and the estimate is tied to actual similarity/divergence evidence through `mean_abs_diff`, `correlation`, and `overlap_count` derived from the Stanhope benchmark. This satisfies the per-station and evidence-linked parts of the requirement, even though the uncertainty method itself fails AC-UNC-1."
+    },
+    {
+      "id": "AC-UNC-3",
+      "name": "Confidence Intervals",
+      "status": "FAIL",
+      "evidence": "src/pea_met_network/uncertainty.py produces no confidence intervals or credible intervals at all. tests/test_uncertainty.py does not test interval behavior such as widening with fewer overlap points and narrowing with more data. The acceptance criterion requires both interval output and a behavioral test of interval width."
+    },
+    {
+      "id": "AC-UNC-4",
+      "name": "Assumptions and Limitations",
+      "status": "FAIL",
+      "evidence": "The implementation includes assumptions text and a limitations string for low overlap, but it rounds `risk_probability` to two decimals in src/pea_met_network/uncertainty.py, creating false precision rather than avoiding it. It also does not explicitly flag stations as insufficient for reliable uncertainty estimation beyond a generic limitations sentence. That is not enough to satisfy the criterion."
+    },
+    {
+      "id": "AC-UNC-5",
+      "name": "Integration with Recommendations",
+      "status": "FAIL",
+      "evidence": "src/pea_met_network/redundancy.py writes the final redundancy summary using correlation, PCA loadings, clustering order, and Stanhope benchmark only. It does not import or call `quantify_station_removal_risk`, and the recommendation/report output contains no uncertainty fields or recommendation text referencing uncertainty estimates. Required integration is missing."
+    },
+    {
+      "id": "AC-UNC-6",
+      "name": "Test Quality",
+      "status": "FAIL",
+      "evidence": "tests/test_uncertainty.py uses a small synthetic fixture with no documented justification, and it checks only columns, ordinal ordering, and limitations text. It does not verify distributional behavior, KDE/equivalent output shape, or confidence-interval properties that would fail a wrong implementation. `.venv/bin/pytest tests/ -q` passes, but the uncertainty tests are too weak to satisfy the spec."
+    }
+  ],
+  "summary": "Rejected. The current uncertainty implementation is still a heuristic weighted score, not a probabilistic or distributional method. It does provide per-station outputs tied to benchmark evidence, but it produces no confidence or credible intervals, rounds values in a way that creates false precision, and is not integrated into the Phase 5 recommendation output. The tests pass, but they do not verify the required method or interval behavior, so they do not support acceptance."
 }
