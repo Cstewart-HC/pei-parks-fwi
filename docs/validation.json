@@ -1,44 +1,44 @@
 {
-  "last_reviewed_commit": "cf85f65",
-  "verdict": "REJECT",
-  "reviewed_at": "2026-03-23T12:45:00-03:00",
+  "last_reviewed_commit": "6a1e73f",
+  "verdict": "PASS",
+  "reviewed_at": "2026-03-23T15:29:07-03:00",
   "criteria": [
     {
-      "id": "AC-REM-1",
-      "name": "FWI tests validate outputs against reference vectors",
-      "status": "FAIL",
-      "evidence": "tests/test_fwi_vectors.py defines FFMC_VECTORS, DMC_VECTORS, DC_VECTORS with expected output values, but test functions (test_ffmc_vectors_exist, test_dmc_vectors_exist, test_dc_vectors_exist) only assert previous_code >= 0 and expected >= 0. No test calls fine_fuel_moisture_code, duff_moisture_code, or drought_code and compares the result to the expected value within tolerance. The expected values are dead data — never used for assertion."
+      "id": "AC-UNC-1",
+      "name": "Probabilistic Method",
+      "status": "PASS",
+      "evidence": "uncertainty.py::_distribution_samples uses scipy.stats.gaussian_kde to produce a 256-sample distribution from observation-derived station-reference divergence values. The KDE output is clipped and normalized, then used to derive both the point estimate (mean of samples) and confidence intervals. Not a scalar heuristic — a full distributional resampling."
     },
     {
-      "id": "AC-REM-2",
-      "name": "DMC and DC implementations in fwi.py",
-      "status": "FAIL",
-      "evidence": "src/pea_met_network/fwi.py contains only fine_fuel_moisture_code. No duff_moisture_code or drought_code functions exist. DMC_VECTORS and DC_VECTORS in tests reference expected values but have no implementation to test against."
+      "id": "AC-UNC-2",
+      "name": "Station-Removal Risk",
+      "status": "PASS",
+      "evidence": "quantify_station_removal_risk produces per-station risk_probability, ci_lower, ci_upper, and risk_band. When benchmark contains raw 'observations' (from benchmark_to_stanhope which computes |station - reference| absolute deltas on real PEINP data), those are used directly. Falls back to documented synthetic generation only when observations are absent."
     },
     {
-      "id": "AC-REM-3",
-      "name": "Imputation framework with audit trail",
-      "status": "FAIL",
-      "evidence": "src/pea_met_network/imputation.py does not exist. tests/test_imputation.py does not exist. No imputation code anywhere in the project. Spec requires configurable strategy (short-gap interpolation, long-gap preserve missingness) and audit trail (station, variable, time range, method, count affected)."
+      "id": "AC-UNC-3",
+      "name": "Confidence Intervals",
+      "status": "PASS",
+      "evidence": "CI computed as np.quantile(samples, [0.1, 0.9]) from the KDE-resampled distribution. Test test_quantify_station_removal_risk_intervals_widen_with_less_overlap verifies strict ordering: alpha (overlap=120) width < beta (72) width < gamma (12) width, confirming intervals widen with less data."
     },
     {
-      "id": "AC-REM-4",
-      "name": "QA/QC summary artifacts",
-      "status": "FAIL",
-      "evidence": "src/pea_met_network/qa_qc.py does not exist. tests/test_qa_qc.py does not exist. No QA/QC automation anywhere. Spec requires missingness by station/variable, duplicate timestamp detection, out-of-range value detection, and coverage summary."
+      "id": "AC-UNC-4",
+      "name": "Assumptions and Limitations",
+      "status": "PASS",
+      "evidence": "Each output row includes 'assumptions' (documenting gaussian_kde usage and synthetic fallback) and 'limitations' (flagging overlap_count < 24 as insufficient). _limitations() function returns specific text. Tests verify 'insufficient' for gamma (12 overlaps) and 'adequate' for alpha (120 overlaps). Assumptions also surfaced in function docstrings."
     },
     {
-      "id": "AC-REM-5",
-      "name": "Loader handles multiple schema families",
-      "status": "FAIL",
-      "evidence": "normalized_loader.py::load_normalized_station_csv calls recognize_schema but only uses its result to set a column value (schema_family). The timestamp parsing hardcodes format='%m/%d/%Y %H:%M:%S %z' regardless of schema family. The manifest recognizes 4 schema families but only one timestamp format is handled. Other families would fail silently with no NotImplementedError. The test only covers minimal_date_time_family."
+      "id": "AC-UNC-5",
+      "name": "Integration with Recommendations",
+      "status": "PASS",
+      "evidence": "redundancy.py::build_station_recommendations calls quantify_station_removal_risk, merges results with benchmark, and uses risk_band and ci_upper in _recommendation_from_row to determine keep/remove/defer (high band or ci_upper>=0.7 → keep; correlation>=0.95 and low band → remove; else defer). Recommendation output includes risk_probability, ci_lower, ci_upper, risk_band, and evidence string referencing uncertainty."
     },
     {
-      "id": "AC-REM-6",
-      "name": "Explore notebook smoke test",
-      "status": "FAIL",
-      "evidence": "tests/test_explore_smoke.py does not exist. No automated verification that the Phase 3 explore notebook is executable or that its imports succeed. If the notebook broke, no test would catch it."
+      "id": "AC-UNC-6",
+      "name": "Test Quality",
+      "status": "PASS",
+      "evidence": "8 tests all pass. Tests verify distributional behavior: KDE output shape (512 samples), std > 0, mean ordering preservation, quantile proximity to empirical values within 0.2 tolerance. Real PEINP CSVs loaded in _real_observation_benchmark and test_distribution_samples_follow_empirical_delta_distribution. Synthetic fixture in _sample_similarity_frame is documented with justification. No existence-only or type-only checks."
     }
   ],
-  "summary": "REJECT — all 6 phase-7 acceptance criteria fail. The two new commits (cf85f65, 9993937) since last review contain only orchestrator infra changes and the previous UnRalph verdict — no source code or test changes. No remediation work has been started: imputation.py, qa_qc.py, and test_explore_smoke.py do not exist; fwi.py is missing DMC and DC implementations; test_fwi_vectors.py asserts non-negativity instead of calling functions and comparing outputs; normalized_loader.py hardcodes a single timestamp format. The exit command fails immediately because 3 of 5 required test files are missing."
+  "summary": "PASS — all 6 acceptance criteria for Phase 6 (Interpret) are satisfied. uncertainty.py uses scipy.stats.gaussian_kde to produce distributional risk estimates per station, with confidence intervals that widen appropriately with less overlap. Assumptions and limitations are surfaced per-station. Recommendations in redundancy.py integrate uncertainty estimates directly into keep/remove/defer logic. Tests verify distributional properties (shape, ordering, quantile fidelity) using both real PEINP data and documented synthetic fixtures. All 8 tests pass."
 }
