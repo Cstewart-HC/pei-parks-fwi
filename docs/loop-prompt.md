@@ -33,7 +33,7 @@ iteration 18 and not yet committing, you are out of time.
 
 2. Read `docs/validation.json`.
    - If VERDICT=REJECT: read the rejected criteria carefully.
-     Your job this loop is to fix what UnRalph flagged.
+     Your job this loop is to fix what Lisa flagged.
    - If VERDICT=PASS or VERDICT=NONE: proceed with next gap.
    - You do NOT modify this file. Ever.
 

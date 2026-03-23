@@ -35,13 +35,13 @@ python3 -c "import json; s=json.load(open('docs/ralph-state.json')); print(f'pha
 Apply these rules IN ORDER:
 
 1. **Circuit breaker tripped** → STOP. Send an escalation via `send_message` to the DM channel with the trip reason. Print the trip reason and exit.
-   Do not run Ralph or UnRalph. Human intervention required.
+   Do not run Ralph or Lisa. Human intervention required.
 
-2. **New commits since last UnRalph review** → Run UnRalph.
+2. **New commits since last Lisa review** → Run Lisa.
    Ralph committed work that hasn't been reviewed yet.
 
 3. **No new commits + verdict is REJECT** → Run Ralph.
-   UnRalph rejected; Ralph needs to fix what was flagged.
+   Lisa rejected; Ralph needs to fix what was flagged.
 
 4. **No new commits + verdict is PASS** → SYNC AND STOP.
    Run `python3 scripts/sync_state.py` to sync phase state, check if
@@ -59,14 +59,14 @@ Apply these rules IN ORDER:
 
 ### Step 3: Execute
 
-If you decided to **run UnRalph**:
-- Read `docs/unralph-prompt.md` and follow it exactly.
+If you decided to **run Lisa**:
+- Read `docs/lisa-prompt.md` and follow it exactly.
 - That prompt contains all instructions for the review.
-- **After UnRalph finishes**: commit the updated validation file so
+- **After Lisa finishes**: commit the updated validation file so
   `sync_state.py` can see it on the next tick:
   ```bash
   git add docs/validation.json
-  git commit -m "unralph: review verdict <VERDICT>"
+  git commit -m "lisa: review verdict <VERDICT>"
   ```
 
 If you decided to **run Ralph**:
@@ -94,7 +94,7 @@ Do NOT send routine loop output to DMs. Only escalate.
 - You make exactly ONE decision per invocation.
 - You are stateless — each run starts fresh.
 - Do not modify docs/validation.json when running as Ralph.
-- Do not modify source code or tests when running as UnRalph.
+- Do not modify source code or tests when running as Lisa.
 - Budget your iterations: the orchestrator decision should take at most 3 iterations. The remaining iterations are for the actual work.
 - Your routine output will be delivered to the FFW-project Discord channel automatically.
 - Only use `send_message` for escalations as described above.
