@@ -177,6 +177,41 @@ def test_build_station_recommendations_references_uncertainty() -> None:
     assert recommendations["evidence"].str.contains("benchmark").all()
 
 
+def test_recommendations_synthesize_pca_clustering_and_benchmark(
+) -> None:
+    frame = _sample_frame()
+    matrix = build_station_matrix(frame, value_column="air_temperature_c")
+    benchmark = benchmark_to_stanhope(matrix, reference_station="stanhope")
+    loadings = pca_station_loadings(matrix)
+    clustering = cluster_station_order(matrix)
+
+    recommendations = build_station_recommendations(
+        benchmark,
+        pca_loadings=loadings,
+        cluster_order=clustering,
+    )
+
+    # Evidence must reference all three analytical methods
+    assert recommendations["evidence"].str.contains("pca", case=False).all(), (
+        "Evidence string must reference PCA analysis"
+    )
+    assert recommendations["evidence"].str.contains(
+        "cluster", case=False,
+    ).all(), (
+        "Evidence string must reference clustering analysis"
+    )
+    assert recommendations["evidence"].str.contains(
+        "benchmark", case=False,
+    ).all(), (
+        "Evidence string must reference benchmarking"
+    )
+    assert recommendations["evidence"].str.contains(
+        "uncertainty", case=False,
+    ).all(), (
+        "Evidence string must reference uncertainty"
+    )
+
+
 def test_write_redundancy_summary_creates_interpretable_artifact(
     tmp_path: Path,
 ) -> None:

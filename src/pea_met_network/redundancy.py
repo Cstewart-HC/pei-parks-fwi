@@ -118,6 +118,9 @@ def _recommendation_from_row(row: pd.Series) -> str:
 
 def build_station_recommendations(
     benchmark: pd.DataFrame,
+    *,
+    pca_loadings: pd.DataFrame | None = None,
+    cluster_order: list[str] | None = None,
 ) -> pd.DataFrame:
     uncertainty = quantify_station_removal_risk(benchmark)
     merged = benchmark.merge(
@@ -125,16 +128,44 @@ def build_station_recommendations(
         on=["station", "reference_station"],
         how="inner",
     )
+
+    # Build PCA evidence string per station.
+    pca_evidence: dict[str, str] = {}
+    if pca_loadings is not None:
+        for station in merged["station"]:
+            station_loadings = pca_loadings[
+                pca_loadings["station"] == station
+            ]
+            parts: list[str] = []
+            for _, row in station_loadings.iterrows():
+                parts.append(
+                    f"{row['component']}={row['loading']:.3f}"
+                )
+            if parts:
+                pca_evidence[station] = ", ".join(parts)
+
+    # Build cluster evidence string per station.
+    cluster_evidence: dict[str, str] = {}
+    if cluster_order is not None:
+        cluster_positions = {
+            station: position
+            for position, station in enumerate(cluster_order)
+        }
+        n = len(cluster_order)
+        for station in merged["station"]:
+            if station in cluster_positions:
+                pos = cluster_positions[station]
+                cluster_evidence[station] = f"position {pos + 1}/{n}"
+
     merged["recommendation"] = merged.apply(
         _recommendation_from_row,
         axis=1,
     )
     merged["evidence"] = merged.apply(
-        lambda row: (
-            "benchmark correlation="
-            f"{row['correlation']:.3f}; uncertainty="
-            f"{row['risk_band']} "
-            f"({row['ci_lower']:.2f}-{row['ci_upper']:.2f})"
+        lambda row: _build_evidence_string(
+            row,
+            pca_evidence=pca_evidence,
+            cluster_evidence=cluster_evidence,
         ),
         axis=1,
     )
@@ -152,6 +183,25 @@ def build_station_recommendations(
             "limitations",
         ]
     ]
+
+
+def _build_evidence_string(
+    row: pd.Series,
+    *,
+    pca_evidence: dict[str, str],
+    cluster_evidence: dict[str, str],
+) -> str:
+    parts = [
+        f"benchmark correlation={row['correlation']:.3f}",
+        f"uncertainty={row['risk_band']} "
+        f"({row['ci_lower']:.2f}-{row['ci_upper']:.2f})",
+    ]
+    station = row["station"]
+    if station in pca_evidence:
+        parts.append(f"pca=[{pca_evidence[station]}]")
+    if station in cluster_evidence:
+        parts.append(f"cluster={cluster_evidence[station]}")
+    return "; ".join(parts)
 
 
 def _frame_to_markdown_table(frame: pd.DataFrame) -> str:
@@ -182,7 +232,11 @@ def write_redundancy_summary(
         matrix,
         reference_station=reference_station,
     )
-    recommendations = build_station_recommendations(benchmark)
+    recommendations = build_station_recommendations(
+        benchmark,
+        pca_loadings=loadings,
+        cluster_order=clustering,
+    )
 
     sections = [
         "# Redundancy Analysis Summary",
