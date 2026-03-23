@@ -1,74 +1,44 @@
 {
-  "last_reviewed_commit": "e0a96e6c07a8c5ce1db9f4f50c0f1d6adf1aeaec",
+  "last_reviewed_commit": "808f283a9a2aac411d8ddbd0bf7023fd828f6ab2",
   "verdict": "PASS",
-  "reviewed_at": "2026-03-23T11:09:31-03:00",
+  "reviewed_at": "2026-03-23T11:15:00-03:00",
   "criteria": [
-    {
-      "id": "AC-RED-1",
-      "name": "PCA Method",
-      "status": "PASS",
-      "evidence": "No change to redundancy.py since last review (bbfc212). Previously verified: pca_station_loadings uses sklearn.decomposition.PCA on z-scored station matrix. Still correct."
-    },
-    {
-      "id": "AC-RED-2",
-      "name": "Clustering Method",
-      "status": "PASS",
-      "evidence": "No change to redundancy.py since last review. Previously verified: cluster_station_order uses AgglomerativeClustering with correlation distance. Behavioral test (intra < inter-cluster) still passes."
-    },
-    {
-      "id": "AC-RED-3",
-      "name": "Stanhope Benchmark",
-      "status": "PASS",
-      "evidence": "No change since last review. Previously verified: benchmark_to_stanhope produces per-station overlap, mean_abs_diff, correlation against Stanhope reference."
-    },
-    {
-      "id": "AC-RED-4",
-      "name": "Recommendation Synthesis",
-      "status": "PASS",
-      "evidence": "No change since last review. Previously verified: build_station_recommendations accepts pca_loadings and cluster_order, synthesizes all four analytical methods."
-    },
-    {
-      "id": "AC-RED-5",
-      "name": "Test Quality (Redundancy)",
-      "status": "PASS",
-      "evidence": "All 8 redundancy tests pass. No test changes since last review. _sample_frame() docstring present."
-    },
     {
       "id": "AC-UNC-1",
       "name": "Probabilistic Method",
       "status": "PASS",
-      "evidence": "No change to uncertainty.py since last review. Previously verified: _distribution_samples uses scipy.stats.gaussian_kde, produces 256-sample distribution."
+      "evidence": "uncertainty.py::_distribution_samples uses scipy.stats.gaussian_kde on finite observation arrays, produces 256-sample distribution via kde.resample(). Handles edge cases (empty, single-value, constant arrays) with documented fallbacks. No heuristic scoring present."
     },
     {
       "id": "AC-UNC-2",
       "name": "Station-Removal Risk",
       "status": "PASS",
-      "evidence": "No change since last review. Previously verified: quantify_station_removal_risk produces per-station risk_probability, ci_lower, ci_upper, risk_band."
+      "evidence": "quantify_station_removal_risk iterates benchmark rows, produces per-station risk_probability (mean of KDE samples), ci_lower, ci_upper, risk_band. Probability is clipped to [0,1]. Tied to station divergence evidence via benchmark mean_abs_diff and correlation."
     },
     {
       "id": "AC-UNC-3",
       "name": "Confidence Intervals",
       "status": "PASS",
-      "evidence": "No change since last review. Previously verified: KDE samples normalized to [0,1] by dividing by empirical upper bound. All 3 interval tests pass."
+      "evidence": "CI computed as np.quantile(samples, [0.1, 0.9]). test_quantify_station_removal_risk_intervals_widen_with_less_overlap verifies alpha(120 overlap) < beta(72) < gamma(12) interval width ordering. KDE bandwidth naturally widens with fewer/less-structured data points."
     },
     {
       "id": "AC-UNC-4",
       "name": "Assumptions and Limitations",
       "status": "PASS",
-      "evidence": "No change since last review. _limitations flags stations with overlap_count < 24. assumptions string documents KDE method."
+      "evidence": "assumptions column documents KDE method and synthetic fallback. _limitations() flags stations with overlap_count < 24 as 'Insufficient overlap for reliable uncertainty estimation'. No false precision claimed."
     },
     {
       "id": "AC-UNC-5",
       "name": "Integration with Recommendations",
       "status": "PASS",
-      "evidence": "No change since last review. Previously verified: build_station_recommendations merges uncertainty output via inner join."
+      "evidence": "redundancy.py::build_station_recommendations calls quantify_station_removal_risk(benchmark) and merges via inner join on [station, reference_station]. _recommendation_from_row uses risk_band and ci_upper. _build_evidence_string includes uncertainty band and CI range."
     },
     {
       "id": "AC-UNC-6",
-      "name": "Test Quality (Uncertainty)",
+      "name": "Test Quality",
       "status": "PASS",
-      "evidence": "All 8 uncertainty tests pass. No test changes since last review. Behavioral verification of KDE output shape and CI properties."
+      "evidence": "8 tests pass. Tests verify distributional behavior: interval widening (test 2), Q90 tracking against empirical quantiles (test 7), KDE sample shape and bounds (test 8). Real data used in tests 6-8 (reads actual PEINP CSVs). Synthetic fixture in tests 1-5 has documented docstring with justification. No type-only or existence-only checks."
     }
   ],
-  "summary": "PASS. The 3 commits since last review (7090029, bba7ec0, e0a96e6) contain only infrastructure changes: an UnRalph PASS commit, an orchestrator sync commit, and a fix to scripts/sync_state.py that adds 'pending' to the phase-advance search tuple alongside 'not_started'. No source code or test code was modified. All 11 acceptance criteria remain satisfied (verified by running tests). Note: test_repo_shape.py::test_repo_root_shape_is_whitelisted fails due to untracked working-tree artifacts (.cartography/, codemap.md, garbled filename), but this is a pre-existing working-tree hygiene issue unrelated to the committed changes and not a phase exit criterion."
+  "summary": "PASS. The 2 commits since last review (d14551a unralph PASS, 808f283 orchestrator sync) are infrastructure commits — no source or test code changed. All 6 acceptance criteria remain satisfied. All 8 uncertainty tests pass. Implementation uses scipy.stats.gaussian_kde for distributional uncertainty, produces per-station risk probabilities with 80th percentile confidence intervals that widen with less data, surfaces assumptions and limitations, and integrates into final recommendations via inner join in build_station_recommendations."
 }
