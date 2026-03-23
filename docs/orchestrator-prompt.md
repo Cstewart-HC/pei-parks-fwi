@@ -34,7 +34,7 @@ python3 -c "import json; s=json.load(open('docs/ralph-state.json')); print(f'pha
 
 Apply these rules IN ORDER:
 
-1. **Circuit breaker tripped** → STOP. Print the trip reason and exit.
+1. **Circuit breaker tripped** → STOP. Send an escalation via `send_message` to the DM channel with the trip reason. Print the trip reason and exit.
    Do not run Ralph or UnRalph. Human intervention required.
 
 2. **New commits since last UnRalph review** → Run UnRalph.
@@ -78,6 +78,17 @@ If you decided to **STOP** (rule 1 or 4):
 - Do not read any prompt files. Do not run any tests.
 - If rule 4, include the sync output and whether a phase advanced.
 
+## Escalation
+
+**Escalation DM channel:** `1484971831105425488`
+
+Use `send_message` to send escalations to the DM channel when:
+- Circuit breaker trips
+- A blocker is set and the loop cannot proceed
+- Anomalous state detected (e.g., FAIL+PASS in the 2x2 grid)
+
+Do NOT send routine loop output to DMs. Only escalate.
+
 ## Constraints
 
 - You make exactly ONE decision per invocation.
@@ -85,3 +96,5 @@ If you decided to **STOP** (rule 1 or 4):
 - Do not modify docs/validation.json when running as Ralph.
 - Do not modify source code or tests when running as UnRalph.
 - Budget your iterations: the orchestrator decision should take at most 3 iterations. The remaining iterations are for the actual work.
+- Your routine output will be delivered to the FFW-project Discord channel automatically.
+- Only use `send_message` for escalations as described above.
