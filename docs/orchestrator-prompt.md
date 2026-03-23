@@ -51,26 +51,26 @@ Apply these rules IN ORDER:
 4. **No new commits + verdict is PASS** → SYNC AND STOP.
    Run `python3 scripts/sync_state.py` to sync phase state, check if
    the current phase exit passes, and advance to the next phase if
-   appropriate. Then commit the updated state files:
+   appropriate. Then commit the updated state files in ONE commit:
    ```bash
+   # Capture HEAD before any changes
+   HASH=$(git rev-parse --short HEAD)
+
+   # Run sync
    python3 scripts/sync_state.py
+
+   # Update last_reviewed_commit to the hash we just captured
+   python3 -c "
+   import json
+   v = json.load(open('docs/validation.json'))
+   v['last_reviewed_commit'] = '$HASH'
+   json.dump(v, open('docs/validation.json','w'), indent=2)
+   print('Set last_reviewed_commit to $HASH')
+   "
+
+   # Stage and commit everything in one commit
    git add docs/ralph-state.json docs/validation.json
    git commit -m "orchestrator: sync state after PASS"
-   ```
-   Then update `last_reviewed_commit` in `docs/validation.json` to the
-   NEW HEAD (the sync commit you just made). If you don't do this,
-   the orchestrator will see the sync commit as "new work" and loop
-   sync forever:
-   ```bash
-   python3 -c "
-   import json, subprocess
-   v = json.load(open('docs/validation.json'))
-   v['last_reviewed_commit'] = subprocess.check_output(['git','-C','/mnt/fast_data/workspaces/pea-met-network','rev-parse','--short','HEAD']).decode().strip()
-   json.dump(v, open('docs/validation.json','w'), indent=2)
-   print('Updated last_reviewed_commit to', v['last_reviewed_commit'])
-   "
-   git add docs/validation.json
-   git commit --amend --no-edit
    ```
    Print a one-line status summary (including whether a phase advanced)
    and exit immediately. Do not read any prompt files.
@@ -87,30 +87,30 @@ Apply these rules IN ORDER:
 If you decided to **run Lisa**:
 - Read `docs/lisa-prompt.md` and follow it exactly.
 - That prompt contains all instructions for the review.
-- **After Lisa finishes**: you MUST do two things before exiting:
-  1. Commit the updated validation file:
+- **After Lisa finishes**: commit the verdict AND update
+  `last_reviewed_commit` in a SINGLE commit. Do this:
   ```bash
+  # Capture HEAD before any changes (this is the commit Lisa reviewed)
+  HASH=$(git rev-parse --short HEAD)
+
+  # Update last_reviewed_commit to the hash we just captured
+  python3 -c "
+  import json
+  v = json.load(open('docs/validation.json'))
+  v['last_reviewed_commit'] = '$HASH'
+  json.dump(v, open('docs/validation.json','w'), indent=2)
+  print('Set last_reviewed_commit to $HASH')
+  "
+
+  # Stage and commit in one commit
   git add docs/validation.json
   git commit -m "lisa: review verdict <VERDICT>"
   ```
-  2. Then update `last_reviewed_commit` in `docs/validation.json` to
-     the NEW HEAD (the verdict commit you just made). If you don't
-     do this, the orchestrator will see the verdict commit as "new work"
-     and loop Lisa forever.
-  ```bash
-  python3 -c "
-  import json, subprocess
-  v = json.load(open('docs/validation.json'))
-  v['last_reviewed_commit'] = subprocess.check_output(['git','-C','/mnt/fast_data/workspaces/pea-met-network','rev-parse','--short','HEAD']).decode().strip()
-  json.dump(v, open('docs/validation.json','w'), indent=2)
-  print('Updated last_reviewed_commit to', v['last_reviewed_commit'])
-  "
-  git add docs/validation.json
-  git commit --amend --no-edit
-  ```
 
-**IMPORTANT**: If you skip step 1, the next tick will see the verdict
-commit as new work and run Lisa in an infinite loop. Always do both steps.
+**IMPORTANT**: `last_reviewed_commit` must be set to the commit Lisa
+reviewed (the HEAD hash captured BEFORE the verdict commit), NOT the
+verdict commit itself. This ensures the verdict commit is NOT seen as
+"new work" on the next tick.
 
 If you decided to **run Ralph**:
 - Read `docs/loop-prompt.md` and follow it exactly.
