@@ -216,7 +216,7 @@ def advance_phase_if_done(state: dict) -> bool:
         # No validation yet — allow advancement (no UnRalph has reviewed)
         phase_info["status"] = "done"
         for p_num in sorted(phases.keys(), key=int):
-            if phases[p_num].get("status") == "not_started":
+            if phases[p_num].get("status") in ("not_started", "pending"):
                 state["phase"] = int(p_num)
                 phases[p_num]["status"] = "active"
                 return True
@@ -226,7 +226,7 @@ def advance_phase_if_done(state: dict) -> bool:
     # PP: both pass — true pass, advance
     phase_info["status"] = "done"
     for p_num in sorted(phases.keys(), key=int):
-        if phases[p_num].get("status") == "not_started":
+        if phases[p_num].get("status") in ("not_started", "pending"):
             state["phase"] = int(p_num)
             phases[p_num]["status"] = "active"
             return True
