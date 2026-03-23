@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -454,6 +455,96 @@ def validate_blocker(state: dict) -> tuple[bool, str | None]:
     return True, blocker
 
 
+def compute_fail_criteria_hash(validation: dict | None) -> str | None:
+    """Hash the set of failing criterion IDs for stall detection."""
+    if validation is None:
+        return None
+    failed = sorted(
+        c.get("id", "")
+        for c in validation.get("criteria", [])
+        if c.get("status") == "FAIL"
+    )
+    if not failed:
+        return None
+    return sha256(
+        ",".join(failed).encode()
+    ).hexdigest()[:16]
+
+
+def update_circuit_breaker(state: dict) -> bool:
+    """Check for stalls and update the circuit_breaker block.
+
+    Returns True if the breaker has tripped (should stop).
+
+    Stall = same commit + same REJECT verdict + same failing criteria
+    across consecutive sync_state runs.
+    """
+    cb = state.setdefault("circuit_breaker", {
+        "consecutive_stalls": 0,
+        "last_commit": None,
+        "last_verdict": None,
+        "last_fail_criteria_hash": None,
+        "consecutive_errors": 0,
+        "tripped": False,
+        "trip_reason": None,
+        "trip_at": None,
+    })
+
+    # If already tripped, stay tripped (manual reset)
+    if cb.get("tripped"):
+        return True
+
+    head_sha = get_head_sha()
+    validation = load_validation()
+    verdict = get_validation_verdict(validation)
+    fail_hash = compute_fail_criteria_hash(validation)
+
+    # Detect stall: same commit + same verdict + same failing criteria
+    is_stall = (
+        cb.get("last_commit") == head_sha
+        and cb.get("last_verdict") == verdict
+        and cb.get("last_fail_criteria_hash") == fail_hash
+        and verdict == "REJECT"
+    )
+
+    if is_stall:
+        cb["consecutive_stalls"] = cb.get("consecutive_stalls", 0) + 1
+    else:
+        cb["consecutive_stalls"] = 0
+
+    # Update tracking fields
+    cb["last_commit"] = head_sha
+    cb["last_verdict"] = verdict
+    cb["last_fail_criteria_hash"] = fail_hash
+
+    # Trip at 3 consecutive stalls
+    if cb["consecutive_stalls"] >= 3:
+        cb["tripped"] = True
+        cb["trip_reason"] = (
+            f"3 consecutive stalls on commit {head_sha}: "
+            f"verdict={verdict}, "
+            f"fail_criteria={fail_hash}"
+        )
+        cb["trip_at"] = datetime.now(
+            timezone.utc
+        ).astimezone().isoformat()
+        print(
+            f"CIRCUIT_BREAKER_TRIPPED: {cb['trip_reason']}",
+            file=sys.stderr,
+        )
+        return True
+
+    if cb["consecutive_stalls"] > 0:
+        print(
+            f"CIRCUIT_BREAKER_WARNING: "
+            f"stall {cb['consecutive_stalls']}/3 "
+            f"on commit {head_sha}",
+            file=sys.stderr,
+        )
+
+    return False
+
+
 def print_sync_report(
     state: dict, head_sha: str, phase_advanced: bool
 ) -> None:
@@ -570,6 +661,26 @@ def main() -> None:
 
     if check_only:
         handle_check_only(state)
+
+    # Circuit breaker check — before any work happens
+    tripped = update_circuit_breaker(state)
+    if tripped:
+        state["status"] = "circuit_breaked"
+        save_state(state)
+        cb = state.get("circuit_breaker", {})
+        print(f"CIRCUIT_BREAKER=TRIPPED")
+        print(f"CIRCUIT_BREAKER_REASON={cb.get('trip_reason', '')}")
+        print(f"CIRCUIT_BREAKER_AT={cb.get('trip_at', '')}")
+        sys.exit(0)
+
+    # Print circuit breaker status if approaching threshold
+    cb = state.get("circuit_breaker", {})
+    stalls = cb.get("consecutive_stalls", 0)
+    if stalls > 0:
+        print(
+            f"CIRCUIT_BREAKER={stalls}/3 stalls",
+            file=sys.stderr,
+        )
 
     # Revert phase if validation says REJECT (fixes PF false positives)
     reverted = revert_phase_on_reject(state)

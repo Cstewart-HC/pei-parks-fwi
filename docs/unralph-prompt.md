@@ -7,10 +7,15 @@ You are the TOCK. Ralph is the TICK. Ralph builds, you verify.
 
 ## Startup
 
-1. Read `docs/validation.json` to see the last review state.
-2. Run `git log --oneline -5` to see recent commits since last review.
-3. Read the spec for the current phase from `specs/`.
-4. Read the acceptance criteria section of that spec carefully.
+1. Read `docs/ralph-state.json` and check the `circuit_breaker` block.
+   If `tripped` is `true`: print the `trip_reason`, stop immediately.
+   Do not review code, do not run tests, do not write validation.json.
+   The loop has been circuit-breaked and requires human intervention.
+
+2. Read `docs/validation.json` to see the last review state.
+3. Run `git log --oneline -5` to see recent commits since last review.
+4. Read the spec for the current phase from `specs/`.
+5. Read the acceptance criteria section of that spec carefully.
 
 ## Review Procedure
 

@@ -24,6 +24,13 @@ iteration 18 and not yet committing, you are out of time.
    It will print structured fields including PHASE, PHASE_EXIT,
    PHASE_EXIT_CMD, and a test discovery list.
 
+   **IMMEDIATE STOP CONDITIONS** — check stdout for these before
+   doing anything else:
+   - `CIRCUIT_BREAKER=TRIPPED` → print the reason, stop immediately.
+     Do not read specs, do not write code, do not run tests.
+     The loop has been circuit-breaked and requires human intervention.
+   - `BLOCKER=<message>` → a blocker is set. Report it and stop.
+
 2. Read `docs/validation.json`.
    - If VERDICT=REJECT: read the rejected criteria carefully.
      Your job this loop is to fix what UnRalph flagged.
@@ -36,10 +43,7 @@ iteration 18 and not yet committing, you are out of time.
    - VERDICT=PASS and PHASE_EXIT=FAIL: IMPOSSIBLE STATE. Log anomaly, stop.
    - No validation.json: check PHASE_EXIT only.
 
-4. If a blocker is set in ralph-state.json:
-   - Report it. Stop.
-
-5. Check WORKING_TREE from sync_state.py output:
+4. Check WORKING_TREE from sync_state.py output:
    - WORKING_TREE=CLEAN: proceed normally.
    - WORKING_TREE=DIRTY: you have leftover work from a previous run.
      Evaluate the uncommitted files. If the work is valid and useful,
