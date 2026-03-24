@@ -8,6 +8,8 @@ the task list. Ralph reads specs, writes tests, implements.
 Usage:
     python scripts/sync_state.py
         Full sync: discover tests, report state, write JSON
+    python scripts/sync_state.py --auto-commit
+        Full sync + auto-commit if state files changed
     python scripts/sync_state.py --check-only
         Print state, exit 1 if phase exit fails unexpectedly
     python scripts/sync_state.py --write
@@ -624,11 +626,43 @@ def print_sync_report(
         print(f"BLOCKER={blocker}")
 
 
+def auto_commit_if_changed() -> bool:
+    """Check if state files were modified and commit if so.
+    Returns True if a commit was made."""
+    for state_file in [STATE_FILE, VALIDATION_FILE]:
+        if not state_file.exists():
+            continue
+        rel = str(state_file.relative_to(REPO_ROOT))
+        result = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "diff", "--quiet", rel],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            # Changes detected — commit
+            subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "add", rel],
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "commit",
+                 "-m", "orchestrator: sync state after PASS"],
+                capture_output=True,
+                text=True,
+            )
+            print("AUTO_COMMIT=true")
+            return True
+    print("AUTO_COMMIT=false")
+    return False
+
+
 def main() -> None:
     argv = sys.argv[1:]
     args = set(argv)
     check_only = "--check-only" in args
     write_only = "--write" in args
+    auto_commit = "--auto-commit" in args
     view_arg = parse_view_arg(argv)
 
     # Step 0: Reset state files from HEAD if dirty
@@ -694,6 +728,9 @@ def main() -> None:
     state["status"] = "running"
     save_state(state)
     print_sync_report(state, head_sha, phase_advanced)
+
+    if auto_commit:
+        auto_commit_if_changed()
 
 
 if __name__ == "__main__":
