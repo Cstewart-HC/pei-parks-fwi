@@ -1,50 +1,50 @@
 {
-  "last_reviewed_commit": "de4a027",
+  "last_reviewed_commit": "4bde77c",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-24T02:28:25.179358+00:00",
+  "reviewed_at": "2026-03-24T03:44:00.000000+00:00",
   "criteria": [
     {
       "id": "AC-PIPE-1",
       "name": "cleaning.py runs on all raw data",
       "status": "FAIL",
-      "evidence": "cleaning.py exists and iterates manifest stations, but only calls materialize_resampled_outputs. It does not run imputation, Stanhope ingestion, or FWI computation. The pipeline is incomplete \u2014 it only resamples, it doesn't execute the full pipeline."
+      "evidence": "cleaning.py exits 0 but 137 of ~142 files are SKIPPED with 'No aggregation rule defined for column' errors. Only 5 files from cavendish and greenwich succeed. The pipeline does not actually process all raw data — it silently skips most files."
     },
     {
       "id": "AC-PIPE-2",
       "name": "Cleaned hourly + daily datasets in data/processed/",
       "status": "FAIL",
-      "evidence": "cleaning.py writes resampled hourly/daily CSVs per station, but no test verifies the outputs exist with correct shape. The exit gate test (test_pipeline_execution.py) does not exist."
+      "evidence": "Pipeline test run produces output for only 2 of 5 stations (cavendish, greenwich). north_rustico, stanley_bridge, and tracadie have empty output directories. AC requires cleaned datasets for ALL stations discovered by the manifest."
     },
     {
       "id": "AC-PIPE-3",
       "name": "Imputation report generated",
-      "status": "FAIL",
-      "evidence": "imputation.py has AuditRecord + audit_trail_to_dataframe(), but cleaning.py never calls impute_column or impute_frame. No imputation report is produced during pipeline execution."
+      "status": "PASS",
+      "evidence": "imputation_report.csv is generated with audit records from impute_frame(). Code calls audit_trail_to_dataframe() and writes the CSV. Report exists in test output."
     },
     {
       "id": "AC-PIPE-4",
       "name": "Stanhope reference data downloaded and cached",
-      "status": "FAIL",
-      "evidence": "stanhope_cache.py has fetch/normalize functions, but cleaning.py does not call them. Stanhope data is not integrated into the pipeline."
+      "status": "PASS",
+      "evidence": "cleaning.py now calls materialize_stanhope_hourly_range() and normalize_stanhope_hourly(). The integration is present and structured correctly (wrapped in try/except, writes to data/processed/stanhope/)."
     },
     {
       "id": "AC-PIPE-5",
       "name": "FFMC, DMC, DC computed for all stations",
       "status": "FAIL",
-      "evidence": "fwi.py has fine_fuel_moisture_code, duff_moisture_code, drought_code. However cleaning.py does not call any of them. FWI moisture codes are not computed during pipeline execution."
+      "evidence": "_compute_fwi_codes() is called on the imputed hourly data, which only exists for 2 of 5 stations. For the 3 stations with no output, FWI codes are never computed. Additionally, FWI computation depends on columns air_temperature_c, relative_humidity_pct, wind_speed_kmh, rain_mm — must verify these exist in the resampled data."
     },
     {
       "id": "AC-PIPE-6",
       "name": "ISI, BUI, FWI computed",
-      "status": "FAIL",
-      "evidence": "fwi.py has NO functions for Initial Spread Index (ISI), Buildup Index (BUI), or Fire Weather Index (FWI). Only the three moisture codes (FFMC, DMC, DC) are implemented. The full FWI chain is incomplete."
+      "status": "PASS",
+      "evidence": "fwi.py now contains initial_spread_index(), buildup_index(), and fire_weather_index() functions. cleaning.py imports and calls all three in _compute_fwi_codes(). The full FWI chain is implemented."
     },
     {
       "id": "AC-PIPE-7",
       "name": "Pipeline artifacts manifest with timestamps and row counts",
-      "status": "FAIL",
-      "evidence": "cleaning.py logs row counts to console but does not write a manifest file tracking artifacts with timestamps and row counts. No manifest output exists."
+      "status": "PASS",
+      "evidence": "pipeline_manifest.json is written by _write_manifest() with generated_at timestamp, per-artifact timestamps, rows, station, type, and path fields. Manifest tracks 97 artifacts in test run."
     }
   ],
-  "summary": "Phase 9 is substantially incomplete. cleaning.py only performs resampling (materialize_resampled_outputs) \u2014 it does not integrate imputation, Stanhope reference data, FWI moisture code computation, or the full FWI chain (ISI/BUI/FWI functions are entirely missing). No imputation report or artifact manifest is generated. The exit gate test (test_pipeline_execution.py) does not exist. The commit under review (de4a027) only adds README tests to test_deliverables.py \u2014 it does not advance Phase 9 implementation. All 7 criteria FAIL."
+  "summary": "Significant progress since last review: cleaning.py now integrates imputation, Stanhope ingestion, full FWI chain (ISI/BUI/FWI added), and artifact manifest. However, the pipeline fails on most raw data files — 137 of ~142 files are skipped due to 'No aggregation rule defined for column' errors (Accumulated Rain, Barometric Pressure columns). Only 2 of 5 stations produce output. Additionally, the exit gate test (test_pipeline_execution.py) does not exist, and 2 existing tests fail (test_notebook_executes_without_error: FileNotFoundError on station_daily.csv; test_repo_root_shape_is_whitelisted: unexpected .cartography/ and codemap.md in repo root). The aggregation rule issue in src/pea_met_network/materialize_resampled.py must be fixed to handle Accumulated Rain and Barometric Pressure columns before the pipeline can satisfy AC-PIPE-1 and AC-PIPE-2."
 }
