@@ -86,11 +86,23 @@ def build_aggregation_map(
 ) -> dict[str, str]:
     aggregation_map: dict[str, str] = {}
     skipped_columns = REQUIRED_COLUMNS | {"source_file", "schema_family"}
+    skipped_unknown: list[str] = []
 
     for column in frame.columns:
         if column in skipped_columns:
             continue
-        aggregation_map[column] = policy.for_column(column)
+        try:
+            aggregation_map[column] = policy.for_column(column)
+        except KeyError:
+            skipped_unknown.append(column)
+
+    if skipped_unknown:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(
+            "Skipped columns with no aggregation rule: %s",
+            ", ".join(sorted(skipped_unknown)),
+        )
 
     return aggregation_map
 

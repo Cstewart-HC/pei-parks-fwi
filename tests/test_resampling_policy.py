@@ -57,7 +57,7 @@ def test_build_aggregation_map_uses_explicit_rules() -> None:
     }
 
 
-def test_build_aggregation_map_rejects_unknown_variable() -> None:
+def test_build_aggregation_map_skips_unknown_variable() -> None:
     frame = pd.DataFrame(
         {
             "timestamp_utc": pd.to_datetime(["2024-01-01T00:00:00Z"]),
@@ -66,8 +66,10 @@ def test_build_aggregation_map_rejects_unknown_variable() -> None:
         }
     )
 
-    with pytest.raises(KeyError, match="mystery_signal"):
-        build_aggregation_map(frame)
+    aggregation_map = build_aggregation_map(frame)
+
+    assert "mystery_signal" not in aggregation_map
+    assert aggregation_map == {}
 
 
 def test_resample_hourly_aggregates_by_station_and_hour() -> None:
