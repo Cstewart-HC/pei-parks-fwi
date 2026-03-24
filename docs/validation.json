@@ -1,7 +1,38 @@
 {
-  "last_reviewed_commit": "3619d4e",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-24T01:02:35.028472+00:00",
-  "criteria": [],
-  "summary": "Phase 8 activated; stale PASS reset. Awaiting Lisa review."
+  "last_reviewed_commit": "6347592",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-24T01:34:54.454846+00:00",
+  "criteria": [
+    {
+      "id": "AC-DLV-1",
+      "name": "README with setup and execution instructions",
+      "status": "PASS",
+      "evidence": "README.md exists with Parks Canada context, pip install instructions, cleaning.py/analysis.ipynb usage, OSEMN description, key outputs listed, repository structure."
+    },
+    {
+      "id": "AC-DLV-2",
+      "name": "cleaning.py pipeline entrypoint",
+      "status": "PASS",
+      "evidence": "cleaning.py at repo root, importable, main() callable, --output-dir configurable (default data/processed/), logs stations/rows, checks raw data dir existence with clear error."
+    },
+    {
+      "id": "AC-DLV-3",
+      "name": "analysis.ipynb with documented narrative",
+      "status": "FAIL",
+      "evidence": "Notebook has only 4 code cells, all import-only with print statements. Zero visualizations (no plt/plot/scatter/hist/figure calls). CODE[2] is a placeholder referencing external notebook. CODE[3] just imports modules. Spec requires at least one visualization per section (EDA, redundancy, FWI, uncertainty) and no placeholder sections."
+    },
+    {
+      "id": "AC-DLV-4",
+      "name": "Full FWI chain attempted",
+      "status": "FAIL",
+      "evidence": "fwi.py implements only FFMC, DMC, DC (moisture codes). Missing: ISI (initial_spread_index), BUI (buildup_index), and final FWI (fire_weather_index). The spec requires the full chain FFMC -> DMC -> DC -> ISI -> BUI -> FWI. Only 3 of 6 steps exist."
+    },
+    {
+      "id": "AC-DLV-5",
+      "name": "Smoke test for deliverables",
+      "status": "PASS",
+      "evidence": "tests/test_deliverables.py covers cleaning import/main, notebook JSON validity, README content. All tests pass (86 passed)."
+    }
+  ],
+  "summary": "REJECT: 3/5 criteria pass, 2 fail. AC-DLV-3 fails because analysis.ipynb contains only import statements with zero visualizations \u2014 no plots, charts, or analytical output despite spec requiring one visualization per section. AC-DLV-4 fails because the FWI chain is incomplete: only moisture codes (FFMC, DMC, DC) are implemented; the remaining half of the chain (ISI, BUI, FWI) is entirely absent from fwi.py."
 }
