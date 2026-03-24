@@ -18,6 +18,18 @@ Budget: ~8 iterations for planning + reading, ~10 for implementation,
 ~7 for verification + commit + diary. If you're on
 iteration 18 and not yet committing, you are out of time.
 
+## ⚠️ CRITICAL: EPHEMERAL SANDBOX — COMMIT INCREMENTALLY
+
+You are running in an ephemeral sandbox. If you hit your iteration limit,
+ALL uncommitted file changes will be permanently destroyed when the next tick
+resets the working tree to HEAD.
+
+**Rule:** You MUST commit your work incrementally—immediately after successfully
+completing each individual file, test, or logical step (for example:
+`git add <file> && git commit -m 'feat: ...'`). Do NOT batch deliverables.
+Do NOT wait until all deliverables are finished. Every completed unit of work
+must be checkpointed with a commit immediately.
+
 ## Startup
 
 1. Run `python scripts/sync_state.py` and read its stdout.
@@ -34,14 +46,14 @@ iteration 18 and not yet committing, you are out of time.
 2. Read `docs/validation.json`.
    - If VERDICT=REJECT: read the rejected criteria carefully.
      Your job this loop is to fix what Lisa flagged.
-   - If VERDICT=PASS or VERDICT=NONE: proceed with next gap.
-   - You do NOT modify this file. Ever.
+   - If VERDICT=PASS, VERDICT=PENDING, or VERDICT=NONE: proceed with next gap.
+   - You do NOT modify this file directly. Ever.
 
 3. Phase exit is subordinate to validation.
    - VERDICT=REJECT: fix rejected criteria (regardless of phase exit).
    - VERDICT=PASS and PHASE_EXIT=PASS: TRUE PASS. Phase is complete. Stop.
    - VERDICT=PASS and PHASE_EXIT=FAIL: IMPOSSIBLE STATE. Log anomaly, stop.
-   - No validation.json: check PHASE_EXIT only.
+   - VERDICT=PENDING or no validation.json: check PHASE_EXIT only.
 
 4. Check WORKING_TREE from sync_state.py output:
    - WORKING_TREE=CLEAN: proceed normally.
@@ -55,23 +67,15 @@ iteration 18 and not yet committing, you are out of time.
 ## Spec-Driven Task Selection
 
 1. Read the spec for the current phase from specs/.
-   Use progressive disclosure — read only what's needed.
 2. Identify what should exist that doesn't yet.
 3. Write a FAILING TEST that defines what "done" looks like.
 4. Implement the minimum code to make that test pass.
 
-You choose the task. You choose the order. The spec and the
-existing test suite tell you what's needed. No one is giving
-you a checklist — you read the requirements and decide what
-to build next.
-
 Rules:
 - Always write the test FIRST. Then implement.
-- **Greenfield work (VERDICT=PASS or NONE):** One test + one implementation per loop. Do not batch.
+- **Greenfield work (VERDICT=PASS, PENDING, or NONE):** One test + one implementation per loop. Do not batch.
 - **Fix mode (VERDICT=REJECT):** You may fix MULTIPLE rejected criteria in a single loop.
-  For each failing criterion: write/fix the test, implement, verify, **commit immediately**.
-  Do NOT wait until all fixes are done before committing. Each fix gets its own commit.
-  This ensures partial progress is preserved even if you run out of iterations.
+  For each failing criterion: write/fix the test, implement, verify, commit immediately.
 - Tests must be meaningful — test behavior, not file existence.
 - Use `.venv/bin/pytest tests/test_<name>.py -q` to verify.
 
@@ -90,7 +94,7 @@ If any fails:
 
 1. Review `git diff` before committing.
 2. Write a clear commit message describing what changed.
-3. The pre-commit hook will run sync_state.py automatically.
+3. Commit immediately after each completed unit of work.
 
 ## Diary
 
@@ -108,36 +112,22 @@ this template:
 - **Next:** {what should happen next or "blocked"}
 ```
 
-The diary is an append-only audit log. You never read it for state.
-Do not write prose. Do not editorialize. Stick to the template.
-
 ## Repo Ownership
 
 You own the entire codebase. If you see lint errors, test failures,
-or bugs in ANY file, they are your responsibility — regardless of
-whether you touched that file in this iteration.
+or bugs in ANY file, they are your responsibility.
 
-Do not write off issues as "pre-existing" or "not my changes."
-Fix them. If you can't fix them, set a blocker explaining why.
-
-## Anti-Patterns (violations will cause problems)
+## Anti-Patterns
 
 - Do NOT commit with failing tests
 - Do NOT skip `git diff` review before committing
-- Do NOT create, modify, or author spec files — specs are human decisions
-- Do NOT read docs/archive/ for anything
+- Do NOT create, modify, or author spec files
+- Do NOT read docs/archive/
 - Do NOT assume work is done — run the tests
-- Do NOT deliver standup summaries — reporting is handled externally
-- Do NOT use memory to override test results — tests are truth
-- Do NOT modify ralph-state.json's phase manually — sync_state.py handles it
-- Do NOT write file-existence gates — test behavior
-- Do NOT batch multiple greenfield tasks in one loop (VERDICT=PASS/NONE)
-- You MAY batch multiple REJECT fixes in one loop — commit each immediately after verification
-- Do NOT read the diary for state
-- Do NOT modify docs/validation.json. Ever.
-- Do NOT implement before writing a test
-- Do NOT use heuristics when the spec requires a specific method
-  (e.g., use sklearn clustering, not sorting; use KDE, not weighted scores)
+- Do NOT modify ralph-state.json's phase manually
+- Do NOT modify docs/validation.json directly
+- Do NOT batch multiple greenfield tasks in one loop
+- Do NOT let finished work sit uncommitted in the sandbox
 
 ## Escalation
 
