@@ -140,3 +140,52 @@ def drought_code(
         dc = dc0 + 0.5 * v
 
     return max(dc, 0.0)
+
+
+def initial_spread_index(
+    ffmc: float,
+    wind: float,
+) -> float:
+    """Compute Initial Spread Index from FFMC and wind speed.
+
+    Follows Van Wagner (1987) / cffdrs reference.
+    Wind speed in km/h.
+    """
+    mo = 147.2 * (101.0 - ffmc) / (59.5 + ffmc)
+    fwi_factor = 91.9 * math.exp(-0.1386 * mo)
+    return (
+        fwi_factor
+        * (1.0 + mo**5.31)
+        / (1.0 + 2.93 * mo**5.31)
+        * math.exp(0.02339 * wind)
+    )
+
+
+def buildup_index(
+    dmc: float,
+    dc: float,
+) -> float:
+    """Compute Buildup Index from DMC and DC.
+
+    Follows Van Wagner (1987) / cffdrs reference.
+    """
+    return max(dmc + 0.394 * dc, 0.0)
+
+
+def fire_weather_index(
+    isi: float,
+    bui: float,
+) -> float:
+    """Compute Fire Weather Index from ISI and BUI.
+
+    Follows Van Wagner (1987) / cffdrs reference.
+    """
+    if bui <= 0.0:
+        return 0.0
+
+    if bui <= 80.0:
+        fBB = 0.1 * isi / (0.626 * bui**1.5 + 10.0)
+    else:
+        fBB = 1000.0 / (0.626 * bui**1.5 + 10.0)
+
+    return max(0.1 * isi * fBB, 0.0)
