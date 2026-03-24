@@ -1,50 +1,50 @@
 {
-  "last_reviewed_commit": "e6db935",
+  "last_reviewed_commit": "2434e33",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-24T03:44:00.000000+00:00",
+  "reviewed_at": "2026-03-24T05:20:49.000000+00:00",
   "criteria": [
     {
       "id": "AC-PIPE-1",
       "name": "cleaning.py runs on all raw data",
       "status": "FAIL",
-      "evidence": "cleaning.py exits 0 but 137 of ~142 files are SKIPPED with 'No aggregation rule defined for column' errors. Only 5 files from cavendish and greenwich succeed. The pipeline does not actually process all raw data \u2014 it silently skips most files."
+      "evidence": "Tests fail (1 failure), so per Lisa protocol verdict must be REJECT. The resampling.py fix in 2434e33 is correct in approach \u2014 wrapping policy.for_column() in try/except to skip unknown columns. However, cannot verify pipeline runs on all raw data because test suite does not pass."
     },
     {
       "id": "AC-PIPE-2",
       "name": "Cleaned hourly + daily datasets in data/processed/",
       "status": "FAIL",
-      "evidence": "Pipeline test run produces output for only 2 of 5 stations (cavendish, greenwich). north_rustico, stanley_bridge, and tracadie have empty output directories. AC requires cleaned datasets for ALL stations discovered by the manifest."
+      "evidence": "Cannot verify \u2014 test suite fails. Pre-existing issue: 3 of 5 stations had empty output. No evidence this was fixed in the reviewed commit."
     },
     {
       "id": "AC-PIPE-3",
       "name": "Imputation report generated",
       "status": "PASS",
-      "evidence": "imputation_report.csv is generated with audit records from impute_frame(). Code calls audit_trail_to_dataframe() and writes the CSV. Report exists in test output."
+      "evidence": "Unchanged from prior review \u2014 imputation_report.csv generation was already passing."
     },
     {
       "id": "AC-PIPE-4",
       "name": "Stanhope reference data downloaded and cached",
       "status": "PASS",
-      "evidence": "cleaning.py now calls materialize_stanhope_hourly_range() and normalize_stanhope_hourly(). The integration is present and structured correctly (wrapped in try/except, writes to data/processed/stanhope/)."
+      "evidence": "Unchanged from prior review \u2014 Stanhope integration was already passing."
     },
     {
       "id": "AC-PIPE-5",
       "name": "FFMC, DMC, DC computed for all stations",
       "status": "FAIL",
-      "evidence": "_compute_fwi_codes() is called on the imputed hourly data, which only exists for 2 of 5 stations. For the 3 stations with no output, FWI codes are never computed. Additionally, FWI computation depends on columns air_temperature_c, relative_humidity_pct, wind_speed_kmh, rain_mm \u2014 must verify these exist in the resampled data."
+      "evidence": "Depends on AC-PIPE-1 and AC-PIPE-2. Only 2 of 5 stations produced output. The resampling fix may help but pipeline hasn't been re-run to verify."
     },
     {
       "id": "AC-PIPE-6",
       "name": "ISI, BUI, FWI computed",
       "status": "PASS",
-      "evidence": "fwi.py now contains initial_spread_index(), buildup_index(), and fire_weather_index() functions. cleaning.py imports and calls all three in _compute_fwi_codes(). The full FWI chain is implemented."
+      "evidence": "Unchanged \u2014 FWI chain implementation was already correct."
     },
     {
       "id": "AC-PIPE-7",
       "name": "Pipeline artifacts manifest with timestamps and row counts",
       "status": "PASS",
-      "evidence": "pipeline_manifest.json is written by _write_manifest() with generated_at timestamp, per-artifact timestamps, rows, station, type, and path fields. Manifest tracks 97 artifacts in test run."
+      "evidence": "Unchanged \u2014 manifest generation was already passing."
     }
   ],
-  "summary": "Significant progress since last review: cleaning.py now integrates imputation, Stanhope ingestion, full FWI chain (ISI/BUI/FWI added), and artifact manifest. However, the pipeline fails on most raw data files \u2014 137 of ~142 files are skipped due to 'No aggregation rule defined for column' errors (Accumulated Rain, Barometric Pressure columns). Only 2 of 5 stations produce output. Additionally, the exit gate test (test_pipeline_execution.py) does not exist, and 2 existing tests fail (test_notebook_executes_without_error: FileNotFoundError on station_daily.csv; test_repo_root_shape_is_whitelisted: unexpected .cartography/ and codemap.md in repo root). The aggregation rule issue in src/pea_met_network/materialize_resampled.py must be fixed to handle Accumulated Rain and Barometric Pressure columns before the pipeline can satisfy AC-PIPE-1 and AC-PIPE-2."
+  "summary": "REJECT: test suite has 1 failure (test_notebook_executes_without_error \u2014 ValueError: Missing column 'timestamp_utc' in station_daily.csv). This is a pre-existing issue unrelated to the reviewed commit 2434e33, which correctly fixes resampling.py to skip unknown columns via try/except. The fix itself looks sound \u2014 wrapping policy.for_column() and logging skipped columns at DEBUG level. However, Lisa protocol requires REJECT when tests fail. Additionally, the Phase 9 exit gate test (test_pipeline_execution.py) still does not exist. Ralph needs to: (1) fix the notebook test by ensuring station_daily.csv has a timestamp_utc column, and (2) create the missing exit gate test."
 }
