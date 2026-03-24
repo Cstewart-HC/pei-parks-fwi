@@ -1,50 +1,7 @@
 {
-  "last_reviewed_commit": "e732100",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-24T05:59:54.000000+00:00",
-  "criteria": [
-    {
-      "id": "AC-PIPE-1",
-      "name": "cleaning.py runs on all raw data",
-      "status": "PASS",
-      "evidence": "timestamp_utc column rename removed from cleaning.py \u2014 groupby key now retains its name. All 5 PEINP stations produce output (861\u20131160 daily rows, 20k\u201328k hourly rows). Exit gate test test_pipeline_execution.py passes 14/14."
-    },
-    {
-      "id": "AC-PIPE-2",
-      "name": "Cleaned hourly + daily datasets in data/processed/",
-      "status": "PASS",
-      "evidence": "All 5 stations (cavendish, greenwich, north_rustico, stanley_bridge, tracadie) have non-empty station_hourly.csv and station_daily.csv. Previous review's concern about 3 empty stations is resolved."
-    },
-    {
-      "id": "AC-PIPE-3",
-      "name": "Imputation report generated",
-      "status": "PASS",
-      "evidence": "imputation_report.csv exists (38KB), has records, tracked as imputation_report type in pipeline_manifest.json."
-    },
-    {
-      "id": "AC-PIPE-4",
-      "name": "Stanhope reference data downloaded and cached",
-      "status": "PASS",
-      "evidence": "data/processed/stanhope/station_hourly.csv exists with 29209 rows."
-    },
-    {
-      "id": "AC-PIPE-5",
-      "name": "FFMC, DMC, DC computed for all stations",
-      "status": "PASS",
-      "evidence": "Cavendish (1044 rows), Greenwich (1160 rows), North Rustico (994 rows) all have ffmc/dmc/dc columns. Stanley Bridge and Tracadie lack relative_humidity_pct so FWI is correctly not computed. Tests properly skip these."
-    },
-    {
-      "id": "AC-PIPE-6",
-      "name": "ISI, BUI, FWI computed",
-      "status": "PASS",
-      "evidence": "Same 3 stations with humidity data have full FWI chain (isi, bui, fwi). Tests verify presence where computable and skip where not."
-    },
-    {
-      "id": "AC-PIPE-7",
-      "name": "Pipeline artifacts manifest with timestamps and row counts",
-      "status": "PASS",
-      "evidence": "pipeline_manifest.json has generated_at timestamp. All artifacts have type, path, rows, and timestamp fields."
-    }
-  ],
-  "summary": "PASS: Ralph fixed both issues from the previous REJECT. (1) Removed the timestamp_utc\u2192date column rename in cleaning.py so station_daily.csv retains timestamp_utc \u2014 the root cause of the failing notebook test and downstream pipeline issues. (2) Created comprehensive Phase 9 exit gate test (test_pipeline_execution.py, 16 tests) covering all 7 acceptance criteria with proper skip logic for stations lacking humidity data. The notebook fix (01_explore.ipynb) now selects the first station with both daily and hourly data. Full test suite passes: 77 passed, 2 skipped, 0 failures. All 5 PEINP stations produce non-empty hourly and daily outputs. FWI computed for 3 of 5 stations (2 lack humidity data \u2014 correct behavior)."
+  "last_reviewed_commit": "32cc12a",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-24T05:17:38.899901+00:00",
+  "criteria": [],
+  "summary": "Phase 10 activated; awaiting Lisa review."
 }
