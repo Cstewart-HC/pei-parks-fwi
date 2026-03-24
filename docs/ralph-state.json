@@ -1,11 +1,11 @@
 {
-  "iteration": 89,
+  "iteration": 90,
   "date": "2026-03-22",
   "max_per_day": 20,
-  "phase": 10,
+  "phase": "10b",
   "status": "running",
   "blocker": null,
-  "updated_at": "2026-03-24T08:00:26.856818+00:00",
+  "updated_at": "2026-03-24T08:36:10.004443+00:00",
   "phases": {
     "1": {
       "name": "Obtain",
@@ -55,12 +55,12 @@
     "10": {
       "name": "Analysis: EDA + FWI",
       "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
-      "status": "active"
+      "status": "done"
     },
     "10b": {
       "name": "Analysis: PCA + Clustering",
       "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
-      "status": "pending"
+      "status": "active"
     },
     "10c": {
       "name": "Analysis: Redundancy + Uncertainty",
@@ -147,9 +147,9 @@
   ],
   "circuit_breaker": {
     "consecutive_stalls": 0,
-    "last_commit": "9055509",
-    "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "bf834d5dd4cee0d7",
+    "last_commit": "6a49c63",
+    "last_verdict": "PASS",
+    "last_fail_criteria_hash": null,
     "consecutive_errors": 0,
     "tripped": false,
     "trip_reason": null,
