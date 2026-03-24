@@ -1,11 +1,11 @@
 {
-  "iteration": 82,
+  "iteration": 87,
   "date": "2026-03-22",
   "max_per_day": 20,
   "phase": 10,
   "status": "running",
   "blocker": null,
-  "updated_at": "2026-03-24T05:17:38.900176+00:00",
+  "updated_at": "2026-03-24T07:50:43.422433+00:00",
   "phases": {
     "1": {
       "name": "Obtain",
@@ -53,9 +53,24 @@
       "status": "done"
     },
     "10": {
-      "name": "Analysis & Narrative",
+      "name": "Analysis: EDA + FWI",
       "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
       "status": "active"
+    },
+    "10b": {
+      "name": "Analysis: PCA + Clustering",
+      "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
+      "status": "pending"
+    },
+    "10c": {
+      "name": "Analysis: Redundancy + Uncertainty",
+      "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
+      "status": "pending"
+    },
+    "10d": {
+      "name": "Analysis: Conclusion",
+      "exit": ".venv/bin/pytest tests/test_analysis_notebook.py -q",
+      "status": "pending"
     },
     "11": {
       "name": "Final Polish",
@@ -132,9 +147,9 @@
   ],
   "circuit_breaker": {
     "consecutive_stalls": 0,
-    "last_commit": "32cc12a",
-    "last_verdict": "PASS",
-    "last_fail_criteria_hash": null,
+    "last_commit": "14f5a47",
+    "last_verdict": "REJECT",
+    "last_fail_criteria_hash": "bf834d5dd4cee0d7",
     "consecutive_errors": 0,
     "tripped": false,
     "trip_reason": null,
