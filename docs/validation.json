@@ -1,5 +1,5 @@
 {
-  "last_reviewed_commit": "4bde77c",
+  "last_reviewed_commit": "e6db935",
   "verdict": "REJECT",
   "reviewed_at": "2026-03-24T03:44:00.000000+00:00",
   "criteria": [
@@ -7,7 +7,7 @@
       "id": "AC-PIPE-1",
       "name": "cleaning.py runs on all raw data",
       "status": "FAIL",
-      "evidence": "cleaning.py exits 0 but 137 of ~142 files are SKIPPED with 'No aggregation rule defined for column' errors. Only 5 files from cavendish and greenwich succeed. The pipeline does not actually process all raw data — it silently skips most files."
+      "evidence": "cleaning.py exits 0 but 137 of ~142 files are SKIPPED with 'No aggregation rule defined for column' errors. Only 5 files from cavendish and greenwich succeed. The pipeline does not actually process all raw data \u2014 it silently skips most files."
     },
     {
       "id": "AC-PIPE-2",
@@ -31,7 +31,7 @@
       "id": "AC-PIPE-5",
       "name": "FFMC, DMC, DC computed for all stations",
       "status": "FAIL",
-      "evidence": "_compute_fwi_codes() is called on the imputed hourly data, which only exists for 2 of 5 stations. For the 3 stations with no output, FWI codes are never computed. Additionally, FWI computation depends on columns air_temperature_c, relative_humidity_pct, wind_speed_kmh, rain_mm — must verify these exist in the resampled data."
+      "evidence": "_compute_fwi_codes() is called on the imputed hourly data, which only exists for 2 of 5 stations. For the 3 stations with no output, FWI codes are never computed. Additionally, FWI computation depends on columns air_temperature_c, relative_humidity_pct, wind_speed_kmh, rain_mm \u2014 must verify these exist in the resampled data."
     },
     {
       "id": "AC-PIPE-6",
@@ -46,5 +46,5 @@
       "evidence": "pipeline_manifest.json is written by _write_manifest() with generated_at timestamp, per-artifact timestamps, rows, station, type, and path fields. Manifest tracks 97 artifacts in test run."
     }
   ],
-  "summary": "Significant progress since last review: cleaning.py now integrates imputation, Stanhope ingestion, full FWI chain (ISI/BUI/FWI added), and artifact manifest. However, the pipeline fails on most raw data files — 137 of ~142 files are skipped due to 'No aggregation rule defined for column' errors (Accumulated Rain, Barometric Pressure columns). Only 2 of 5 stations produce output. Additionally, the exit gate test (test_pipeline_execution.py) does not exist, and 2 existing tests fail (test_notebook_executes_without_error: FileNotFoundError on station_daily.csv; test_repo_root_shape_is_whitelisted: unexpected .cartography/ and codemap.md in repo root). The aggregation rule issue in src/pea_met_network/materialize_resampled.py must be fixed to handle Accumulated Rain and Barometric Pressure columns before the pipeline can satisfy AC-PIPE-1 and AC-PIPE-2."
+  "summary": "Significant progress since last review: cleaning.py now integrates imputation, Stanhope ingestion, full FWI chain (ISI/BUI/FWI added), and artifact manifest. However, the pipeline fails on most raw data files \u2014 137 of ~142 files are skipped due to 'No aggregation rule defined for column' errors (Accumulated Rain, Barometric Pressure columns). Only 2 of 5 stations produce output. Additionally, the exit gate test (test_pipeline_execution.py) does not exist, and 2 existing tests fail (test_notebook_executes_without_error: FileNotFoundError on station_daily.csv; test_repo_root_shape_is_whitelisted: unexpected .cartography/ and codemap.md in repo root). The aggregation rule issue in src/pea_met_network/materialize_resampled.py must be fixed to handle Accumulated Rain and Barometric Pressure columns before the pipeline can satisfy AC-PIPE-1 and AC-PIPE-2."
 }
