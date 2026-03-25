@@ -58,11 +58,11 @@ PHASE_STRUCTURAL_REQUIREMENTS: dict[str, list[StructuralRequirement]] = {
         StructuralRequirement("class", "JSONAdapter", "**/adapters/*.py", must_inherit="BaseAdapter"),
     ],
     "3": [  # Pipeline Integration
-        StructuralRequirement("function", "discover_raw_files", "**/*.py"),
-        StructuralRequirement("function", "concat_station_data", "**/*.py"),
-        StructuralRequirement("function", "deduplicate_timestamps", "**/*.py"),
-        StructuralRequirement("function", "resample_hourly_to_daily", "**/*.py"),
-        StructuralRequirement("function", "impute_missing_values", "**/*.py"),
+        StructuralRequirement("function", "build_raw_manifest", "**/*.py"),
+        StructuralRequirement("function", "resample_hourly", "**/*.py"),
+        StructuralRequirement("function", "resample_daily", "**/*.py"),
+        StructuralRequirement("function", "impute_frame", "**/*.py"),
+        StructuralRequirement("function", "materialize_resampled_outputs", "**/*.py"),
     ],
     "4": [  # Stanhope Validation
         StructuralRequirement("function", "validate_against_reference", "**/*.py"),
