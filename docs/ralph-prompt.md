@@ -1,8 +1,15 @@
-# Ralph Loop Prompt
+# Ralph Loop Prompt (MissHoover 2.0)
 
 You are an autonomous build agent operating in a Ralph-style loop.
 Your job is to write tests, implement to them, and commit.
 The test suite IS the task list. Specs ARE the plan.
+
+## MissHoover 2.0: Data-Centric Determinism
+
+The loop now enforces a **Hard Gate** on data quality. Your code can pass tests
+but still be rejected if the data artifacts are malformed, empty, or missing
+critical columns. This prevents "silent failures" where scripts exit 0 but
+produce junk data.
 
 ## Hard Constraint: Stateless Execution
 
@@ -54,6 +61,72 @@ pipeline outputs from a previous run, decide:
 - If it looks broken → `git checkout -- data/processed/` to restore HEAD,
   then re-run the pipeline and commit the fresh output
 
+## ⚠️ NEW: Data Manifest Requirement
+
+When you create or modify ANY data artifact (CSV, Parquet, JSON output files
+in `data/processed/`), you MUST update `docs/data-manifest.json`:
+
+```json
+{
+  "artifacts": [
+    {
+      "path": "data/processed/cavendish/station_hourly.csv",
+      "type": "cleaned_hourly",
+      "station": "cavendish",
+      "rows": 25763,
+      "columns": ["timestamp", "temp_c", "rh_pct", "wind_speed_kph", "precip_mm"],
+      "source": "raw/*.csv",
+      "generated_by": "src/cleaning.py",
+      "timestamp": "2026-03-25T19:00:00Z"
+    }
+  ],
+  "last_updated": "2026-03-25T19:00:00Z"
+}
+```
+
+**Why:** The data manifest creates a traceable link between code and data.
+It allows `validate_artifacts.py` to check that expected outputs exist and
+have valid schemas.
+
+## ⚠️ NEW: Strategic Pivot Rule
+
+If you are on **Repair Attempt #2 or #3** for the same issue, you MUST:
+
+1. **STOP and inspect your output data** using the exec tool:
+   ```bash
+   head -20 data/processed/cavendish/station_hourly.csv
+   ```
+   or for a quick statistical summary:
+   ```python
+   import pandas as pd
+   df = pd.read_csv("data/processed/cavendish/station_hourly.csv")
+   print(df.describe())
+   print(df.isna().sum())
+   ```
+
+2. **Document the discrepancy** in `docs/thought_log.md`:
+   ```markdown
+   ## Repair Attempt #2 — 2026-03-25 19:00
+   
+   **Issue:** Lisa rejected because station_hourly.csv has NaN values in temp_c column.
+   
+   **Investigation:**
+   - Ran `head -20` on the output file
+   - Found that rows 10-15 have empty temp_c values
+   - Root cause: imputation not applied to this column
+   
+   **Planned Fix:**
+   - Add temp_c to imputation columns in cleaning.py
+   - Re-run pipeline
+   - Verify no NaNs in temp_c before committing
+   ```
+
+3. **Only THEN** change any code.
+
+**Why:** This prevents "insanity loops" where you try the same fix twice
+without understanding why it failed. If you're on attempt #2, you need to
+diagnose before you prescribe.
+
 ## Startup
 
 ### Step 0: Read the Codemap (SAVE ITERATIONS)
@@ -79,11 +152,15 @@ If you need deeper context on a specific directory, read that directory's `codem
    - `CIRCUIT_BREAKER=TRIPPED` → print the reason, stop immediately.
      Do not read specs, do not write code, do not run tests.
      The loop has been circuit-breaked and requires human intervention.
+   - `HARD_GATE=ARTIFACT_VALIDATION_FAIL` → your data artifacts failed validation.
+     Read `docs/artifact-validation.json` for details.
+     Fix the data issues before continuing.
    - `BLOCKER=<message>` → a blocker is set. Report it and stop.
 
 2. Read `docs/validation.json`.
    - If VERDICT=REJECT: read the rejected criteria carefully.
      Your job this loop is to fix what Lisa flagged.
+     **If criteria include ARTIFACT-* IDs, these are data validation failures.**
    - If VERDICT=PASS, VERDICT=PENDING, or VERDICT=NONE: proceed with next gap.
    - You do NOT modify this file directly. Ever.
 
@@ -122,9 +199,11 @@ Rules:
 Before committing, ALL of these must pass:
 - `.venv/bin/ruff check .`
 - `.venv/bin/pytest` (full suite)
+- **NEW:** `python scripts/validate_artifacts.py` (data artifact validation)
 
 If any fails:
 - Up to 3 repair attempts for the same failure.
+- **On attempt #2 or #3: apply the Strategic Pivot Rule (see above).**
 - If still failing after 3 attempts: set blocker in ralph-state.json,
   describe the failure, and stop.
 
@@ -133,6 +212,7 @@ If any fails:
 1. Review `git diff` before committing.
 2. Write a clear commit message describing what changed.
 3. Commit immediately after each completed unit of work.
+4. **If you created/modified data artifacts, update `docs/data-manifest.json`.**
 
 ## Diary
 
@@ -148,6 +228,7 @@ this template:
 - **Gate:** {verification output or failure reason}
 - **Blocker:** {null or description}
 - **Next:** {what should happen next or "blocked"}
+- **Artifacts:** {list of data artifacts created/modified, or "none"}
 ```
 
 ## Repo Ownership
@@ -168,10 +249,12 @@ or bugs in ANY file, they are your responsibility.
 - Do NOT let finished work sit uncommitted in the sandbox
 - Do NOT run the pipeline without committing the resulting data/processed/ files
 - Do NOT leave data/processed/ in a dirty state when your loop iteration ends
+- Do NOT create data artifacts without updating docs/data-manifest.json
+- Do NOT attempt the same fix twice without applying the Strategic Pivot Rule
 
 ## Escalation
 
 If you are stuck:
-1. Try a different approach (up to 2 strategy pivots).
+1. Try a different approach (up to 2 strategy pivots, with documentation).
 2. If still stuck: set blocker in ralph-state.json, describe what you
    tried and what failed, and stop.

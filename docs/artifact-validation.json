@@ -1,0 +1,98 @@
+{
+  "phase": "3",
+  "timestamp": "2026-03-25T19:09:06.295675+00:00",
+  "verdict": "FAIL",
+  "checks": [
+    {
+      "type": "directory",
+      "path": "data/processed/cavendish",
+      "status": "PASS"
+    },
+    {
+      "type": "directory",
+      "path": "data/processed/greenwich",
+      "status": "PASS"
+    },
+    {
+      "type": "file_exists",
+      "path": "data/processed/cavendish/station_hourly.csv",
+      "status": "PASS"
+    },
+    {
+      "type": "row_count",
+      "path": "data/processed/cavendish/station_hourly.csv",
+      "status": "PASS",
+      "message": "25763 rows"
+    },
+    {
+      "type": "schema",
+      "path": "data/processed/cavendish/station_hourly.csv",
+      "status": "FAIL",
+      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+    },
+    {
+      "type": "file_exists",
+      "path": "data/processed/cavendish/station_daily.csv",
+      "status": "PASS"
+    },
+    {
+      "type": "row_count",
+      "path": "data/processed/cavendish/station_daily.csv",
+      "status": "PASS",
+      "message": "1185 rows"
+    },
+    {
+      "type": "schema",
+      "path": "data/processed/cavendish/station_daily.csv",
+      "status": "FAIL",
+      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+    },
+    {
+      "type": "file_exists",
+      "path": "data/processed/greenwich/station_hourly.csv",
+      "status": "PASS"
+    },
+    {
+      "type": "row_count",
+      "path": "data/processed/greenwich/station_hourly.csv",
+      "status": "PASS",
+      "message": "28715 rows"
+    },
+    {
+      "type": "schema",
+      "path": "data/processed/greenwich/station_hourly.csv",
+      "status": "FAIL",
+      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+    },
+    {
+      "type": "file_exists",
+      "path": "data/processed/greenwich/station_daily.csv",
+      "status": "PASS"
+    },
+    {
+      "type": "row_count",
+      "path": "data/processed/greenwich/station_daily.csv",
+      "status": "PASS",
+      "message": "1241 rows"
+    },
+    {
+      "type": "schema",
+      "path": "data/processed/greenwich/station_daily.csv",
+      "status": "FAIL",
+      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+    },
+    {
+      "type": "pipeline_manifest",
+      "path": "data/processed/pipeline_manifest.json",
+      "status": "PASS",
+      "message": "Found 417 artifacts"
+    }
+  ],
+  "errors": [
+    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']",
+    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']",
+    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']",
+    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+  ],
+  "summary": "Validated 15 checks for phase 3: FAIL (4 errors)"
+}

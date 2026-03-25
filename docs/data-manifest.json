@@ -1,0 +1,57 @@
+{
+  "description": "Data Manifest for MissHoover 2.0 — tracks all data artifacts produced by the pipeline",
+  "version": "1.0.0",
+  "last_updated": null,
+  "artifacts": [
+    {
+      "path": "data/processed/cavendish/station_hourly.csv",
+      "type": "cleaned_hourly",
+      "station": "cavendish",
+      "rows": null,
+      "columns": ["timestamp", "temp_c", "rh_pct", "wind_speed_kph", "precip_mm"],
+      "source": "raw/*.csv",
+      "generated_by": "src/cleaning.py",
+      "timestamp": null
+    },
+    {
+      "path": "data/processed/cavendish/station_daily.csv",
+      "type": "cleaned_daily",
+      "station": "cavendish",
+      "rows": null,
+      "columns": ["date", "temp_c_max", "temp_c_min", "precip_mm"],
+      "source": "station_hourly.csv",
+      "generated_by": "src/cleaning.py",
+      "timestamp": null
+    },
+    {
+      "path": "data/processed/greenwich/station_hourly.csv",
+      "type": "cleaned_hourly",
+      "station": "greenwich",
+      "rows": null,
+      "columns": ["timestamp", "temp_c", "rh_pct", "wind_speed_kph", "precip_mm"],
+      "source": "raw/*.csv",
+      "generated_by": "src/cleaning.py",
+      "timestamp": null
+    },
+    {
+      "path": "data/processed/greenwich/station_daily.csv",
+      "type": "cleaned_daily",
+      "station": "greenwich",
+      "rows": null,
+      "columns": ["date", "temp_c_max", "temp_c_min", "precip_mm"],
+      "source": "station_hourly.csv",
+      "generated_by": "src/cleaning.py",
+      "timestamp": null
+    },
+    {
+      "path": "data/processed/imputation_report.csv",
+      "type": "report",
+      "station": null,
+      "rows": null,
+      "columns": ["station", "column", "missing_count", "imputed_count", "method"],
+      "source": "pipeline",
+      "generated_by": "src/cleaning.py",
+      "timestamp": null
+    }
+  ]
+}

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""sync_state.py — Ralph loop state synchronizer (spec-driven)."""
+"""sync_state.py — Ralph loop state synchronizer (spec-driven).
+
+MissHoover 2.0: Data-Centric Determinism
+- Calls validate_artifacts.py before Lisa review (Hard Gate)
+- Generates STALL_REPORT.md on circuit breaker trip
+"""
 from __future__ import annotations
 
 import json
@@ -15,6 +20,166 @@ STATE_FILE = REPO_ROOT / "docs" / "ralph-state.json"
 TESTS_DIR = REPO_ROOT / "tests"
 VALIDATION_FILE = REPO_ROOT / "docs" / "validation.json"
 LOOP_LOG_FILE = REPO_ROOT / "docs" / "loop-log.jsonl"
+ARTIFACT_VALIDATION_FILE = REPO_ROOT / "docs" / "artifact-validation.json"
+STALL_REPORT_FILE = REPO_ROOT / "docs" / "STALL_REPORT.md"
+
+
+def run_artifact_validation() -> tuple[bool, dict]:
+    """Run validate_artifacts.py and return (passes, result_dict).
+    
+    This is the Hard Gate - artifact validation runs BEFORE Lisa review.
+    If artifacts fail validation, Lisa is skipped and verdict is REJECT.
+    """
+    script_path = REPO_ROOT / "scripts" / "validate_artifacts.py"
+    if not script_path.exists():
+        print("ARTIFACT_VALIDATION=SKIP (script not found)", file=sys.stderr)
+        return True, {"verdict": "SKIP", "reason": "script not found"}
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            timeout=60,
+        )
+        
+        # Print output for visibility
+        if result.stdout:
+            for line in result.stdout.strip().split("\n"):
+                print(f"  {line}")
+        
+        # Load detailed result
+        artifact_result = {}
+        if ARTIFACT_VALIDATION_FILE.exists():
+            try:
+                artifact_result = json.loads(ARTIFACT_VALIDATION_FILE.read_text())
+            except json.JSONDecodeError:
+                pass
+        
+        passes = result.returncode == 0
+        return passes, artifact_result
+        
+    except subprocess.TimeoutExpired:
+        print("ARTIFACT_VALIDATION=TIMEOUT", file=sys.stderr)
+        return False, {"verdict": "TIMEOUT", "reason": "validation timed out"}
+    except Exception as e:
+        print(f"ARTIFACT_VALIDATION=ERROR: {e}", file=sys.stderr)
+        return False, {"verdict": "ERROR", "reason": str(e)}
+
+
+def generate_stall_report(state: dict, validation: dict | None) -> None:
+    """Generate STALL_REPORT.md when circuit breaker trips.
+    
+    Concatenates last 3 test failures and Lisa's last 3 REJECT summaries
+    to provide a clear hand-off for human intervention.
+    """
+    cb = state.get("circuit_breaker", {})
+    
+    lines = [
+        "# ⚠️ STALL REPORT — Circuit Breaker Tripped",
+        "",
+        f"**Generated:** {datetime.now(timezone.utc).astimezone().isoformat()}",
+        f"**Commit:** {cb.get('last_commit', 'unknown')}",
+        f"**Trip Reason:** {cb.get('trip_reason', 'unknown')}",
+        f"**Trip Time:** {cb.get('trip_at', 'unknown')}",
+        "",
+        "---",
+        "",
+        "## Recent Loop History",
+        "",
+    ]
+    
+    # Read last 3 entries from loop-log.jsonl
+    if LOOP_LOG_FILE.exists():
+        try:
+            log_lines = LOOP_LOG_FILE.read_text().strip().split("\n")[-3:]
+            lines.append("| Timestamp | Phase | Verdict | Commits | Files Changed |")
+            lines.append("|---|---|---|---|---|")
+            for line in reversed(log_lines):
+                try:
+                    entry = json.loads(line)
+                    lines.append(
+                        f"| {entry.get('ts', '?')[:19]} | "
+                        f"{entry.get('phase', '?')} | "
+                        f"{entry.get('verdict', '?')} | "
+                        f"{len(entry.get('new_commits', []))} | "
+                        f"{len(entry.get('files_changed', []))} |"
+                    )
+                except json.JSONDecodeError:
+                    continue
+            lines.append("")
+        except Exception as e:
+            lines.append(f"*Could not read loop log: {e}*\n")
+    
+    # Add validation failures
+    if validation and validation.get("criteria"):
+        lines.extend([
+            "## Last Review Criteria (FAIL)",
+            "",
+        ])
+        for c in validation.get("criteria", []):
+            if c.get("status") == "FAIL":
+                lines.append(f"### {c.get('id', '?')}: {c.get('name', '?')}")
+                lines.append(f"- **Status:** {c.get('status', '?')}")
+                evidence = c.get("evidence", "")
+                if evidence:
+                    lines.append(f"- **Evidence:** {evidence}")
+                lines.append("")
+    
+    # Add artifact validation failures
+    if ARTIFACT_VALIDATION_FILE.exists():
+        try:
+            artifact = json.loads(ARTIFACT_VALIDATION_FILE.read_text())
+            if artifact.get("errors"):
+                lines.extend([
+                    "## Artifact Validation Errors",
+                    "",
+                ])
+                for err in artifact.get("errors", []):
+                    lines.append(f"- {err}")
+                lines.append("")
+        except json.JSONDecodeError:
+            pass
+    
+    # Add current phase info
+    phases = state.get("phases", {})
+    phase = str(state.get("phase", "?"))
+    phase_info = phases.get(phase, {})
+    
+    lines.extend([
+        "## Current Phase Details",
+        "",
+        f"- **Phase:** {phase} — {phase_info.get('name', 'unknown')}",
+        f"- **Status:** {phase_info.get('status', '?')}",
+        f"- **Exit Command:** `{phase_info.get('exit', 'not defined')}`",
+        f"- **Iteration:** {state.get('iteration', '?')}",
+        "",
+        "---",
+        "",
+        "## Recommended Actions",
+        "",
+        "1. **Review the errors above** — identify if this is a code issue, data issue, or spec ambiguity.",
+        "2. **Check the test suite** — run `.venv/bin/pytest tests/ -v` to see full failure details.",
+        "3. **Inspect data artifacts** — check `data/processed/` for missing or malformed outputs.",
+        "4. **Update specs or code** — fix the root cause, not just the symptom.",
+        "5. **Reset the circuit breaker** — set `circuit_breaker.tripped = false` in `docs/ralph-state.json`.",
+        "",
+        "### To Reset and Resume",
+        "",
+        "```bash",
+        "# After fixing the issue, reset the circuit breaker:",
+        "python scripts/sync_state.py  # verify state is clean",
+        "# Edit docs/ralph-state.json: set circuit_breaker.tripped = false",
+        "git add docs/ralph-state.json && git commit -m 'fix: reset circuit breaker after stall'",
+        "```",
+        "",
+        "---",
+        "*This report was auto-generated by sync_state.py (MissHoover 2.0)*",
+    ])
+    
+    STALL_REPORT_FILE.write_text("\n".join(lines))
+    print(f"STALL_REPORT_GENERATED={STALL_REPORT_FILE}", file=sys.stderr)
 
 
 class StateManager:
@@ -604,6 +769,32 @@ def main() -> None:
         print("NEXT_ACTION=RUN_RALPH")
         return
 
+    # 1.5. MissHoover 2.0: Hard Gate — Artifact Validation
+    # Run BEFORE Lisa review. If artifacts fail, skip Lisa and REJECT immediately.
+    artifact_passes, artifact_result = run_artifact_validation()
+    if not artifact_passes:
+        print("HARD_GATE=ARTIFACT_VALIDATION_FAIL", file=sys.stderr)
+        print("ACTION=SKIP_LISA_AUTO_REJECT", file=sys.stderr)
+        # Auto-set validation to REJECT with artifact errors
+        if validation is None:
+            validation = {}
+        validation["verdict"] = "REJECT"
+        validation["last_reviewed_commit"] = head_sha
+        validation["reviewed_at"] = datetime.now(timezone.utc).astimezone().isoformat()
+        artifact_summary = artifact_result.get("summary", "Unknown artifact validation failure")
+        validation["summary"] = f"Artifact validation failed: {artifact_summary}"
+        validation["criteria"] = [
+            {
+                "id": f"ARTIFACT-{i}",
+                "name": (err[:50] + "...") if len(err) > 50 else err,
+                "status": "FAIL",
+                "evidence": err,
+            }
+            for i, err in enumerate(artifact_result.get("errors", ["Unknown artifact error"]), 1)
+        ]
+        state_mgr.save_validation(validation)
+        verdict = "REJECT"  # Update local verdict for subsequent logic
+
     # 2. Pipeline Execution
     tripped = update_circuit_breaker(state, head_sha, validation, verdict)
     if tripped:
@@ -613,6 +804,8 @@ def main() -> None:
         print("CIRCUIT_BREAKER=TRIPPED")
         print(f"CIRCUIT_BREAKER_REASON={cb.get('trip_reason', '')}")
         print(f"CIRCUIT_BREAKER_AT={cb.get('trip_at', '')}")
+        # MissHoover 2.0: Generate stall report for human hand-off
+        generate_stall_report(state, validation)
         sys.exit(0)
 
     cb = state.get("circuit_breaker", {})
