@@ -1,103 +1,103 @@
 {
-  "iteration": 0,
-  "date": "2026-03-25",
-  "max_per_day": 20,
-  "phase": "1",
-  "status": "running",
   "blocker": null,
-  "updated_at": "2026-03-25T02:00:00.000000+00:00",
-  "phases": {
-    "1": {
-      "name": "Pipeline Refactor — Adapter Architecture",
-      "exit": ".venv/bin/pytest tests/test_pipeline_execution.py::TestAC_PIPE_1_PipelineRuns -q",
-      "status": "active"
-    },
-    "2": {
-      "name": "Format Adapters — CSV, XLSX, XLE Coverage",
-      "exit": ".venv/bin/pytest tests/test_normalized_loader.py tests/test_pipeline_execution.py::TestAC_PIPE_2_SchemaCoverage -q",
-      "status": "not_started"
-    },
-    "3": {
-      "name": "Imputation Wired + Audit Trail",
-      "exit": ".venv/bin/pytest tests/test_imputation.py tests/test_pipeline_execution.py::TestAC_PIPE_3_ImputationAudit -q",
-      "status": "not_started"
-    },
-    "4": {
-      "name": "Stanhope Validation Integration",
-      "exit": ".venv/bin/pytest tests/test_pipeline_execution.py::TestAC_PIPE_4_StanhopeValidation -q",
-      "status": "not_started"
-    },
-    "5": {
-      "name": "QA/QC Report Generation",
-      "exit": ".venv/bin/pytest tests/test_qa_qc.py tests/test_pipeline_execution.py::TestAC_PIPE_5_QAQCReport -q",
-      "status": "not_started"
-    },
-    "6": {
-      "name": "Determinism + Reproducibility",
-      "exit": ".venv/bin/pytest tests/test_data_refresh.py tests/test_pipeline_execution.py::TestAC_PIPE_6_Determinism -q",
-      "status": "not_started"
-    },
-    "7": {
-      "name": "Licor JSON Adapter + Continuous Coverage",
-      "exit": ".venv/bin/pytest tests/test_pipeline_execution.py::TestAC_PIPE_7_LicorIntegration -q",
-      "status": "not_started"
-    },
-    "8": {
-      "name": "Full End-to-End Validation",
-      "exit": ".venv/bin/pytest tests/ -q",
-      "status": "not_started"
-    }
+  "circuit_breaker": {
+    "consecutive_errors": 0,
+    "consecutive_stalls": 0,
+    "last_commit": null,
+    "last_fail_criteria_hash": null,
+    "last_verdict": null,
+    "trip_at": null,
+    "trip_reason": null,
+    "tripped": false
   },
+  "date": "2026-03-25",
   "decisions": [
     {
-      "id": "v2-d1",
       "date": "2026-03-25",
+      "id": "v2-d1",
       "summary": "Archive v1 project specs and docs — zip under docs/archive/, replace specs/ with pipeline rebuild phases"
     },
     {
-      "id": "v2-d2",
       "date": "2026-03-25",
+      "id": "v2-d2",
       "summary": "Pipeline stays serial, pandas-based, single-process — data volume too small for parallelism"
     },
     {
-      "id": "v2-d3",
       "date": "2026-03-25",
+      "id": "v2-d3",
       "summary": "Stanhope gets daily output + FWI — parks group needs daily FWI comparison"
     },
     {
-      "id": "v2-d4",
       "date": "2026-03-25",
+      "id": "v2-d4",
       "summary": "ADAPTER ARCHITECTURE: single entry point, format adapters (csv/xlsx/xle/json), canonical output schema. No file silently skipped — unknown formats are HARD ERRORS."
     },
     {
-      "id": "v2-d5",
       "date": "2026-03-25",
+      "id": "v2-d5",
       "summary": "Keep existing solid modules (resampling, fwi, imputation, stanhope_cache, qa_qc) — only rewrite cleaning.py and normalized_loader.py, add adapters/"
     },
     {
-      "id": "v2-d6",
       "date": "2026-03-25",
+      "id": "v2-d6",
       "summary": "Pipeline flow: discover → adapter.load (per file) → concat per station → dedup → resample → impute → FWI → QA/QC → write"
     },
     {
-      "id": "v2-d7",
       "date": "2026-03-25",
+      "id": "v2-d7",
       "summary": "Licor JSON is NOT a separate phase — it's just another adapter. Phase 7 completes the JSON adapter and validates continuous coverage at the PEINP→Licor boundary."
     },
     {
-      "id": "v2-d8",
       "date": "2026-03-25",
+      "id": "v2-d8",
       "summary": "Canonical schema defined once, enforced by all adapters. Shared column mapping module prevents drift across CSV/XLSX/XLE adapters."
     }
   ],
-  "circuit_breaker": {
-    "consecutive_stalls": 0,
-    "last_commit": null,
-    "last_verdict": null,
-    "last_fail_criteria_hash": null,
-    "consecutive_errors": 0,
-    "tripped": false,
-    "trip_reason": null,
-    "trip_at": null
-  }
+  "iteration": 0,
+  "max_per_day": 20,
+  "phase": "1",
+  "phases": {
+    "1": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_1_AdapterArchitecture tests/test_v2_pipeline.py::TestAC_PIPE_1_SingleEntryPoint -q",
+      "name": "Pipeline Refactor — Adapter Architecture",
+      "status": "active"
+    },
+    "2": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_2_FormatAdapters -q",
+      "name": "Format Adapters — CSV, XLSX, XLE Coverage",
+      "status": "not_started"
+    },
+    "3": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_ImputationAudit -q",
+      "name": "Imputation Wired + Audit Trail",
+      "status": "not_started"
+    },
+    "4": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_4_StanhopeValidation -q",
+      "name": "Stanhope Validation Integration",
+      "status": "not_started"
+    },
+    "5": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_5_QAQCReport -q",
+      "name": "QA/QC Report Generation",
+      "status": "not_started"
+    },
+    "6": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_6_Determinism -q",
+      "name": "Determinism + Reproducibility",
+      "status": "not_started"
+    },
+    "7": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_7_LicorIntegration -q",
+      "name": "Licor JSON Adapter + Continuous Coverage",
+      "status": "not_started"
+    },
+    "8": {
+      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_8_EndToEnd -q",
+      "name": "Full End-to-End Validation",
+      "status": "not_started"
+    }
+  },
+  "status": "running",
+  "updated_at": "2026-03-25T02:00:00.000000+00:00"
 }
