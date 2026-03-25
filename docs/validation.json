@@ -1,44 +1,7 @@
 {
-  "last_reviewed_commit": "4c07e45",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-24T12:29:31.902563+00:00",
-  "criteria": [
-    {
-      "id": "AC-POL-1",
-      "name": "README accurate",
-      "status": "PASS",
-      "evidence": "README describes all phases complete, correct setup (venv + pip), OSEMN structure, cleaning.py and analysis.ipynb usage. No stale references."
-    },
-    {
-      "id": "AC-POL-2",
-      "name": "__pycache__ gitignored",
-      "status": "PASS",
-      "evidence": "__pycache__/ present in .gitignore line 2. No __pycache__ entries tracked in git index."
-    },
-    {
-      "id": "AC-POL-3",
-      "name": "Repo shape clean",
-      "status": "PASS",
-      "evidence": "test_repo_shape.py passes \u2014 all root files and dirs match whitelist."
-    },
-    {
-      "id": "AC-POL-4",
-      "name": "analysis.ipynb location",
-      "status": "PASS",
-      "evidence": "analysis.ipynb exists at repo root (ROOT / 'analysis.ipynb') as expected by test_deliverables.py and test_analysis_notebook.py."
-    },
-    {
-      "id": "AC-POL-5",
-      "name": "11 done-definition items met",
-      "status": "PASS",
-      "evidence": "113 tests pass across pipeline, FWI, Stanhope, redundancy, uncertainty, deliverables, and polish. All done-definition items covered by passing tests."
-    },
-    {
-      "id": "AC-POL-6",
-      "name": "Full test suite passes",
-      "status": "PASS",
-      "evidence": "pytest -q: 113 passed, 2 skipped, 0 failures in 58s."
-    }
-  ],
-  "summary": "Phase 11 polish review: all 6 criteria pass. README is accurate, repo is clean, notebook is correctly located, full test suite passes with 0 failures."
+  "last_reviewed_commit": "",
+  "verdict": "NONE",
+  "reviewed_at": "2026-03-25T02:28:22.665465+00:00",
+  "criteria": [],
+  "summary": "Phase 12 activated; awaiting first Lisa review."
 }
