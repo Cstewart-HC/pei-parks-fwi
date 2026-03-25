@@ -1,7 +1,8 @@
 {
-  "last_reviewed_commit": "",
   "verdict": "NONE",
-  "reviewed_at": "2026-03-25T02:28:22.665465+00:00",
   "criteria": [],
-  "summary": "Phase 12 activated; awaiting first Lisa review."
+  "phase": "1",
+  "iteration": 0,
+  "timestamp": null,
+  "notes": "v2 pipeline rebuild — adapter architecture. Phase 1 active."
 }
