@@ -97,14 +97,14 @@ def run_agent():
 
 
 def main():
-    print(f"=== ORCHESTRATOR WRAPPER START ===")
+    print("=== ORCHESTRATOR WRAPPER START ===")
 
     # Step 1: Run the agent
     agent_ok = run_agent()
 
     # Step 2: Advance pointer (always runs, even if agent failed)
     print("TEARDOWN: advancing review pointer...")
-    changed = advance_pointer()
+    advance_pointer()
     commit_if_dirty()
 
     if not agent_ok:

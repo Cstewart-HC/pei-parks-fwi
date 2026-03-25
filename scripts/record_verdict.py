@@ -35,7 +35,7 @@ def emit_lineage_event(verdict: str, failing_nodes: list[dict] | None = None) ->
     """Emit a lineage event for the verdict."""
     if not LINEAGE_FILE.parent.exists():
         LINEAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Read state for phase info
     state_file = REPO_ROOT / "docs" / "ralph-state.json"
     phase = "?"
@@ -45,7 +45,7 @@ def emit_lineage_event(verdict: str, failing_nodes: list[dict] | None = None) ->
             phase = str(state.get("phase", "?"))
         except json.JSONDecodeError:
             pass
-    
+
     event = {
         "eventType": "LISA_VERDICT",
         "eventTime": datetime.now(timezone.utc).astimezone().isoformat(),
@@ -62,7 +62,7 @@ def emit_lineage_event(verdict: str, failing_nodes: list[dict] | None = None) ->
         },
         "producer": "record_verdict.py",
     }
-    
+
     with open(LINEAGE_FILE, "a") as f:
         f.write(json.dumps(event) + "\n")
 
@@ -81,7 +81,7 @@ def main() -> None:
         help="Optional summary text",
     )
     args = parser.parse_args()
-    
+
     # Parse failing nodes if provided
     failing_nodes = None
     if args.failing_nodes:
@@ -90,48 +90,48 @@ def main() -> None:
         except json.JSONDecodeError as e:
             print(f"Error parsing --failing-nodes JSON: {e}", file=sys.stderr)
             sys.exit(2)
-    
+
     head = git("rev-parse", "--short", "HEAD")
-    
+
     # Load or create validation
     if not VALIDATION_FILE.exists():
         validation = {}
     else:
         validation = json.loads(VALIDATION_FILE.read_text())
-    
+
     # Update validation
     validation["verdict"] = args.verdict
     validation["last_reviewed_commit"] = head
     validation["reviewed_at"] = datetime.now(timezone.utc).astimezone().isoformat()
-    
+
     # Add structured failing nodes if provided
     if failing_nodes:
         validation["failing_nodes"] = failing_nodes
-    
+
     # Add summary if provided
     if args.summary:
         validation["summary"] = args.summary
-    
+
     # Write validation
     VALIDATION_FILE.write_text(json.dumps(validation, indent=2) + "\n")
-    
+
     # Emit lineage event
     emit_lineage_event(args.verdict, failing_nodes)
-    
+
     # Git commit
     git("add", "docs/validation.json")
-    
+
     # Also add lineage file if it exists
     if LINEAGE_FILE.exists():
         git("add", "docs/lineage.jsonl")
-    
+
     result = subprocess.run(["git", "-C", str(REPO_ROOT), "diff", "--staged", "--quiet"])
     if result.returncode != 0:
         commit_msg = f"lisa: review verdict {args.verdict}"
         if failing_nodes:
             commit_msg += f" ({len(failing_nodes)} failing nodes)"
         git("commit", "-m", commit_msg)
-    
+
     print(f"VERDICT_RECORDED={args.verdict}")
     if failing_nodes:
         print(f"FAILING_NODES_COUNT={len(failing_nodes)}")

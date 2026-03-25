@@ -14,10 +14,10 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
-from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 API_BASE = "https://api.licor.cloud/v2/data"
 DELAY_SECONDS = 2  # Respectful delay between requests
@@ -35,12 +35,12 @@ def fetch_data(device, start_ms, end_ms, token, sensor=None):
     url = f"{API_BASE}?deviceSerialNumber={device}&startTime={start_ms}&endTime={end_ms}"
     if sensor:
         url += f"&sensorSerialNumber={sensor}"
-    
+
     req = Request(url, headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     })
-    
+
     try:
         with urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode())
@@ -49,7 +49,7 @@ def fetch_data(device, start_ms, end_ms, token, sensor=None):
 
 def fetch_devices(token):
     """Fetch list of devices."""
-    url = f"https://api.licor.cloud/v2/devices?includeSensors=true"
+    url = "https://api.licor.cloud/v2/devices?includeSensors=true"
     req = Request(url, headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
 
     token = get_token()
-    
+
     # Setup output directory
     repo_root = Path(__file__).resolve().parent.parent
     output_dir = Path(args.output_dir) if args.output_dir else repo_root / "data" / "raw" / "licor" / args.device
@@ -99,7 +99,7 @@ def main():
                 print(f"Device: {dev['deviceName']} ({dev['deviceSerialNumber']})")
                 print(f"  Product: {dev['productCode']}")
                 print(f"  Last connection: {dev['lastConnectionTime']}")
-                print(f"  Sensors:")
+                print("  Sensors:")
                 for s in dev.get("sensors", []):
                     print(f"    {s['sensorSerialNumber']}: {s['measurementType']} ({s['units']})")
                 return
@@ -108,28 +108,28 @@ def main():
 
     start_ms = dt_to_ms(args.start)
     end_ms = dt_to_ms(args.end)
-    
+
     print(f"Fetching data for device {args.device}")
     print(f"  Range: {args.start} to {args.end}")
     print(f"  Chunk: {args.chunk_days} days, delay: {args.delay}s")
     print(f"  Output: {output_dir}")
     if args.sensor:
         print(f"  Sensor filter: {args.sensor}")
-    
+
     all_chunks = []
     current = start_ms
     chunk_num = 0
     errors = 0
-    
+
     while current < end_ms:
         chunk_end = min(current + (args.chunk_days * 86400000), end_ms)
         chunk_num += 1
-        
+
         date_label = f"{ms_to_date(current)}_{ms_to_date(chunk_end - 1)}"
         print(f"  [{chunk_num}] {date_label}...", end=" ", flush=True)
-        
+
         result = fetch_data(args.device, current, chunk_end, token, args.sensor)
-        
+
         if "error" in result:
             print(f"ERROR {result['error']}: {result['message']}")
             errors += 1
@@ -139,26 +139,26 @@ def main():
         else:
             total_records = sum(s.get("totalRecords", 0) for s in result.get("sensors", []))
             print(f"OK ({total_records} records)")
-            
+
             # Save chunk
             chunk_file = output_dir / f"{date_label}.json"
             with open(chunk_file, "w") as f:
                 json.dump(result, f, indent=2)
             all_chunks.append(result)
-        
+
         if current < end_ms:
             time.sleep(args.delay)
-        
+
         current = chunk_end
-    
+
     # Save combined result
     combined_file = output_dir / f"{args.start}_{args.end}_combined.json"
     # Merge sensors across chunks
-    merged = {"source": "licor_cache.py", "device": args.device, 
+    merged = {"source": "licor_cache.py", "device": args.device,
               "start": args.start, "end": args.end, "chunks": chunk_num,
               "errors": errors, "fetchTime": datetime.now(timezone.utc).isoformat(),
               "sensors": {}}
-    
+
     for chunk in all_chunks:
         for sensor in chunk.get("sensors", []):
             sid = sensor["sensorSerialNumber"]
@@ -173,7 +173,7 @@ def main():
             merged["sensors"][sid]["totalRecords"] += sensor.get("totalRecords", 0)
             for d in sensor.get("data", []):
                 merged["sensors"][sid]["records"].extend(d.get("records", []))
-    
+
     # Deduplicate records by timestamp
     for sid in merged["sensors"]:
         seen = set()
@@ -184,10 +184,10 @@ def main():
                 deduped.append(rec)
         merged["sensors"][sid]["records"] = sorted(deduped, key=lambda x: x[0])
         merged["sensors"][sid]["totalRecords"] = len(merged["sensors"][sid]["records"])
-    
+
     with open(combined_file, "w") as f:
         json.dump(merged, f, indent=2)
-    
+
     total = sum(s["totalRecords"] for s in merged["sensors"].values())
     print(f"\nDone: {chunk_num} chunks, {errors} errors, {total} total records")
     print(f"Combined file: {combined_file}")

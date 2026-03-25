@@ -51,7 +51,7 @@ def get_lineage_client() -> LineageClient | None:
 
 def run_artifact_validation() -> tuple[bool, dict]:
     """Run validate_artifacts.py and return (passes, result_dict).
-    
+
     This is the Hard Gate - artifact validation runs BEFORE Lisa review.
     If artifacts fail validation, Lisa is skipped and verdict is REJECT.
     """
@@ -59,7 +59,7 @@ def run_artifact_validation() -> tuple[bool, dict]:
     if not script_path.exists():
         print("ARTIFACT_VALIDATION=SKIP (script not found)", file=sys.stderr)
         return True, {"verdict": "SKIP", "reason": "script not found"}
-    
+
     try:
         result = subprocess.run(
             [sys.executable, str(script_path)],
@@ -68,12 +68,12 @@ def run_artifact_validation() -> tuple[bool, dict]:
             cwd=str(REPO_ROOT),
             timeout=60,
         )
-        
+
         # Print output for visibility
         if result.stdout:
             for line in result.stdout.strip().split("\n"):
                 print(f"  {line}")
-        
+
         # Load detailed result
         artifact_result = {}
         if ARTIFACT_VALIDATION_FILE.exists():
@@ -81,10 +81,10 @@ def run_artifact_validation() -> tuple[bool, dict]:
                 artifact_result = json.loads(ARTIFACT_VALIDATION_FILE.read_text())
             except json.JSONDecodeError:
                 pass
-        
+
         passes = result.returncode == 0
         return passes, artifact_result
-        
+
     except subprocess.TimeoutExpired:
         print("ARTIFACT_VALIDATION=TIMEOUT", file=sys.stderr)
         return False, {"verdict": "TIMEOUT", "reason": "validation timed out"}
@@ -95,7 +95,7 @@ def run_artifact_validation() -> tuple[bool, dict]:
 
 def run_pre_flight() -> tuple[bool, dict]:
     """Run pre_flight.py and return (passes, result_dict).
-    
+
     This is the Structural Lint - runs BEFORE phase exit gate.
     Verifies required classes/functions exist in src/.
     """
@@ -103,7 +103,7 @@ def run_pre_flight() -> tuple[bool, dict]:
     if not script_path.exists():
         print("PRE_FLIGHT=SKIP (script not found)", file=sys.stderr)
         return True, {"verdict": "SKIP", "reason": "script not found"}
-    
+
     try:
         result = subprocess.run(
             [sys.executable, str(script_path)],
@@ -112,12 +112,12 @@ def run_pre_flight() -> tuple[bool, dict]:
             cwd=str(REPO_ROOT),
             timeout=60,
         )
-        
+
         # Print output for visibility
         if result.stdout:
             for line in result.stdout.strip().split("\n"):
                 print(f"  {line}")
-        
+
         # Load detailed result
         pre_flight_result = {}
         if PRE_FLIGHT_FILE.exists():
@@ -125,10 +125,10 @@ def run_pre_flight() -> tuple[bool, dict]:
                 pre_flight_result = json.loads(PRE_FLIGHT_FILE.read_text())
             except json.JSONDecodeError:
                 pass
-        
+
         passes = result.returncode == 0
         return passes, pre_flight_result
-        
+
     except subprocess.TimeoutExpired:
         print("PRE_FLIGHT=TIMEOUT", file=sys.stderr)
         return False, {"verdict": "TIMEOUT", "reason": "pre-flight timed out"}
@@ -139,12 +139,12 @@ def run_pre_flight() -> tuple[bool, dict]:
 
 def generate_stall_report(state: dict, validation: dict | None) -> None:
     """Generate STALL_REPORT.md when circuit breaker trips.
-    
+
     Concatenates last 3 test failures and Lisa's last 3 REJECT summaries
     to provide a clear hand-off for human intervention.
     """
     cb = state.get("circuit_breaker", {})
-    
+
     lines = [
         "# ⚠️ STALL REPORT — Circuit Breaker Tripped",
         "",
@@ -158,7 +158,7 @@ def generate_stall_report(state: dict, validation: dict | None) -> None:
         "## Recent Loop History",
         "",
     ]
-    
+
     # Read last 3 entries from loop-log.jsonl
     if LOOP_LOG_FILE.exists():
         try:
@@ -180,7 +180,7 @@ def generate_stall_report(state: dict, validation: dict | None) -> None:
             lines.append("")
         except Exception as e:
             lines.append(f"*Could not read loop log: {e}*\n")
-    
+
     # Add validation failures
     if validation and validation.get("criteria"):
         lines.extend([
@@ -195,7 +195,7 @@ def generate_stall_report(state: dict, validation: dict | None) -> None:
                 if evidence:
                     lines.append(f"- **Evidence:** {evidence}")
                 lines.append("")
-    
+
     # Add artifact validation failures
     if ARTIFACT_VALIDATION_FILE.exists():
         try:
@@ -210,12 +210,12 @@ def generate_stall_report(state: dict, validation: dict | None) -> None:
                 lines.append("")
         except json.JSONDecodeError:
             pass
-    
+
     # Add current phase info
     phases = state.get("phases", {})
     phase = str(state.get("phase", "?"))
     phase_info = phases.get(phase, {})
-    
+
     lines.extend([
         "## Current Phase Details",
         "",
@@ -246,7 +246,7 @@ def generate_stall_report(state: dict, validation: dict | None) -> None:
         "---",
         "*This report was auto-generated by sync_state.py (MissHoover 2.0)*",
     ])
-    
+
     STALL_REPORT_FILE.write_text("\n".join(lines))
     print(f"STALL_REPORT_GENERATED={STALL_REPORT_FILE}", file=sys.stderr)
 
@@ -872,7 +872,7 @@ def main() -> None:
         ]
         state_mgr.save_validation(validation)
         verdict = "REJECT"  # Update local verdict for subsequent logic
-        
+
         # Emit FAIL lineage event
         lineage_client = get_lineage_client()
         if lineage_client:
@@ -911,7 +911,7 @@ def main() -> None:
         ]
         state_mgr.save_validation(validation)
         verdict = "REJECT"  # Update local verdict for subsequent logic
-        
+
         # Emit FAIL lineage event
         lineage_client = get_lineage_client()
         if lineage_client:

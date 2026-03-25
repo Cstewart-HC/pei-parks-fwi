@@ -16,12 +16,10 @@ from __future__ import annotations
 
 import ast
 import json
-import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = REPO_ROOT / "docs" / "ralph-state.json"
@@ -148,16 +146,16 @@ def get_base_classes(class_node: ast.ClassDef) -> list[str]:
 def check_requirement(req: StructuralRequirement) -> StructuralRequirement:
     """Check if a single structural requirement is satisfied."""
     files = find_files(req.file_pattern)
-    
+
     if not files:
         req.error = f"No files match pattern: {req.file_pattern}"
         return req
-    
+
     for file_path in files:
         try:
             source = file_path.read_text()
             tree = ast.parse(source)
-            
+
             if req.type == "class":
                 classes = extract_classes_from_ast(tree)
                 if req.name in classes:
@@ -176,7 +174,7 @@ def check_requirement(req: StructuralRequirement) -> StructuralRequirement:
                         req.found = True
                         req.location = f"{file_path.relative_to(REPO_ROOT)}:{class_node.lineno}"
                         return req
-            
+
             elif req.type == "function":
                 functions = extract_functions_from_ast(tree)
                 if req.name in functions:
@@ -184,7 +182,7 @@ def check_requirement(req: StructuralRequirement) -> StructuralRequirement:
                     req.found = True
                     req.location = f"{file_path.relative_to(REPO_ROOT)}:{func_node.lineno}"
                     return req
-            
+
             elif req.type == "constant":
                 constants = extract_constants_from_ast(tree)
                 if req.name in constants:
@@ -192,17 +190,17 @@ def check_requirement(req: StructuralRequirement) -> StructuralRequirement:
                     req.found = True
                     req.location = f"{file_path.relative_to(REPO_ROOT)}:{const_node.lineno}"
                     return req
-        
+
         except SyntaxError as e:
             req.error = f"Syntax error in {file_path}: {e}"
             continue
         except Exception as e:
             req.error = f"Error parsing {file_path}: {e}"
             continue
-    
+
     if not req.error:
         req.error = f"{req.type.title()} '{req.name}' not found in {req.file_pattern}"
-    
+
     return req
 
 
@@ -216,14 +214,14 @@ def run_pre_flight(phase: str) -> dict:
         "missing": [],
         "errors": [],
     }
-    
+
     requirements = PHASE_STRUCTURAL_REQUIREMENTS.get(phase, [])
-    
+
     if not requirements:
         result["verdict"] = "SKIP"
         result["summary"] = f"Phase {phase} has no structural requirements"
         return result
-    
+
     for req in requirements:
         checked = check_requirement(req)
         check_result = {
@@ -234,7 +232,7 @@ def run_pre_flight(phase: str) -> dict:
             "error": checked.error,
         }
         result["checks"].append(check_result)
-        
+
         if checked.found:
             print(f"  ✓ {req.type.title()} '{req.name}' found at {checked.location}")
         else:
@@ -247,12 +245,12 @@ def run_pre_flight(phase: str) -> dict:
             })
             result["errors"].append(checked.error)
             print(f"  ✗ {req.type.title()} '{req.name}' NOT FOUND: {checked.error}")
-    
+
     result["summary"] = (
         f"Checked {len(requirements)} structural requirements for phase {phase}: "
         f"{result['verdict']} ({len(result['missing'])} missing)"
     )
-    
+
     return result
 
 
@@ -263,27 +261,27 @@ def main() -> int:
     if not state:
         print("ERROR: Cannot read docs/ralph-state.json", file=sys.stderr)
         return 2
-    
+
     # Get current phase
     phase = str(state.get("phase", state.get("current_phase", "?")))
-    
+
     print(f"PRE_FLIGHT_CHECK for Phase {phase}")
     print("=" * 50)
-    
+
     # Run pre-flight
     result = run_pre_flight(phase)
-    
+
     # Save result
     save_json(PRE_FLIGHT_OUTPUT, result)
-    
+
     # Output summary
     print()
     print(f"PRE_FLIGHT_VERDICT={result['verdict']}")
     print(f"PHASE={phase}")
     print(f"CHECKS_COUNT={len(result['checks'])}")
     print(f"MISSING_COUNT={len(result['missing'])}")
-    print(f"Full report: docs/pre-flight.json")
-    
+    print("Full report: docs/pre-flight.json")
+
     # Exit code
     if result["verdict"] == "PASS":
         return 0
