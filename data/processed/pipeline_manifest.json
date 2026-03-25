@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-25T09:58:01.386414+00:00",
+  "generated_at": "2026-03-25T12:20:23.837980+00:00",
   "artifacts": [
     {
       "station": "greenwich",
@@ -7,7 +7,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 227,
-      "timestamp": "2026-03-25T09:57:55.323055+00:00"
+      "timestamp": "2026-03-25T12:20:14.336673+00:00"
     },
     {
       "station": "greenwich",
@@ -15,7 +15,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:55.323068+00:00"
+      "timestamp": "2026-03-25T12:20:14.336690+00:00"
     },
     {
       "station": "greenwich",
@@ -23,7 +23,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:55.398016+00:00"
+      "timestamp": "2026-03-25T12:20:14.414009+00:00"
     },
     {
       "station": "greenwich",
@@ -31,7 +31,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:55.398023+00:00"
+      "timestamp": "2026-03-25T12:20:14.414016+00:00"
     },
     {
       "station": "greenwich",
@@ -39,7 +39,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 4,
-      "timestamp": "2026-03-25T09:57:55.409248+00:00"
+      "timestamp": "2026-03-25T12:20:14.425920+00:00"
     },
     {
       "station": "greenwich",
@@ -47,7 +47,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 1,
-      "timestamp": "2026-03-25T09:57:55.409254+00:00"
+      "timestamp": "2026-03-25T12:20:14.425926+00:00"
     },
     {
       "station": "greenwich",
@@ -55,7 +55,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2026.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 198,
-      "timestamp": "2026-03-25T09:57:55.436645+00:00"
+      "timestamp": "2026-03-25T12:20:14.455065+00:00"
     },
     {
       "station": "greenwich",
@@ -63,7 +63,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2026.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 28,
-      "timestamp": "2026-03-25T09:57:55.436651+00:00"
+      "timestamp": "2026-03-25T12:20:14.455072+00:00"
     },
     {
       "station": "greenwich",
@@ -71,7 +71,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2026.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:55.512162+00:00"
+      "timestamp": "2026-03-25T12:20:14.532370+00:00"
     },
     {
       "station": "greenwich",
@@ -79,7 +79,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2026.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:55.512169+00:00"
+      "timestamp": "2026-03-25T12:20:14.532378+00:00"
     },
     {
       "station": "greenwich",
@@ -87,7 +87,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2026.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 23,
-      "timestamp": "2026-03-25T09:57:55.523016+00:00"
+      "timestamp": "2026-03-25T12:20:14.544445+00:00"
     },
     {
       "station": "greenwich",
@@ -95,7 +95,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2026.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 23,
-      "timestamp": "2026-03-25T09:57:55.523022+00:00"
+      "timestamp": "2026-03-25T12:20:14.544452+00:00"
     },
     {
       "station": "greenwich",
@@ -103,7 +103,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2022.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:55.725262+00:00"
+      "timestamp": "2026-03-25T12:20:14.727268+00:00"
     },
     {
       "station": "greenwich",
@@ -111,7 +111,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2022.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:55.725268+00:00"
+      "timestamp": "2026-03-25T12:20:14.727275+00:00"
     },
     {
       "station": "greenwich",
@@ -119,7 +119,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2022.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 721,
-      "timestamp": "2026-03-25T09:57:55.913425+00:00"
+      "timestamp": "2026-03-25T12:20:14.951719+00:00"
     },
     {
       "station": "greenwich",
@@ -127,7 +127,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2022.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:55.913432+00:00"
+      "timestamp": "2026-03-25T12:20:14.951728+00:00"
     },
     {
       "station": "greenwich",
@@ -135,7 +135,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2022.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 131,
-      "timestamp": "2026-03-25T09:57:55.951453+00:00"
+      "timestamp": "2026-03-25T12:20:15.013862+00:00"
     },
     {
       "station": "greenwich",
@@ -143,7 +143,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2022.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 8,
-      "timestamp": "2026-03-25T09:57:55.951460+00:00"
+      "timestamp": "2026-03-25T12:20:15.013869+00:00"
     },
     {
       "station": "greenwich",
@@ -151,7 +151,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:56.115381+00:00"
+      "timestamp": "2026-03-25T12:20:15.196924+00:00"
     },
     {
       "station": "greenwich",
@@ -159,7 +159,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:56.115387+00:00"
+      "timestamp": "2026-03-25T12:20:15.196931+00:00"
     },
     {
       "station": "greenwich",
@@ -167,7 +167,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:56.185740+00:00"
+      "timestamp": "2026-03-25T12:20:15.271867+00:00"
     },
     {
       "station": "greenwich",
@@ -175,7 +175,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:56.185746+00:00"
+      "timestamp": "2026-03-25T12:20:15.271873+00:00"
     },
     {
       "station": "greenwich",
@@ -183,7 +183,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 740,
-      "timestamp": "2026-03-25T09:57:56.254329+00:00"
+      "timestamp": "2026-03-25T12:20:15.345271+00:00"
     },
     {
       "station": "greenwich",
@@ -191,7 +191,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:56.254335+00:00"
+      "timestamp": "2026-03-25T12:20:15.345279+00:00"
     },
     {
       "station": "greenwich",
@@ -199,7 +199,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 672,
-      "timestamp": "2026-03-25T09:57:56.410500+00:00"
+      "timestamp": "2026-03-25T12:20:15.510818+00:00"
     },
     {
       "station": "greenwich",
@@ -207,7 +207,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 29,
-      "timestamp": "2026-03-25T09:57:56.410507+00:00"
+      "timestamp": "2026-03-25T12:20:15.510824+00:00"
     },
     {
       "station": "greenwich",
@@ -215,7 +215,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:56.579942+00:00"
+      "timestamp": "2026-03-25T12:20:15.691884+00:00"
     },
     {
       "station": "greenwich",
@@ -223,7 +223,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:56.579949+00:00"
+      "timestamp": "2026-03-25T12:20:15.691891+00:00"
     },
     {
       "station": "greenwich",
@@ -231,7 +231,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:56.650733+00:00"
+      "timestamp": "2026-03-25T12:20:15.767058+00:00"
     },
     {
       "station": "greenwich",
@@ -239,7 +239,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:56.650740+00:00"
+      "timestamp": "2026-03-25T12:20:15.767064+00:00"
     },
     {
       "station": "greenwich",
@@ -247,7 +247,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:56.719959+00:00"
+      "timestamp": "2026-03-25T12:20:15.844668+00:00"
     },
     {
       "station": "greenwich",
@@ -255,7 +255,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:56.719965+00:00"
+      "timestamp": "2026-03-25T12:20:15.844675+00:00"
     },
     {
       "station": "greenwich",
@@ -263,7 +263,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 743,
-      "timestamp": "2026-03-25T09:57:56.887916+00:00"
+      "timestamp": "2026-03-25T12:20:16.022463+00:00"
     },
     {
       "station": "greenwich",
@@ -271,7 +271,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:56.887922+00:00"
+      "timestamp": "2026-03-25T12:20:16.022470+00:00"
     },
     {
       "station": "greenwich",
@@ -279,7 +279,7 @@
       "source": "PEINP_GR_WeatherStn_May2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 598,
-      "timestamp": "2026-03-25T09:57:56.946451+00:00"
+      "timestamp": "2026-03-25T12:20:16.090654+00:00"
     },
     {
       "station": "greenwich",
@@ -287,7 +287,7 @@
       "source": "PEINP_GR_WeatherStn_May2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 27,
-      "timestamp": "2026-03-25T09:57:56.946458+00:00"
+      "timestamp": "2026-03-25T12:20:16.090663+00:00"
     },
     {
       "station": "greenwich",
@@ -295,7 +295,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 721,
-      "timestamp": "2026-03-25T09:57:57.024270+00:00"
+      "timestamp": "2026-03-25T12:20:16.169997+00:00"
     },
     {
       "station": "greenwich",
@@ -303,7 +303,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:57.024278+00:00"
+      "timestamp": "2026-03-25T12:20:16.170003+00:00"
     },
     {
       "station": "greenwich",
@@ -311,7 +311,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.114758+00:00"
+      "timestamp": "2026-03-25T12:20:16.245656+00:00"
     },
     {
       "station": "greenwich",
@@ -319,7 +319,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.114764+00:00"
+      "timestamp": "2026-03-25T12:20:16.245662+00:00"
     },
     {
       "station": "greenwich",
@@ -327,7 +327,7 @@
       "source": "PEINP_GR_WeatherStn_Sep2023.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:57.182307+00:00"
+      "timestamp": "2026-03-25T12:20:16.315305+00:00"
     },
     {
       "station": "greenwich",
@@ -335,7 +335,7 @@
       "source": "PEINP_GR_WeatherStn_Sep2023.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:57.182314+00:00"
+      "timestamp": "2026-03-25T12:20:16.315312+00:00"
     },
     {
       "station": "greenwich",
@@ -343,7 +343,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:57.250795+00:00"
+      "timestamp": "2026-03-25T12:20:16.392225+00:00"
     },
     {
       "station": "greenwich",
@@ -351,7 +351,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:57.250802+00:00"
+      "timestamp": "2026-03-25T12:20:16.392233+00:00"
     },
     {
       "station": "greenwich",
@@ -359,7 +359,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.352905+00:00"
+      "timestamp": "2026-03-25T12:20:16.468527+00:00"
     },
     {
       "station": "greenwich",
@@ -367,7 +367,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.352911+00:00"
+      "timestamp": "2026-03-25T12:20:16.468534+00:00"
     },
     {
       "station": "greenwich",
@@ -375,7 +375,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.424957+00:00"
+      "timestamp": "2026-03-25T12:20:16.550768+00:00"
     },
     {
       "station": "greenwich",
@@ -383,7 +383,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.424964+00:00"
+      "timestamp": "2026-03-25T12:20:16.550774+00:00"
     },
     {
       "station": "greenwich",
@@ -391,7 +391,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 696,
-      "timestamp": "2026-03-25T09:57:57.489010+00:00"
+      "timestamp": "2026-03-25T12:20:16.616214+00:00"
     },
     {
       "station": "greenwich",
@@ -399,7 +399,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 30,
-      "timestamp": "2026-03-25T09:57:57.489017+00:00"
+      "timestamp": "2026-03-25T12:20:16.616221+00:00"
     },
     {
       "station": "greenwich",
@@ -407,7 +407,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.553598+00:00"
+      "timestamp": "2026-03-25T12:20:16.684315+00:00"
     },
     {
       "station": "greenwich",
@@ -415,7 +415,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.553604+00:00"
+      "timestamp": "2026-03-25T12:20:16.684322+00:00"
     },
     {
       "station": "greenwich",
@@ -423,7 +423,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.625789+00:00"
+      "timestamp": "2026-03-25T12:20:16.761506+00:00"
     },
     {
       "station": "greenwich",
@@ -431,7 +431,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.625796+00:00"
+      "timestamp": "2026-03-25T12:20:16.761513+00:00"
     },
     {
       "station": "greenwich",
@@ -439,7 +439,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:57.695603+00:00"
+      "timestamp": "2026-03-25T12:20:16.836947+00:00"
     },
     {
       "station": "greenwich",
@@ -447,7 +447,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:57.695610+00:00"
+      "timestamp": "2026-03-25T12:20:16.836953+00:00"
     },
     {
       "station": "greenwich",
@@ -455,7 +455,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 743,
-      "timestamp": "2026-03-25T09:57:57.793552+00:00"
+      "timestamp": "2026-03-25T12:20:16.916559+00:00"
     },
     {
       "station": "greenwich",
@@ -463,7 +463,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.793559+00:00"
+      "timestamp": "2026-03-25T12:20:16.916566+00:00"
     },
     {
       "station": "greenwich",
@@ -471,7 +471,7 @@
       "source": "PEINP_GR_WeatherStn_May2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:57.898559+00:00"
+      "timestamp": "2026-03-25T12:20:16.990986+00:00"
     },
     {
       "station": "greenwich",
@@ -479,7 +479,7 @@
       "source": "PEINP_GR_WeatherStn_May2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:57.898566+00:00"
+      "timestamp": "2026-03-25T12:20:16.990993+00:00"
     },
     {
       "station": "greenwich",
@@ -487,7 +487,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 721,
-      "timestamp": "2026-03-25T09:57:57.984493+00:00"
+      "timestamp": "2026-03-25T12:20:17.067107+00:00"
     },
     {
       "station": "greenwich",
@@ -495,7 +495,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:57.984499+00:00"
+      "timestamp": "2026-03-25T12:20:17.067114+00:00"
     },
     {
       "station": "greenwich",
@@ -503,7 +503,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.054838+00:00"
+      "timestamp": "2026-03-25T12:20:17.155053+00:00"
     },
     {
       "station": "greenwich",
@@ -511,7 +511,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.054844+00:00"
+      "timestamp": "2026-03-25T12:20:17.155060+00:00"
     },
     {
       "station": "greenwich",
@@ -519,7 +519,7 @@
       "source": "PEINP_GR_WeatherStn_Sep2024.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:58.124787+00:00"
+      "timestamp": "2026-03-25T12:20:17.228036+00:00"
     },
     {
       "station": "greenwich",
@@ -527,7 +527,7 @@
       "source": "PEINP_GR_WeatherStn_Sep2024.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:58.124793+00:00"
+      "timestamp": "2026-03-25T12:20:17.228043+00:00"
     },
     {
       "station": "greenwich",
@@ -535,7 +535,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:58.194514+00:00"
+      "timestamp": "2026-03-25T12:20:17.301939+00:00"
     },
     {
       "station": "greenwich",
@@ -543,7 +543,7 @@
       "source": "PEINP_GR_WeatherStn_Apr2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:58.194520+00:00"
+      "timestamp": "2026-03-25T12:20:17.301946+00:00"
     },
     {
       "station": "greenwich",
@@ -551,7 +551,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.266198+00:00"
+      "timestamp": "2026-03-25T12:20:17.379856+00:00"
     },
     {
       "station": "greenwich",
@@ -559,7 +559,7 @@
       "source": "PEINP_GR_WeatherStn_Aug2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.266204+00:00"
+      "timestamp": "2026-03-25T12:20:17.379863+00:00"
     },
     {
       "station": "greenwich",
@@ -567,7 +567,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.338118+00:00"
+      "timestamp": "2026-03-25T12:20:17.452809+00:00"
     },
     {
       "station": "greenwich",
@@ -575,7 +575,7 @@
       "source": "PEINP_GR_WeatherStn_Dec2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.338125+00:00"
+      "timestamp": "2026-03-25T12:20:17.452816+00:00"
     },
     {
       "station": "greenwich",
@@ -583,7 +583,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 672,
-      "timestamp": "2026-03-25T09:57:58.401344+00:00"
+      "timestamp": "2026-03-25T12:20:17.518634+00:00"
     },
     {
       "station": "greenwich",
@@ -591,7 +591,7 @@
       "source": "PEINP_GR_WeatherStn_Feb2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 29,
-      "timestamp": "2026-03-25T09:57:58.401350+00:00"
+      "timestamp": "2026-03-25T12:20:17.518640+00:00"
     },
     {
       "station": "greenwich",
@@ -599,7 +599,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.471954+00:00"
+      "timestamp": "2026-03-25T12:20:17.591089+00:00"
     },
     {
       "station": "greenwich",
@@ -607,7 +607,7 @@
       "source": "PEINP_GR_WeatherStn_Jan2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.471961+00:00"
+      "timestamp": "2026-03-25T12:20:17.591095+00:00"
     },
     {
       "station": "greenwich",
@@ -615,7 +615,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.543059+00:00"
+      "timestamp": "2026-03-25T12:20:17.665910+00:00"
     },
     {
       "station": "greenwich",
@@ -623,7 +623,7 @@
       "source": "PEINP_GR_WeatherStn_Jul2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.543066+00:00"
+      "timestamp": "2026-03-25T12:20:17.665920+00:00"
     },
     {
       "station": "greenwich",
@@ -631,7 +631,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:58.611715+00:00"
+      "timestamp": "2026-03-25T12:20:17.744505+00:00"
     },
     {
       "station": "greenwich",
@@ -639,7 +639,7 @@
       "source": "PEINP_GR_WeatherStn_Jun2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:58.611721+00:00"
+      "timestamp": "2026-03-25T12:20:17.744511+00:00"
     },
     {
       "station": "greenwich",
@@ -647,7 +647,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 743,
-      "timestamp": "2026-03-25T09:57:58.700141+00:00"
+      "timestamp": "2026-03-25T12:20:17.818155+00:00"
     },
     {
       "station": "greenwich",
@@ -655,7 +655,7 @@
       "source": "PEINP_GR_WeatherStn_Mar2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.700149+00:00"
+      "timestamp": "2026-03-25T12:20:17.818162+00:00"
     },
     {
       "station": "greenwich",
@@ -663,7 +663,7 @@
       "source": "PEINP_GR_WeatherStn_May2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.779098+00:00"
+      "timestamp": "2026-03-25T12:20:17.891822+00:00"
     },
     {
       "station": "greenwich",
@@ -671,7 +671,7 @@
       "source": "PEINP_GR_WeatherStn_May2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.779105+00:00"
+      "timestamp": "2026-03-25T12:20:17.891829+00:00"
     },
     {
       "station": "greenwich",
@@ -679,7 +679,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 721,
-      "timestamp": "2026-03-25T09:57:58.874724+00:00"
+      "timestamp": "2026-03-25T12:20:17.968692+00:00"
     },
     {
       "station": "greenwich",
@@ -687,7 +687,7 @@
       "source": "PEINP_GR_WeatherStn_Nov2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:58.874730+00:00"
+      "timestamp": "2026-03-25T12:20:17.968699+00:00"
     },
     {
       "station": "greenwich",
@@ -695,7 +695,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 744,
-      "timestamp": "2026-03-25T09:57:58.945447+00:00"
+      "timestamp": "2026-03-25T12:20:18.040846+00:00"
     },
     {
       "station": "greenwich",
@@ -703,7 +703,7 @@
       "source": "PEINP_GR_WeatherStn_Oct2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 32,
-      "timestamp": "2026-03-25T09:57:58.945453+00:00"
+      "timestamp": "2026-03-25T12:20:18.040853+00:00"
     },
     {
       "station": "greenwich",
@@ -711,7 +711,7 @@
       "source": "PEINP_GR_WeatherStn_Sep2025.csv",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 720,
-      "timestamp": "2026-03-25T09:57:59.016642+00:00"
+      "timestamp": "2026-03-25T12:20:18.112152+00:00"
     },
     {
       "station": "greenwich",
@@ -719,34 +719,41 @@
       "source": "PEINP_GR_WeatherStn_Sep2025.csv",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 31,
-      "timestamp": "2026-03-25T09:57:59.016649+00:00"
+      "timestamp": "2026-03-25T12:20:18.112158+00:00"
     },
     {
       "station": "greenwich",
       "type": "hourly_cleaned",
       "path": "data/processed/greenwich/station_hourly.csv",
       "rows": 28715,
-      "timestamp": "2026-03-25T09:58:00.794221+00:00"
+      "timestamp": "2026-03-25T12:20:19.972348+00:00"
     },
     {
       "station": "greenwich",
       "type": "daily_cleaned",
       "path": "data/processed/greenwich/station_daily.csv",
       "rows": 1241,
-      "timestamp": "2026-03-25T09:58:00.794230+00:00"
+      "timestamp": "2026-03-25T12:20:19.972355+00:00"
     },
     {
       "type": "imputation_report",
       "path": "data/processed/imputation_report.csv",
       "rows": 543,
-      "timestamp": "2026-03-25T09:58:00.795823+00:00"
+      "timestamp": "2026-03-25T12:20:19.973898+00:00"
     },
     {
       "station": "stanhope",
-      "type": "hourly_normalized",
+      "type": "hourly_cleaned",
       "path": "data/processed/stanhope/station_hourly.csv",
-      "rows": 29208,
-      "timestamp": "2026-03-25T09:58:01.386388+00:00"
+      "rows": 32180,
+      "timestamp": "2026-03-25T12:20:23.837956+00:00"
+    },
+    {
+      "station": "stanhope",
+      "type": "daily_cleaned",
+      "path": "data/processed/stanhope/station_daily.csv",
+      "rows": 1346,
+      "timestamp": "2026-03-25T12:20:23.837965+00:00"
     }
   ]
 }
