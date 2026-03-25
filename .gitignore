@@ -1,3 +1,6 @@
+# Licor Cloud API data (contains device serials + raw fetched data)
+data/raw/licor/
+
 # Python
 __pycache__/
 *.py[cod]

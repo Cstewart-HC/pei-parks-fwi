@@ -73,7 +73,7 @@ If you decided to **run Lisa**:
 - Do NOT touch `last_reviewed_commit`. The AgentEnd hook handles pointer advancement automatically after this process exits.
 
 If you decided to **run Ralph**:
-- Read `docs/loop-prompt.md` and follow it exactly.
+- Read `docs/ralph-prompt.md` and follow it exactly.
 - That prompt contains all instructions for the build loop.
 
 If you decided to **STOP** (rule 1 or 4):

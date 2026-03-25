@@ -372,7 +372,7 @@ deny = ["spawn_agent", "browser", "memory_save", "cron"]
 ### Prompt Files
 Three prompt files under `docs/`:
 - `docs/orchestrator-prompt.md` — decision logic
-- `docs/loop-prompt.md` — Ralph's instructions
+- `docs/ralph-prompt.md` — Ralph's instructions
 - `docs/lisa-prompt.md` — Lisa's instructions
 
 **Rule for prompts:** Every section should justify itself. For each section, ask: what failure does this prevent? What context does this provide? What happens if it is removed?
@@ -466,7 +466,7 @@ Source: src/app/auth.py
 - [ ] 6. Set deterministic repo structure
 - [ ] 7. Create `docs/ralph-state.json` with phase definitions
 - [ ] 8. Create `docs/validation.json` with empty initial state
-- [ ] 9. Write `docs/loop-prompt.md` (Ralph's instructions)
+- [ ] 9. Write `docs/ralph-prompt.md` (Ralph's instructions)
 - [ ] 10. Write `docs/lisa-prompt.md` (Lisa's instructions)
 - [ ] 11. Write `docs/orchestrator-prompt.md` (decision tree)
 
