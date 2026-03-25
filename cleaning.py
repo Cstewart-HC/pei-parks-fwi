@@ -374,7 +374,13 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                     include="number"
                 ).columns
             }).reset_index()
-            # groupby key retains the name "timestamp_utc"
+            # Preserve station column
+            cleaned_daily["station"] = station
+            # Reorder: station first, then timestamp, then rest
+            cols = ["station"] + [
+                c for c in cleaned_daily.columns if c != "station"
+            ]
+            cleaned_daily = cleaned_daily[cols]
             cleaned_daily_path = station_output / "station_daily.csv"
             cleaned_daily.to_csv(cleaned_daily_path, index=False)
 
@@ -500,6 +506,13 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                         include="number"
                     ).columns
                 }).reset_index()
+                # Preserve station column
+                stanhope_daily["station"] = "stanhope"
+                # Reorder: station first, then timestamp, then rest
+                cols = ["station"] + [
+                    c for c in stanhope_daily.columns if c != "station"
+                ]
+                stanhope_daily = stanhope_daily[cols]
                 stanhope_daily_path = stanhope_output / "station_daily.csv"
                 stanhope_daily.to_csv(stanhope_daily_path, index=False)
 

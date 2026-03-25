@@ -324,7 +324,7 @@ class TestAC_PIPE_3_PipelineIntegration:
         """AC-INT-4: Hourly CSVs have FWI columns."""
         fwi_cols = ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]
         
-        for station_dir in DATA_PROCESSED.iterdir():
+        for station_dir in sorted(DATA_PROCESSED.iterdir()):
             if not station_dir.is_dir():
                 continue
             
@@ -340,7 +340,7 @@ class TestAC_PIPE_3_PipelineIntegration:
         """AC-INT-5: Daily CSVs have FWI columns."""
         fwi_cols = ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]
         
-        for station_dir in DATA_PROCESSED.iterdir():
+        for station_dir in sorted(DATA_PROCESSED.iterdir()):
             if not station_dir.is_dir():
                 continue
             
