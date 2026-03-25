@@ -56,6 +56,10 @@ class JSONAdapter(BaseAdapter):
         with open(path) as f:
             data = json.load(f)
 
+        # Skip non-sensor files (devices.json, etc.)
+        if "sensors" not in data:
+            return pd.DataFrame()
+
         # Locate the devices.json file (sibling or parent directory)
         devices_path = path.parent.parent / "devices.json"
         if not devices_path.exists():
