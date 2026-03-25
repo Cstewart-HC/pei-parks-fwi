@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "826926a",
+  "last_reviewed_commit": "aa54a1d",
   "verdict": "PASS",
-  "reviewed_at": "2026-03-25T21:14:26.623588+00:00",
+  "reviewed_at": "2026-03-25T21:14:40.457342+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -63,13 +63,13 @@
       "id": "AC-INT-8",
       "name": "Long gaps remain NaN",
       "status": "PASS",
-      "evidence": "Imputation uses interpolate(method='linear', limit=6) — long gaps preserved as NaN per test assertions"
+      "evidence": "Imputation uses interpolate(method='linear', limit=6) \u2014 long gaps preserved as NaN per test assertions"
     },
     {
       "id": "AC-INT-9",
       "name": "FWI calculated on imputed data",
       "status": "PASS",
-      "evidence": "Pipeline order: concat → dedup → impute → FWI → resample_daily → write"
+      "evidence": "Pipeline order: concat \u2192 dedup \u2192 impute \u2192 FWI \u2192 resample_daily \u2192 write"
     }
   ],
   "failing_nodes": [],
