@@ -1,8 +1,9 @@
 {
   "verdict": "NONE",
+  "phase": null,
+  "iteration": null,
+  "reviewed_at": null,
   "criteria": [],
-  "phase": "1",
-  "iteration": 0,
-  "timestamp": null,
-  "notes": "v2 pipeline rebuild — adapter architecture. Phase 1 active."
+  "summary": null,
+  "reviewer_notes": null
 }

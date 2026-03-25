@@ -1,53 +1,127 @@
-# Phase 6: Determinism + Reproducibility
+# Spec 06: Determinism + Reproducibility
 
-## Context
+**Phase:** 6  
+**Status:** Pending  
+**Depends on:** Phase 5 (QA/QC Reporting)
 
-A pipeline is only useful if it produces identical output on re-run from
-the same raw data. Currently there's no guarantee of this.
+---
 
 ## Goal
 
-`python cleaning.py` produces byte-identical CSV outputs on re-run from
-the same raw data.
+Pipeline produces byte-identical outputs on re-run from the same raw data.
 
-## Scope
+---
 
-1. Sort all outputs by (station, timestamp_utc) before writing.
+## Deliverables
 
-2. Deterministic column ordering in CSVs — use the canonical column list
-   defined in Phase 1, applied everywhere.
+### 1. Sorted Output
 
-3. Pipeline manifest includes:
-   - list of input files with mtimes
-   - pipeline run timestamp
-   - python version
-   - total row counts per station
+All CSVs sorted by (station, timestamp_utc) before writing:
 
-4. Add `--force` flag to overwrite existing outputs.
-   Default behavior: skip a station if its output CSV is newer than all
-   its input source files.
+```python
+def write_station_outputs(station: str, hourly: pd.DataFrame, daily: pd.DataFrame):
+    station_hourly = hourly[hourly["station"] == station].sort_values("timestamp_utc")
+    station_daily = daily[daily["station"] == station].sort_values("timestamp_utc")
+    
+    # Deterministic column order
+    columns = sorted(station_hourly.columns)
+    station_hourly = station_hourly[columns]
+    
+    station_hourly.to_csv(f"data/processed/{station}/station_hourly.csv", index=False)
+```
 
-5. Fix the `test_cleaning_py_runs` race condition with pytest-xdist:
-   mark the subprocess-based test as serial or mock the pipeline call.
+### 2. Checksums in Manifest
 
-6. Ensure `pandas` doesn't introduce non-determinism:
-   - `sort=False` on all groupby operations
-   - explicit `float_format` in `to_csv()` to avoid platform-dependent formatting
+```python
+def write_pipeline_manifest():
+    manifest = {
+        "run_timestamp": datetime.utcnow().isoformat(),
+        "files": [],
+        "checksums": {},
+    }
+    
+    for station in STATIONS:
+        for filename in ["station_hourly.csv", "station_daily.csv"]:
+            path = Path(f"data/processed/{station}/{filename}")
+            if path.exists():
+                checksum = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+                manifest["checksums"][f"{station}_{filename}"] = checksum
+    
+    # Write manifest
+    with open("data/processed/pipeline_manifest.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+```
+
+### 3. --force Flag
+
+```python
+def parse_args():
+    parser.add_argument("--force", action="store_true",
+                        help="Overwrite existing outputs (default: skip if newer)")
+    return parser.parse_args()
+
+def should_process(station: str, force: bool) -> bool:
+    output_path = Path(f"data/processed/{station}/station_hourly.csv")
+    if not output_path.exists():
+        return True
+    if force:
+        return True
+    # Skip if output is newer than all raw inputs
+    raw_files = get_raw_files_for_station(station)
+    newest_raw = max(f.stat().st_mtime for f in raw_files)
+    if output_path.stat().st_mtime > newest_raw:
+        return False
+    return True
+```
+
+### 4. Race Condition Fix
+
+The `test_cleaning_py_runs` test has a race condition with pytest-xdist. Fix:
+
+```python
+# In tests/test_data_refresh.py
+
+@pytest.mark.serial  # Run without xdist parallelization
+def test_cleaning_py_runs():
+    """Test that cleaning.py runs without error."""
+    result = subprocess.run(
+        ["python", "cleaning.py", "--stations", "greenwich"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"cleaning.py failed: {result.stderr}"
+```
+
+And in `pytest.ini`:
+
+```ini
+[pytest]
+addopts = -n auto
+markers =
+    serial: run without xdist parallelization
+```
+
+---
 
 ## Acceptance Criteria
 
 | ID | Criterion |
 |----|-----------|
-| AC-DET-1 | Two consecutive runs of `python cleaning.py` produce byte-identical CSV outputs (verified by checksum) |
-| AC-DET-2 | All CSVs have columns in deterministic order (canonical schema order) |
-| AC-DET-3 | All CSVs are sorted by (station, timestamp_utc) |
-| AC-DET-4 | Pipeline manifest exists with input file list and mtimes |
-| AC-DET-5 | `--force` flag forces overwrite; default skips if output is newer |
-| AC-DET-6 | `test_cleaning_py_runs` passes reliably (no race condition) |
-| AC-DET-7 | Full test suite passes: `.venv/bin/pytest tests/ -q` |
+| AC-DET-1 | Two consecutive runs of `cleaning.py` produce byte-identical CSV outputs |
+| AC-DET-2 | All outputs sorted by (station, timestamp_utc) |
+| AC-DET-3 | Column order is deterministic (alphabetical) |
+| AC-DET-4 | Pipeline manifest includes SHA256 checksums (first 16 chars) for all output files |
+| AC-DET-5 | `--force` flag overwrites existing outputs; without it, skips if output newer than inputs |
+| AC-DET-6 | `test_cleaning_py_runs` no longer has race condition (marked serial) |
+| AC-DET-7 | Checksum comparison between runs shows no differences |
+
+---
 
 ## Exit Gate
 
 ```bash
-.venv/bin/pytest tests/test_data_refresh.py tests/test_pipeline_execution.py::TestAC_PIPE_6_Determinism -q
+pytest tests/test_v2_pipeline.py::TestAC_PIPE_6_Determinism -v
 ```
+
+All tests must pass.

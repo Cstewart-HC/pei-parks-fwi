@@ -1,49 +1,76 @@
-# Phase 4: Stanhope Validation Integration
+# Spec 04: Stanhope Validation
 
-## Context
+**Phase:** 4  
+**Status:** Pending  
+**Depends on:** Phase 3 (Pipeline Integration)
 
-Stanhope (ECCC station 8300590) is the reference station. The parks group
-gets daily FWI numbers from ECCC, so we must compute FWI for Stanhope too.
-Currently Stanhope has hourly output but no daily resampling and no FWI
-indices.
-
-Stanhope's role is validation: where Stanhope and Greenwich overlap
-temporally, we should be able to compare FWI values.
-
-Phase 1 wires Stanhope daily + FWI into the pipeline. This phase focuses
-on validation reporting and cross-comparison.
+---
 
 ## Goal
 
-Stanhope is a first-class station with daily output, FWI indices, and
-serves as the cross-validation reference against Greenwich.
+Stanhope (ECCC government station) serves as a validation reference for the local PEINP stations. Compare FWI values where temporal overlap exists.
 
-## Scope
+---
 
-1. Stanhope daily resampling uses the same `AggregationPolicy` as other
-   stations (from `resampling.py`).
+## Background
 
-2. Compute FWI indices for Stanhope using latitude 46.4°N.
+- Stanhope uses ECCC schema, processed through `csv_adapter` like any other station
+- ECCC data is quality-controlled by Environment Canada
+- Stanhope is the closest government weather station to PEINP sites
+- We calculate FWI for Stanhope to have a common comparison metric
 
-3. Stanhope daily CSV has columns: station, timestamp_utc, ffmc, dmc, dc,
-   isi, bui, fwi plus the standard measurement columns.
+---
 
-4. Validation comparison: where Stanhope and Greenwich overlap temporally,
-   log FWI divergence statistics (mean absolute difference, max difference)
-   to a `data/processed/stanhope_validation.csv` artifact.
+## Deliverables
+
+### 1. Stanhope Daily Output
+
+Stanhope must have:
+- `data/processed/stanhope/station_hourly.csv` (already exists)
+- `data/processed/stanhope/station_daily.csv` (needs to be generated)
+- FWI columns populated in both
+
+### 2. Validation Report
+
+`data/processed/stanhope_validation.csv`:
+
+```csv
+station,overlap_days,mean_abs_diff_ffmc,mean_abs_diff_dmc,mean_abs_diff_dc,mean_abs_diff_fwi
+greenwich,245,2.3,5.1,12.4,1.8
+stanley_bridge,180,3.1,6.2,15.3,2.1
+...
+```
+
+### 3. Validation Script
+
+`scripts/validate_stanhope.py`:
+
+```python
+def compare_fwi(station: str, stanhope_df: pd.DataFrame, station_df: pd.DataFrame):
+    """Compare FWI values between Stanhope and a local station."""
+    # Find overlapping dates
+    # Calculate mean absolute difference for each FWI component
+    # Return comparison metrics
+```
+
+---
 
 ## Acceptance Criteria
 
 | ID | Criterion |
 |----|-----------|
-| AC-VAL-1 | `data/processed/stanhope/station_daily.csv` has ffmc, dmc, dc, isi, bui, fwi columns |
-| AC-VAL-2 | Stanhope FWI values are physically plausible (FFMC 0-101, DMC 0-300, DC 0-800, ISI 0-∞, BUI 0-∞, FWI 0-∞) |
-| AC-VAL-3 | `data/processed/stanhope_validation.csv` exists with overlap-period FWI comparison between Stanhope and Greenwich |
-| AC-VAL-4 | Validation report includes mean absolute difference and count of overlapping days |
-| AC-VAL-5 | Full test suite passes: `.venv/bin/pytest tests/ -q` |
+| AC-VAL-1 | Stanhope has `station_daily.csv` with FWI columns |
+| AC-VAL-2 | `data/processed/stanhope_validation.csv` exists |
+| AC-VAL-3 | Validation report includes row for each local station with temporal overlap |
+| AC-VAL-4 | Validation report includes: overlap day count, mean absolute difference for ffmc/dmc/dc/fwi |
+| AC-VAL-5 | Greenwich-Stanhope comparison shows reasonable agreement (MAE < 5 for FWI) |
+
+---
 
 ## Exit Gate
 
 ```bash
-.venv/bin/pytest tests/test_pipeline_execution.py::TestAC_PIPE_4_StanhopeValidation -q
+pytest tests/test_v2_pipeline.py::TestAC_PIPE_4_StanhopeValidation -v
 ```
+
+All tests must pass.

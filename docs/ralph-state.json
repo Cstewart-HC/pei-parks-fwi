@@ -1,103 +1,128 @@
 {
-  "blocker": null,
-  "circuit_breaker": {
-    "consecutive_errors": 0,
-    "consecutive_stalls": 0,
-    "last_commit": null,
-    "last_fail_criteria_hash": null,
-    "last_verdict": null,
-    "trip_at": null,
-    "trip_reason": null,
-    "tripped": false
-  },
-  "date": "2026-03-25",
-  "decisions": [
+  "project": "pea-met-network",
+  "version": "2.0.0",
+  "phases": [
     {
-      "date": "2026-03-25",
-      "id": "v2-d1",
-      "summary": "Archive v1 project specs and docs — zip under docs/archive/, replace specs/ with pipeline rebuild phases"
+      "id": 1,
+      "name": "Adapter Architecture",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_1_AdapterArchitecture -v",
+      "notes": "Router, registry, canonical schema constant, base adapter class, dry-run flag"
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d2",
-      "summary": "Pipeline stays serial, pandas-based, single-process — data volume too small for parallelism"
+      "id": 2,
+      "name": "Format Adapters — All Formats (CSV/XLSX/XLE/JSON)",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_2_AllFormatAdapters -v",
+      "notes": "All adapters built together: csv_adapter (PEINP + ECCC), xlsx_adapter, xle_adapter, json_adapter (Licor)"
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d3",
-      "summary": "Stanhope gets daily output + FWI — parks group needs daily FWI comparison"
+      "id": 3,
+      "name": "Pipeline Integration",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v",
+      "notes": "Wire adapters into cleaning.py: concat → dedup → resample → impute → FWI. Single SSOT output."
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d4",
-      "summary": "ADAPTER ARCHITECTURE: single entry point, format adapters (csv/xlsx/xle/json), canonical output schema. No file silently skipped — unknown formats are HARD ERRORS."
+      "id": 4,
+      "name": "Stanhope Validation",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_4_StanhopeValidation -v",
+      "notes": "Compare ECCC reference (Stanhope) to local stations. Analysis phase."
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d5",
-      "summary": "Keep existing solid modules (resampling, fwi, imputation, stanhope_cache, qa_qc) — only rewrite cleaning.py and normalized_loader.py, add adapters/"
+      "id": 5,
+      "name": "QA/QC Reporting",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_5_QAQCReporting -v",
+      "notes": "Wire qa_qc.py into pipeline, generate report artifact"
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d6",
-      "summary": "Pipeline flow: discover → adapter.load (per file) → concat per station → dedup → resample → impute → FWI → QA/QC → write"
+      "id": 6,
+      "name": "Determinism",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_6_Determinism -v",
+      "notes": "Reproducibility, --force flag, checksums"
     },
     {
-      "date": "2026-03-25",
-      "id": "v2-d7",
-      "summary": "Licor JSON is NOT a separate phase — it's just another adapter. Phase 7 completes the JSON adapter and validates continuous coverage at the PEINP→Licor boundary."
-    },
-    {
-      "date": "2026-03-25",
-      "id": "v2-d8",
-      "summary": "Canonical schema defined once, enforced by all adapters. Shared column mapping module prevents drift across CSV/XLSX/XLE adapters."
+      "id": 7,
+      "name": "E2E Validation",
+      "status": "pending",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_7_E2EValidation -v",
+      "notes": "Full run, all tests pass, coverage report, zero unprocessed files"
     }
   ],
-  "iteration": 0,
-  "max_per_day": 20,
-  "phase": "1",
-  "phases": {
-    "1": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_1_AdapterArchitecture tests/test_v2_pipeline.py::TestAC_PIPE_1_SingleEntryPoint -q",
-      "name": "Pipeline Refactor — Adapter Architecture",
-      "status": "active"
-    },
-    "2": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_2_FormatAdapters -q",
-      "name": "Format Adapters — CSV, XLSX, XLE Coverage",
-      "status": "not_started"
-    },
-    "3": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_ImputationAudit -q",
-      "name": "Imputation Wired + Audit Trail",
-      "status": "not_started"
-    },
-    "4": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_4_StanhopeValidation -q",
-      "name": "Stanhope Validation Integration",
-      "status": "not_started"
-    },
-    "5": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_5_QAQCReport -q",
-      "name": "QA/QC Report Generation",
-      "status": "not_started"
-    },
-    "6": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_6_Determinism -q",
-      "name": "Determinism + Reproducibility",
-      "status": "not_started"
-    },
-    "7": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_7_LicorIntegration -q",
-      "name": "Licor JSON Adapter + Continuous Coverage",
-      "status": "not_started"
-    },
-    "8": {
-      "exit": ".venv/bin/pytest tests/test_v2_pipeline.py::TestAC_PIPE_8_EndToEnd -q",
-      "name": "Full End-to-End Validation",
-      "status": "not_started"
-    }
+  "current_phase": 1,
+  "circuit_breaker": {
+    "stall_count": 0,
+    "last_stall_at": null,
+    "max_stalls": 3
   },
-  "status": "running",
-  "updated_at": "2026-03-25T02:00:00.000000+00:00"
+  "decisions": [
+    {
+      "id": "v2-d1",
+      "decision": "Archive v1 specs and reset state machine",
+      "rationale": "Original project complete. Pipeline rebuild needs clean slate.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d2",
+      "decision": "Adapter architecture with single entry point",
+      "rationale": "All raw files route through format adapters to canonical schema. No files skipped.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d3",
+      "decision": "All adapters built in Phase 2",
+      "rationale": "Single entry point means csv/xlsx/xle/json adapters built together, not scattered across phases.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d4",
+      "decision": "Pipeline integration consolidates concat/dedup/resample/impute/FWI",
+      "rationale": "Imputation is part of the pipeline flow, not a standalone phase.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d5",
+      "decision": "Stanhope is processed like any other station",
+      "rationale": "Stanhope uses csv_adapter with ECCC schema. Phase 4 is comparison/analysis only.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d6",
+      "decision": "7 phases (reduced from 8)",
+      "rationale": "Licor integration merged into Phase 2. Imputation merged into Phase 3.",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "v2-d7",
+      "decision": "Tests define the contract",
+      "rationale": "Each phase has failing tests that pass when implementation is complete. Red → green.",
+      "date": "2026-03-25"
+    }
+  ],
+  "last_reviewed_commit": null,
+  "blockers": []
 }
