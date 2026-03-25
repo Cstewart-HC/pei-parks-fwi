@@ -1,6 +1,6 @@
 {
   "phase": "3",
-  "timestamp": "2026-03-25T19:09:06.295675+00:00",
+  "timestamp": "2026-03-25T19:58:52.646241+00:00",
   "verdict": "FAIL",
   "checks": [
     {
@@ -16,70 +16,78 @@
     {
       "type": "file_exists",
       "path": "data/processed/cavendish/station_hourly.csv",
-      "status": "PASS"
+      "status": "PASS",
+      "fingerprint": "84b09fada5150c4b"
     },
     {
       "type": "row_count",
       "path": "data/processed/cavendish/station_hourly.csv",
       "status": "PASS",
-      "message": "25763 rows"
+      "message": "25763 rows",
+      "row_count": 25763
     },
     {
       "type": "schema",
       "path": "data/processed/cavendish/station_hourly.csv",
       "status": "FAIL",
-      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+      "message": "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%)"
     },
     {
       "type": "file_exists",
       "path": "data/processed/cavendish/station_daily.csv",
-      "status": "PASS"
+      "status": "PASS",
+      "fingerprint": "b02c586d88193c33"
     },
     {
       "type": "row_count",
       "path": "data/processed/cavendish/station_daily.csv",
       "status": "PASS",
-      "message": "1185 rows"
+      "message": "1185 rows",
+      "row_count": 1185
     },
     {
       "type": "schema",
       "path": "data/processed/cavendish/station_daily.csv",
       "status": "FAIL",
-      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+      "message": "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: 'wind_speed_kmh' has 15.7% NaN (max 10%), 'wind_gust_speed_kmh' has 15.7% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 15.7% NaN (max 10%), 'dmc' has 15.7% NaN (max 10%), 'dc' has 15.7% NaN (max 10%), 'isi' has 15.7% NaN (max 10%), 'bui' has 15.7% NaN (max 10%), 'fwi' has 15.7% NaN (max 10%)"
     },
     {
       "type": "file_exists",
       "path": "data/processed/greenwich/station_hourly.csv",
-      "status": "PASS"
+      "status": "PASS",
+      "fingerprint": "d410b06d5935373e"
     },
     {
       "type": "row_count",
       "path": "data/processed/greenwich/station_hourly.csv",
       "status": "PASS",
-      "message": "28715 rows"
+      "message": "28715 rows",
+      "row_count": 28715
     },
     {
       "type": "schema",
       "path": "data/processed/greenwich/station_hourly.csv",
       "status": "FAIL",
-      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+      "message": "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: 'dew_point_c' has 100.0% NaN (max 10%), 'relative_humidity_pct' has 100.0% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 100.0% NaN (max 10%), 'dmc' has 100.0% NaN (max 10%), 'dc' has 100.0% NaN (max 10%), 'isi' has 100.0% NaN (max 10%), 'bui' has 100.0% NaN (max 10%), 'fwi' has 100.0% NaN (max 10%)"
     },
     {
       "type": "file_exists",
       "path": "data/processed/greenwich/station_daily.csv",
-      "status": "PASS"
+      "status": "PASS",
+      "fingerprint": "30364bc7504e1a25"
     },
     {
       "type": "row_count",
       "path": "data/processed/greenwich/station_daily.csv",
       "status": "PASS",
-      "message": "1241 rows"
+      "message": "1241 rows",
+      "row_count": 1241
     },
     {
       "type": "schema",
       "path": "data/processed/greenwich/station_daily.csv",
       "status": "FAIL",
-      "message": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+      "message": "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: 'dew_point_c' has 30.6% NaN (max 10%), 'relative_humidity_pct' has 30.6% NaN (max 10%), 'air_temperature_c' has 38.9% NaN (max 10%), 'wind_gust_speed_kmh' has 11.3% NaN (max 10%), 'wind_speed_kmh' has 11.3% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 56.1% NaN (max 10%), 'dmc' has 56.1% NaN (max 10%), 'dc' has 56.1% NaN (max 10%), 'isi' has 56.1% NaN (max 10%), 'bui' has 56.1% NaN (max 10%), 'fwi' has 56.1% NaN (max 10%)"
     },
     {
       "type": "pipeline_manifest",
@@ -89,10 +97,16 @@
     }
   ],
   "errors": [
-    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']",
-    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']",
-    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']",
-    "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+    "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%)",
+    "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: 'wind_speed_kmh' has 15.7% NaN (max 10%), 'wind_gust_speed_kmh' has 15.7% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 15.7% NaN (max 10%), 'dmc' has 15.7% NaN (max 10%), 'dc' has 15.7% NaN (max 10%), 'isi' has 15.7% NaN (max 10%), 'bui' has 15.7% NaN (max 10%), 'fwi' has 15.7% NaN (max 10%)",
+    "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: 'dew_point_c' has 100.0% NaN (max 10%), 'relative_humidity_pct' has 100.0% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 100.0% NaN (max 10%), 'dmc' has 100.0% NaN (max 10%), 'dc' has 100.0% NaN (max 10%), 'isi' has 100.0% NaN (max 10%), 'bui' has 100.0% NaN (max 10%), 'fwi' has 100.0% NaN (max 10%)",
+    "High NaN ratio in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: 'dew_point_c' has 30.6% NaN (max 10%), 'relative_humidity_pct' has 30.6% NaN (max 10%), 'air_temperature_c' has 38.9% NaN (max 10%), 'wind_gust_speed_kmh' has 11.3% NaN (max 10%), 'wind_speed_kmh' has 11.3% NaN (max 10%), 'wind_speed_ms' has 100.0% NaN (max 10%), 'wind_gust_speed_max_kmh' has 100.0% NaN (max 10%), 'ffmc' has 56.1% NaN (max 10%), 'dmc' has 56.1% NaN (max 10%), 'dc' has 56.1% NaN (max 10%), 'isi' has 56.1% NaN (max 10%), 'bui' has 56.1% NaN (max 10%), 'fwi' has 56.1% NaN (max 10%)"
   ],
+  "fingerprints": {
+    "data/processed/cavendish/station_hourly.csv": "84b09fada5150c4b",
+    "data/processed/cavendish/station_daily.csv": "b02c586d88193c33",
+    "data/processed/greenwich/station_hourly.csv": "d410b06d5935373e",
+    "data/processed/greenwich/station_daily.csv": "30364bc7504e1a25"
+  },
   "summary": "Validated 15 checks for phase 3: FAIL (4 errors)"
 }

@@ -344,6 +344,13 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
         # Combine all hourly frames for this station
         if station_hourly_frames:
+            # Ensure timestamp_utc is datetime in all frames
+            for i, frame in enumerate(station_hourly_frames):
+                if not pd.api.types.is_datetime64_any_dtype(frame["timestamp_utc"]):
+                    station_hourly_frames[i] = frame.copy()
+                    station_hourly_frames[i]["timestamp_utc"] = pd.to_datetime(
+                        frame["timestamp_utc"], utc=True
+                    )
             combined_hourly = pd.concat(
                 station_hourly_frames, ignore_index=True
             )
@@ -466,6 +473,13 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                                 result.cache_path.name, exc)
 
             if stanhope_frames:
+                # Ensure timestamp_utc is datetime in all frames
+                for i, frame in enumerate(stanhope_frames):
+                    if not pd.api.types.is_datetime64_any_dtype(frame["timestamp_utc"]):
+                        stanhope_frames[i] = frame.copy()
+                        stanhope_frames[i]["timestamp_utc"] = pd.to_datetime(
+                            frame["timestamp_utc"], utc=True
+                        )
                 stanhope_combined = pd.concat(
                     stanhope_frames, ignore_index=True
                 )

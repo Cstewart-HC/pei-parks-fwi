@@ -86,9 +86,9 @@
     "last_stall_at": null,
     "max_stalls": 3,
     "consecutive_stalls": 0,
-    "last_commit": "860c9ee",
-    "last_verdict": "PENDING",
-    "last_fail_criteria_hash": null
+    "last_commit": "3dbb639",
+    "last_verdict": "REJECT",
+    "last_fail_criteria_hash": "67972720ce64a02f"
   },
   "decisions": [
     {
@@ -137,7 +137,7 @@
   "last_reviewed_commit": null,
   "blockers": [],
   "phase": "3",
-  "iteration": 17,
+  "iteration": 22,
   "status": "running",
-  "updated_at": "2026-03-25T12:15:34.149286+00:00"
+  "updated_at": "2026-03-25T19:12:23.086296+00:00"
 }

@@ -1,0 +1,4 @@
+station,timestamp_utc,wind_gust_speed_max_kmh,solar_radiation_w_m2,rain_mm,air_temperature_c,battery_v,wind_direction_deg,wind_speed_kmh,wind_gust_speed_kmh,wind_speed_ms
+tracadie,2023-06-29 00:00:00+00:00,10.7,192.425,0.0,22.18032142857143,4.4614,,,,6.633333333333333
+tracadie,2023-06-30 00:00:00+00:00,,153.74295774647888,0.0,21.595052631578948,4.394733333333334,,,,
+tracadie,2023-07-01 00:00:00+00:00,,1.1111111111111112,0.0,21.646666666666665,4.3365,,,,

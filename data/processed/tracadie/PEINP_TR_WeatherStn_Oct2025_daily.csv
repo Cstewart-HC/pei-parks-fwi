@@ -1,0 +1,2 @@
+station,timestamp_utc,air_temperature_c,solar_radiation_w_m2,rain_mm,wind_direction_deg,wind_speed_kmh,wind_gust_speed_kmh
+tracadie,2025-11-01 00:00:00+00:00,12.550472829929113,0.625,0.200048828125,202.16470588235293,16.050365920122932,22.1719474289838

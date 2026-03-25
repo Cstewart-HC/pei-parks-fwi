@@ -1,0 +1,2 @@
+station,timestamp_utc,relative_humidity_pct,air_temperature_c,wind_speed_kmh,wind_direction_deg,rain_mm,solar_radiation_w_m2,wind_gust_speed_kmh,dew_point_c
+cavendish,2025-11-01 00:00:00+00:00,88.26499605038998,12.058049142455292,13.094774193258846,228.83921568627449,0,0.625,22.342269664091223,10.188126603449126

@@ -16,8 +16,11 @@ def materialize_resampled_outputs(
     daily = resample_daily(normalized)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    hourly_path = output_dir / 'station_hourly.csv'
-    daily_path = output_dir / 'station_daily.csv'
+    # Use source stem to avoid clobbering station_hourly.csv / station_daily.csv
+    # which are written by the final combined pipeline step in cleaning.py.
+    stem = source_path.stem
+    hourly_path = output_dir / f'{stem}_hourly.csv'
+    daily_path = output_dir / f'{stem}_daily.csv'
     hourly.to_csv(hourly_path, index=False)
     daily.to_csv(daily_path, index=False)
     return hourly_path, daily_path

@@ -1,8 +1,33 @@
 {
-  "last_reviewed_commit": "bc0aa05",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-25T17:18:29.676743+00:00",
+  "last_reviewed_commit": "80b852a",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-25T19:09:06.405066+00:00",
   "phase": 3,
-  "criteria": [],
-  "summary": "Pointer reset: Lisa to re-review bc0aa05 with clean working tree."
+  "criteria": [
+    {
+      "id": "ARTIFACT-1",
+      "name": "Missing columns in /mnt/fast_data/workspaces/pea-m...",
+      "status": "FAIL",
+      "evidence": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+    },
+    {
+      "id": "ARTIFACT-2",
+      "name": "Missing columns in /mnt/fast_data/workspaces/pea-m...",
+      "status": "FAIL",
+      "evidence": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/cavendish/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+    },
+    {
+      "id": "ARTIFACT-3",
+      "name": "Missing columns in /mnt/fast_data/workspaces/pea-m...",
+      "status": "FAIL",
+      "evidence": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_hourly.csv: ['timestamp', 'temp_c', 'rh_pct']"
+    },
+    {
+      "id": "ARTIFACT-4",
+      "name": "Missing columns in /mnt/fast_data/workspaces/pea-m...",
+      "status": "FAIL",
+      "evidence": "Missing columns in /mnt/fast_data/workspaces/pea-met-network/data/processed/greenwich/station_daily.csv: ['date', 'temp_c_max', 'temp_c_min']"
+    }
+  ],
+  "summary": "Artifact validation failed: Validated 15 checks for phase 3: FAIL (4 errors)"
 }

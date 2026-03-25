@@ -1,0 +1,2 @@
+station,timestamp_utc,rain_mm,wind_direction_deg,solar_radiation_w_m2,air_temperature_c
+stanley_bridge,2025-11-01 00:00:00+00:00,0.0,181.1058823529412,0.625,12.435334980753336
