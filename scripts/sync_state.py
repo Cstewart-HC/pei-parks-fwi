@@ -143,6 +143,14 @@ def run_test_file(test_file: str) -> tuple[bool, str]:
     return run_cmd(cmd, timeout=120)
 
 
+def _ensure_venv_path(cmd: str) -> str:
+    """Prepend .venv/bin/ to pytest/ruff if not already present."""
+    for tool in ("pytest", "ruff"):
+        if cmd.startswith(tool + " ") or cmd == tool:
+            return f".venv/bin/{cmd}"
+    return cmd
+
+
 def check_phase_exit(state: dict) -> tuple[bool, str, str]:
     phases = state.get("phases", {})
     phase = str(state.get("phase", "?"))
@@ -150,6 +158,7 @@ def check_phase_exit(state: dict) -> tuple[bool, str, str]:
     exit_gate = phase_info.get("exit", "")
     if not exit_gate:
         return True, "(no exit gate defined)", ""
+    exit_gate = _ensure_venv_path(exit_gate)
     passes, output = run_cmd(exit_gate, timeout=120)
     return passes, exit_gate, output
 
