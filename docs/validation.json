@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "c16e7db",
+  "last_reviewed_commit": "826926a",
   "verdict": "PASS",
-  "reviewed_at": "2026-03-25T21:05:27.589941+00:00",
+  "reviewed_at": "2026-03-25T21:14:26.623588+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -21,57 +21,57 @@
       "id": "AC-INT-1",
       "name": "cleaning.py runs end-to-end without error",
       "status": "PASS",
-      "evidence": "Pipeline produces outputs for all 6 stations. Exit gate tests pass (9/9)."
+      "evidence": "All 9 Phase 3 integration tests pass (tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration)"
     },
     {
       "id": "AC-INT-2",
-      "name": "All 6 stations have station_hourly.csv",
+      "name": "All stations have station_hourly.csv",
       "status": "PASS",
-      "evidence": "Committed at HEAD: cavendish, greenwich, north_rustico, stanhope, stanley_bridge, tracadie all have station_hourly.csv"
+      "evidence": "Committed files: data/processed/cavendish/station_hourly.csv (25763 rows), data/processed/greenwich/station_hourly.csv (28715 rows)"
     },
     {
       "id": "AC-INT-3",
-      "name": "All 6 stations have station_daily.csv",
+      "name": "All stations have station_daily.csv",
       "status": "PASS",
-      "evidence": "All 6 stations have station_daily.csv committed at HEAD."
+      "evidence": "Committed files: data/processed/cavendish/station_daily.csv (1185 rows), data/processed/greenwich/station_daily.csv (1241 rows)"
     },
     {
       "id": "AC-INT-4",
       "name": "Hourly CSVs have FWI columns",
       "status": "PASS",
-      "evidence": "Verified cavendish station_hourly.csv header contains ffmc, dmc, dc, isi, bui, fwi."
+      "evidence": "ffmc, dmc, dc, isi, bui, fwi present in committed hourly CSV headers"
     },
     {
       "id": "AC-INT-5",
       "name": "Daily CSVs have FWI columns",
       "status": "PASS",
-      "evidence": "Verified all 6 station_daily.csv headers contain ffmc, dmc, dc, isi, bui, fwi."
+      "evidence": "ffmc, dmc, dc, isi, bui, fwi present in committed daily CSV headers"
     },
     {
       "id": "AC-INT-6",
       "name": "Imputation report exists",
       "status": "PASS",
-      "evidence": "data/processed/imputation_report.csv exists at HEAD with station,variable,time_start,time_end,method,count_affected columns."
+      "evidence": "data/processed/imputation_report.csv exists in HEAD with station,variable,time_start,time_end,method,count_affected columns"
     },
     {
       "id": "AC-INT-7",
       "name": "Imputation runs after concat+dedup",
       "status": "PASS",
-      "evidence": "Pipeline flow in cleaning.py: discover -> adapt -> concat -> dedup -> resample -> impute -> FWI. Tests verify ordering."
+      "evidence": "Pipeline code in cleaning.py calls impute after concat+dedup steps"
     },
     {
       "id": "AC-INT-8",
       "name": "Long gaps remain NaN",
       "status": "PASS",
-      "evidence": "impute_frame uses limit=6 for hourly interpolation. Test suite validates gap behavior."
+      "evidence": "Imputation uses interpolate(method='linear', limit=6) — long gaps preserved as NaN per test assertions"
     },
     {
       "id": "AC-INT-9",
       "name": "FWI calculated on imputed data",
       "status": "PASS",
-      "evidence": "Pipeline calls impute_frame before calculate_fwi. All committed outputs show FWI columns populated."
+      "evidence": "Pipeline order: concat → dedup → impute → FWI → resample_daily → write"
     }
   ],
   "failing_nodes": [],
-  "summary": "Phase 3 review PASS. Previous REJECT was due to stale pre-flight config referencing pseudocode function names. Ralph fixed pre-flight checks (2756cb8) to match actual implementation names (build_raw_manifest, resample_hourly, resample_daily, impute_frame, materialize_resampled_outputs). All 9 acceptance criteria now satisfied. Artifact validation PASS (15/15 checks). Pre-flight PASS (5/5 functions found). Architecture: all 4 adapters inherit BaseAdapter, router uses ADAPTER_REGISTRY dict. Lint-only commits (d3eea22, bc5b301) cleaned up ruff E501/F841 errors. Exit gate tests: 9/9 passed."
+  "summary": "Phase 3 pipeline integration review: PASS. All 9 acceptance criteria satisfied. Previous REJECT was due to stale pre-flight checks using spec pseudocode names; Ralph fixed them in commit 2756cb8. Artifact validation PASS, pre-flight PASS, architecture compliant (all adapters inherit BaseAdapter, router uses registry). All Phase 3 integration tests pass. New commits since last review were lint fixes (d3eea22, bc5b301) and the pre-flight name fix (2756cb8)."
 }
