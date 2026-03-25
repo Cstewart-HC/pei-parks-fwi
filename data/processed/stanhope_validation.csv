@@ -1,0 +1,6 @@
+station,overlap_days,mean_abs_diff_ffmc,mean_abs_diff_dmc,mean_abs_diff_dc,mean_abs_diff_fwi
+greenwich,1044,3.1411,49.7109,598.1487,0.0159
+cavendish,988,2.7473,27.7956,403.7072,0.0208
+north_rustico,907,2.0487,0.3791,32.7943,0.0203
+stanley_bridge,805,,,,
+tracadie,774,,,,
