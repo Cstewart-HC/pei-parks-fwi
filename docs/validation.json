@@ -1,63 +1,8 @@
 {
   "last_reviewed_commit": "ba2e237",
-  "verdict": "PASS",
+  "verdict": "PENDING",
   "phase": 2,
-  "reviewed_at": "2026-03-25T07:38:10Z",
-  "criteria": [
-    {
-      "id": "AC-FMT-1",
-      "name": "CSV adapter loads PEINP archives",
-      "status": "PASS",
-      "evidence": "csv_adapter.py: CSVAdapter.load() detects PEINP schema via _detect_csv_schema(), normalizes columns via rename_columns(), parses Date+Time to timestamp_utc. Test loads real PEINP CSV, verifies DataFrame with station/timestamp_utc columns."
-    },
-    {
-      "id": "AC-FMT-2",
-      "name": "CSV adapter loads ECCC Stanhope",
-      "status": "PASS",
-      "evidence": "csv_adapter.py: _load_eccc_csv() parses Date/Time (LST) column, skips flag/meta columns, sets station='stanhope'. Test loads real ECCC CSV, verifies station == 'stanhope'."
-    },
-    {
-      "id": "AC-FMT-3",
-      "name": "XLSX adapter loads Greenwich Excel",
-      "status": "PASS",
-      "evidence": "xlsx_adapter.py: XLSXAdapter.load() auto-detects header row, filters unit rows via _is_date_value(), uses openpyxl engine. Test loads real XLSX, verifies non-empty DataFrame."
-    },
-    {
-      "id": "AC-FMT-4",
-      "name": "XLE adapter loads Stanley Bridge Solinst",
-      "status": "PASS",
-      "evidence": "xle_adapter.py: XLEAdapter.load() parses XML via ElementTree, extracts channel headers (Ch1/Ch2), maps 'level' \u2192 water_level_m and 'temperature' \u2192 water_temperature_c. Test loads real .xle file."
-    },
-    {
-      "id": "AC-FMT-5",
-      "name": "JSON adapter loads Licor Cloud API",
-      "status": "PASS",
-      "evidence": "json_adapter.py: JSONAdapter loads nested sensor data, maps device serial \u2192 station via devices.json, converts ms timestamps to UTC, applies unit conversions (m/s \u2192 km/h for wind). Test loads real Licor JSON."
-    },
-    {
-      "id": "AC-FMT-6",
-      "name": "All adapters output canonical schema",
-      "status": "PASS",
-      "evidence": "Test iterates all entries in ADAPTER_REGISTRY, loads real files for each format, verifies station and timestamp_utc present in output. All 4 adapters pass."
-    },
-    {
-      "id": "AC-FMT-7",
-      "name": "wind_speed_kmh derived from wind_speed_ms (\u00d73.6)",
-      "status": "PASS",
-      "evidence": "column_maps.py:derive_wind_speed_kmh() implements wind_speed_ms * 3.6 when wind_speed_kmh absent. Called by CSVAdapter and XLSXAdapter. JSONAdapter handles its own m/s\u2192km/h conversion. Test skips (no processed data yet) but implementation is verified by code review."
-    },
-    {
-      "id": "AC-FMT-8",
-      "name": "Water-level columns for coastal stations",
-      "status": "PASS",
-      "evidence": "xle_adapter.py maps Solinst channel 'level' \u2192 water_level_m and 'temperature' \u2192 water_temperature_c. column_maps.py includes Water Level/Water Pressure/Water Temp mappings. Test is informational (no processed data yet)."
-    },
-    {
-      "id": "AC-FMT-9",
-      "name": "accumulated_rain_mm excluded from output",
-      "status": "PASS",
-      "evidence": "column_maps.py SKIP_COLUMNS drops accumulated_rain_mm. json_adapter.py explicitly skips 'Accumulated Rain' measurementType. XLSX SKIP_PREFIXES drops 'Accumulated Rain' headers. Triple-layer exclusion."
-    }
-  ],
-  "summary": "Phase 2 (Format Adapters) PASS. All 4 adapters (CSV, XLSX, XLE, JSON) implemented and functional. Exit gate: 8 passed, 1 skipped (skip gated on processed data from Phase 3). AC-FMT-7/8/9 have correct implementations but tests are deferred to Phase 3 when processed data exists. No issues found."
+  "reviewed_at": "2026-03-25T08:39:57.031414+00:00",
+  "criteria": [],
+  "summary": "Phase 2 activated; stale PASS reset. Awaiting Lisa review."
 }
