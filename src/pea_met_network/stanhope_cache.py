@@ -221,6 +221,8 @@ STANHOPE_COLUMN_RENAMES = {
     "Dew Point Temp Flag": "dew_point_flag",
     "Rel Hum (%)": "relative_humidity_pct",
     "Rel Hum Flag": "relative_humidity_flag",
+    "Precip. Amount (mm)": "rain_mm",
+    "Precip. Amount Flag": "rain_mm_flag",
     "Wind Dir (10s deg)": "wind_direction_tens_deg",
     "Wind Dir Flag": "wind_direction_flag",
     "Wind Spd (km/h)": "wind_speed_kmh",
@@ -240,7 +242,13 @@ STANHOPE_COLUMN_RENAMES = {
 def _stanhope_timestamp_utc(frame: pd.DataFrame) -> pd.Series:
     timestamp_text = frame["Date/Time (LST)"].astype(str).str.strip()
     timestamp = pd.to_datetime(timestamp_text, format="%Y-%m-%d %H:%M")
-    return timestamp.dt.tz_localize("America/Halifax").dt.tz_convert("UTC")
+    return (
+        timestamp
+        .dt.tz_localize(
+            "America/Halifax", nonexistent="shift_forward", ambiguous="infer"
+        )
+        .dt.tz_convert("UTC")
+    )
 
 
 def normalize_stanhope_hourly(

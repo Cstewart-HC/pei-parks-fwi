@@ -81,6 +81,9 @@ def _compute_fwi_codes(
         log.warning("FWI skipped for %s: missing columns %s",
                      df["station"].iloc[0] if "station" in df.columns else "?",
                      missing)
+        # Still add FWI columns as NaN so output schema is consistent
+        for col in ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]:
+            df[col] = float("nan")
         return df
 
     df = df.sort_values("timestamp_utc").reset_index(drop=True)
@@ -250,6 +253,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     skip_extensions = {
         ".txt", ".md", ".png", ".jpg", ".gitignore",
         ".r", ".py", ".pyc", ".pyo", ".toml", ".cfg", ".ini",
+        ".pdf", ".zip", ".docx", ".doc",
     }
     # Scan raw directory for any data files with unknown extensions
     # (manifest only yields known formats, so we scan independently)
@@ -459,14 +463,58 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 stanhope_combined = pd.concat(
                     stanhope_frames, ignore_index=True
                 )
+                stanhope_combined = stanhope_combined.sort_values(
+                    "timestamp_utc"
+                )
+                stanhope_combined = stanhope_combined.drop_duplicates(
+                    subset=["timestamp_utc"], keep="first"
+                )
+                stanhope_combined = stanhope_combined.reset_index(drop=True)
+
+                # Run imputation on Stanhope
+                log.info(
+                    "  Running imputation for stanhope ..."
+                )
+                stanhope_imputed, stanhope_audit = _run_imputation(
+                    stanhope_combined, "stanhope"
+                )
+                all_audit_records.extend(stanhope_audit)
+
+                # Compute FWI on Stanhope
+                log.info(
+                    "  Computing FWI indices for stanhope ..."
+                )
+                stanhope_imputed = _compute_fwi_codes(stanhope_imputed)
+
+                # Write cleaned hourly
                 stanhope_hourly_path = stanhope_output / "station_hourly.csv"
-                stanhope_combined.to_csv(stanhope_hourly_path, index=False)
+                stanhope_imputed.to_csv(
+                    stanhope_hourly_path, index=False
+                )
+
+                # Aggregate daily from cleaned hourly
+                stanhope_daily = stanhope_imputed.groupby(
+                    stanhope_imputed["timestamp_utc"].dt.date
+                ).agg({
+                    col: "mean" for col in stanhope_imputed.select_dtypes(
+                        include="number"
+                    ).columns
+                }).reset_index()
+                stanhope_daily_path = stanhope_output / "station_daily.csv"
+                stanhope_daily.to_csv(stanhope_daily_path, index=False)
 
                 artifacts.append({
                     "station": "stanhope",
-                    "type": "hourly_normalized",
+                    "type": "hourly_cleaned",
                     "path": str(stanhope_hourly_path),
-                    "rows": len(stanhope_combined),
+                    "rows": len(stanhope_imputed),
+                    "timestamp": datetime.now(UTC).isoformat(),
+                })
+                artifacts.append({
+                    "station": "stanhope",
+                    "type": "daily_cleaned",
+                    "path": str(stanhope_daily_path),
+                    "rows": len(stanhope_daily),
                     "timestamp": datetime.now(UTC).isoformat(),
                 })
         except Exception as exc:
