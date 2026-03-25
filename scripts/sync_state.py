@@ -362,8 +362,25 @@ def discover_tests() -> list[str]:
     return sorted(str(p.relative_to(REPO_ROOT)) for p in TESTS_DIR.glob("test_*.py"))
 
 
+def _venv_python() -> str:
+    """Return path to venv python if available, else sys.executable."""
+    venv = Path(__file__).resolve().parent.parent / ".venv" / "bin" / "python"
+    if venv.exists():
+        return str(venv)
+    return sys.executable
+
+
+def _venv_tool(tool: str) -> str:
+    """Return path to a venv tool (e.g. pytest, ruff) if available."""
+    venv = Path(__file__).resolve().parent.parent / ".venv" / "bin" / tool
+    if venv.exists():
+        return str(venv)
+    return f"{sys.executable} -m {tool}"
+
+
 def run_test_file(test_file: str) -> tuple[bool, str]:
-    cmd = f"{sys.executable} -m pytest {test_file} -q --tb=short 2>&1"
+    pytest = _venv_tool("pytest")
+    cmd = f"{pytest} {test_file} -q --tb=short 2>&1"
     return run_cmd(cmd, timeout=120)
 
 
@@ -371,7 +388,12 @@ def _ensure_portable_execution(cmd: str) -> str:
     """Ensure standard tools execute within the current Python environment."""
     for tool in ("pytest", "ruff"):
         if cmd.startswith(tool + " ") or cmd == tool:
-            return cmd.replace(tool, f"{sys.executable} -m {tool}", 1)
+            return cmd.replace(tool, _venv_tool(tool), 1)
+    # Handle "python -m pytest" or "python3 -m pytest" patterns
+    for prefix in ("python -m ", "python3 -m ", f"{sys.executable} -m "):
+        for tool in ("pytest", "ruff"):
+            if prefix + tool in cmd:
+                return cmd.replace(prefix + tool, _venv_tool(tool), 1)
     return cmd
 
 
@@ -577,7 +599,7 @@ def validate_blocker(state: dict) -> tuple[bool, str | None]:
 
     if "ruff" in blocker_lower:
         targets = " ".join(files_mentioned) if files_mentioned else "."
-        passed, _ = run_cmd(f"{sys.executable} -m ruff check {targets}")
+        passed, _ = run_cmd(f"{_venv_tool('ruff')} check {targets}")
         if passed:
             return False, f"ruff now passes on {targets}"
 
@@ -587,7 +609,7 @@ def validate_blocker(state: dict) -> tuple[bool, str | None]:
             targets = " ".join(test_files) if test_files else "."
         else:
             targets = "."
-        passed, _ = run_cmd(f"{sys.executable} -m pytest {targets} -q --tb=short 2>&1")
+        passed, _ = run_cmd(f"{_venv_tool('pytest')} {targets} -q --tb=short 2>&1")
         if passed:
             return False, f"pytest now passes on {targets}"
 
