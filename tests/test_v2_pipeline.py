@@ -13,10 +13,12 @@ import hashlib
 from pathlib import Path
 import pytest
 import pandas as pd
+import sys
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_RAW = PROJECT_ROOT / "data" / "raw"
 DATA_PROCESSED = PROJECT_ROOT / "data" / "processed"
+PYTHON = sys.executable
 
 
 # =============================================================================
@@ -71,7 +73,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
     def test_dry_run_flag_reports_file_counts(self):
         """AC-ARCH-6: cleaning.py --dry-run reports file counts without writing."""
         result = subprocess.run(
-            ["python", "cleaning.py", "--dry-run"],
+            [PYTHON, "cleaning.py", "--dry-run"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -89,7 +91,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
             test_marker.unlink()
         
         result = subprocess.run(
-            ["python", "cleaning.py", "--dry-run", "--stations", "greenwich"],
+            [PYTHON, "cleaning.py", "--dry-run", "--stations", "greenwich"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -108,7 +110,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
         
         try:
             result = subprocess.run(
-                ["python", "cleaning.py", "--stations", "test_station"],
+                [PYTHON, "cleaning.py", "--stations", "test_station"],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
                 text=True,
@@ -292,7 +294,7 @@ class TestAC_PIPE_3_PipelineIntegration:
     def test_cleaning_py_runs_end_to_end(self):
         """AC-INT-1: cleaning.py runs end-to-end without error."""
         result = subprocess.run(
-            ["python", "cleaning.py", "--stations", "greenwich"],
+            [PYTHON, "cleaning.py", "--stations", "greenwich"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -524,7 +526,7 @@ class TestAC_PIPE_6_Determinism:
         
         # Run once
         subprocess.run(
-            ["python", "cleaning.py", "--force", "--stations", station],
+            [PYTHON, "cleaning.py", "--force", "--stations", station],
             cwd=PROJECT_ROOT,
             capture_output=True,
             timeout=300,
@@ -592,7 +594,7 @@ class TestAC_PIPE_6_Determinism:
         
         # Run without --force (should skip if newer)
         subprocess.run(
-            ["python", "cleaning.py", "--stations", station],
+            [PYTHON, "cleaning.py", "--stations", station],
             cwd=PROJECT_ROOT,
             capture_output=True,
             timeout=300,
@@ -623,7 +625,7 @@ class TestAC_PIPE_7_E2EValidation:
     def test_cleaning_py_completes(self):
         """AC-E2E-1: cleaning.py completes with exit code 0."""
         result = subprocess.run(
-            ["python", "cleaning.py"],
+            [PYTHON, "cleaning.py"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,

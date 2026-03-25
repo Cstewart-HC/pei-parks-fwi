@@ -161,7 +161,7 @@ def _write_manifest(
     )
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> None:  # noqa: C901
     parser = argparse.ArgumentParser(
         description="PEA Met Network cleaning pipeline",
     )
@@ -181,6 +181,17 @@ def main(argv: list[str] | None = None) -> None:
         "--skip-stanhope",
         action="store_true",
         help="Skip Stanhope reference data ingestion",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Report what would be processed without writing outputs",
+    )
+    parser.add_argument(
+        "--stations",
+        nargs="*",
+        default=None,
+        help="Process only these stations",
     )
     args = parser.parse_args(argv)
 
@@ -209,7 +220,66 @@ def main(argv: list[str] | None = None) -> None:
     for rec in records:
         stations.setdefault(rec.station, []).append(rec)
 
+    # Filter to requested stations
+    if args.stations:
+        filtered = {
+            s: recs for s, recs in stations.items()
+            if s in args.stations
+        }
+        stations = filtered
+
     log.info("Stations: %s", ", ".join(sorted(stations.keys())))
+
+    # --- Dry-run mode: report and exit ---
+    if args.dry_run:
+        for station, recs in sorted(stations.items()):
+            fmt_counts: dict[str, int] = {}
+            for rec in recs:
+                ext = rec.extension
+                fmt_counts[ext] = fmt_counts.get(ext, 0) + 1
+            parts = ", ".join(
+                f"{ext}={n}" for ext, n in sorted(fmt_counts.items())
+            )
+            print(f"station={station} files={len(recs)} [{parts}]")
+        print(f"Total: {len(records)} files across {len(stations)} stations")
+        return
+
+    # --- Unknown format detection (hard error) ---
+    from pea_met_network.adapters import ADAPTER_REGISTRY
+    known_extensions = set(ADAPTER_REGISTRY.keys())
+    skip_extensions = {
+        ".txt", ".md", ".png", ".jpg", ".gitignore",
+        ".r", ".py", ".pyc", ".pyo", ".toml", ".cfg", ".ini",
+    }
+    # Scan raw directory for any data files with unknown extensions
+    # (manifest only yields known formats, so we scan independently)
+    # Include explicitly requested stations even if not in manifest
+    scan_stations = set(stations.keys())
+    if args.stations:
+        scan_stations.update(args.stations)
+    for raw_path in sorted(raw_data_dir.rglob("*")):
+        if not raw_path.is_file():
+            continue
+        ext = raw_path.suffix.lower()
+        if not ext or ext in known_extensions or ext in skip_extensions:
+            continue
+        rel = raw_path.relative_to(raw_data_dir).as_posix()
+        # Check if this file belongs to any of our target stations
+        belongs_to_target = any(
+            s.lower() in rel.lower() for s in scan_stations
+        )
+        if not belongs_to_target:
+            continue
+        log.error(
+            "Unknown file format: %s (file: %s)",
+            ext, raw_path,
+        )
+        print(
+            f"Error: unknown file format '{ext}' for "
+            f"{raw_path}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Process each station
     total_hourly_rows = 0
