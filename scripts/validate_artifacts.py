@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""validate_artifacts.py — Deterministic data artifact validation for MissHoover 2.0.
+"""validate_artifacts.py — Deterministic data artifact validation for MissHoover V2.
 
 This script enforces the "Hard Gate" before Lisa review:
 1. Reads docs/ralph-state.json to identify active phase
 2. Verifies expected data outputs exist, are not empty
 3. Performs basic schema checks (no NaNs in primary keys)
-4. Outputs structured JSON for sync_state.py to consume
+4. Uses pandas for robust CSV validation
+5. Computes SHA256 fingerprint for validated outputs
+6. Outputs structured JSON for sync_state.py to consume
 
 Exit codes:
   0 = PASS (all artifacts valid)
@@ -15,10 +17,20 @@ Exit codes:
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+# Optional pandas import for enhanced validation
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    pd = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = REPO_ROOT / "docs" / "ralph-state.json"
@@ -63,6 +75,21 @@ PHASE_ARTIFACT_EXPECTATIONS = {
 # Minimum rows for valid output (catch empty files)
 MIN_ROWS_PER_ARTIFACT = 10
 
+# Maximum NaN ratio allowed in non-key columns (0.0 = none, 1.0 = any)
+MAX_NAN_RATIO = 0.1  # 10% NaNs allowed in data columns
+
+
+def compute_file_hash(path: Path) -> str:
+    """Compute SHA256 hash of a file for fingerprinting."""
+    sha256 = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                sha256.update(chunk)
+        return sha256.hexdigest()[:16]  # First 16 chars for brevity
+    except Exception as e:
+        return f"ERROR: {e}"
+
 
 def load_json(path: Path) -> dict | None:
     """Load JSON file, return None if not found or invalid."""
@@ -76,6 +103,7 @@ def load_json(path: Path) -> dict | None:
 
 def save_json(path: Path, data: dict) -> None:
     """Atomically write JSON file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.parent / (path.name + ".tmp")
     tmp.write_text(json.dumps(data, indent=2) + "\n")
     tmp.replace(path)
@@ -90,24 +118,76 @@ def check_file_exists(path: Path) -> tuple[bool, str]:
     return True, "OK"
 
 
-def check_row_count(path: Path, min_rows: int) -> tuple[bool, str]:
-    """Check CSV has at least min_rows (excluding header)."""
+def check_row_count(path: Path, min_rows: int) -> tuple[bool, str, int]:
+    """Check CSV has at least min_rows (excluding header). Returns row count."""
     try:
         with open(path, newline="") as f:
             reader = csv.reader(f)
             header = next(reader, None)
             if not header:
-                return False, f"No header in {path}"
+                return False, f"No header in {path}", 0
             row_count = sum(1 for _ in reader)
             if row_count < min_rows:
-                return False, f"Only {row_count} rows in {path}, need >= {min_rows}"
-            return True, f"{row_count} rows"
+                return False, f"Only {row_count} rows in {path}, need >= {min_rows}", row_count
+            return True, f"{row_count} rows", row_count
     except Exception as e:
-        return False, f"Error reading {path}: {e}"
+        return False, f"Error reading {path}: {e}", 0
 
 
 def check_schema(path: Path, schema: dict) -> tuple[bool, str]:
-    """Validate CSV schema: required columns and no NaNs in key columns."""
+    """Validate CSV schema: required columns and no NaNs in key columns.
+    
+    Uses pandas if available for more robust validation.
+    Falls back to csv module if pandas is not installed.
+    """
+    if PANDAS_AVAILABLE:
+        return check_schema_pandas(path, schema)
+    else:
+        return check_schema_csv(path, schema)
+
+
+def check_schema_pandas(path: Path, schema: dict) -> tuple[bool, str]:
+    """Validate CSV schema using pandas for robust checking."""
+    try:
+        df = pd.read_csv(path, nrows=1000)  # Sample first 1000 rows
+        
+        # Check required columns
+        required = schema.get("required_columns", [])
+        missing = [c for c in required if c not in df.columns]
+        if missing:
+            return False, f"Missing columns in {path}: {missing}"
+        
+        # Check for NaNs in specified columns
+        no_nan_cols = schema.get("no_nan_columns", [])
+        nan_issues = []
+        for col in no_nan_cols:
+            if col in df.columns:
+                nan_count = df[col].isna().sum()
+                if nan_count > 0:
+                    nan_issues.append(f"'{col}' has {nan_count} NaN values")
+        
+        if nan_issues:
+            return False, f"NaN values in primary keys in {path}: {', '.join(nan_issues)}"
+        
+        # Check NaN ratio in data columns
+        data_cols = [c for c in df.columns if c not in no_nan_cols]
+        high_nan_cols = []
+        for col in data_cols:
+            nan_ratio = df[col].isna().sum() / len(df) if len(df) > 0 else 0
+            if nan_ratio > MAX_NAN_RATIO:
+                high_nan_cols.append(f"'{col}' has {nan_ratio:.1%} NaN (max {MAX_NAN_RATIO:.0%})")
+        
+        if high_nan_cols:
+            return False, f"High NaN ratio in {path}: {', '.join(high_nan_cols)}"
+        
+        return True, f"Schema OK (pandas, {len(df)} rows sampled)"
+    
+    except Exception as e:
+        return False, f"Pandas schema check error for {path}: {e}"
+
+
+def check_schema_csv(path: Path, schema: dict) -> tuple[bool, str]:
+    """Validate CSV schema using csv module (fallback)."""
     try:
         with open(path, newline="") as f:
             reader = csv.DictReader(f)
@@ -151,6 +231,7 @@ def validate_phase_artifacts(phase: str) -> dict:
         "verdict": "PASS",
         "checks": [],
         "errors": [],
+        "fingerprints": {},  # SHA256 hashes of validated files
     }
     
     expectations = PHASE_ARTIFACT_EXPECTATIONS.get(phase)
@@ -194,14 +275,19 @@ def validate_phase_artifacts(phase: str) -> dict:
             })
             continue
         
+        # Compute fingerprint for validated file
+        file_hash = compute_file_hash(full_path)
+        result["fingerprints"][file_path] = file_hash
+        
         result["checks"].append({
             "type": "file_exists",
             "path": file_path,
             "status": "PASS",
+            "fingerprint": file_hash,
         })
         
         # Check row count
-        row_ok, row_msg = check_row_count(full_path, MIN_ROWS_PER_ARTIFACT)
+        row_ok, row_msg, row_count = check_row_count(full_path, MIN_ROWS_PER_ARTIFACT)
         if not row_ok:
             result["verdict"] = "FAIL"
             result["errors"].append(row_msg)
@@ -217,6 +303,7 @@ def validate_phase_artifacts(phase: str) -> dict:
                 "path": file_path,
                 "status": "PASS",
                 "message": row_msg,
+                "row_count": row_count,
             })
         
         # Schema checks based on filename pattern
@@ -307,11 +394,17 @@ def main() -> int:
     print(f"PHASE={phase}")
     print(f"CHECKS_COUNT={len(result['checks'])}")
     print(f"ERRORS_COUNT={len(result['errors'])}")
+    print(f"FINGERPRINTS_COUNT={len(result.get('fingerprints', {}))}")
     
     if result["errors"]:
         print("\n## Validation Errors")
         for err in result["errors"]:
             print(f"  - {err}")
+    
+    if result.get("fingerprints"):
+        print("\n## File Fingerprints (SHA256)")
+        for path, fp in result["fingerprints"].items():
+            print(f"  {fp[:8]}... {path}")
     
     print(f"\nFull report: docs/artifact-validation.json")
     

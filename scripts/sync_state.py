@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """sync_state.py — Ralph loop state synchronizer (spec-driven).
 
-MissHoover 2.0: Data-Centric Determinism
-- Calls validate_artifacts.py before Lisa review (Hard Gate)
+MissHoover V2: Data-Centric Determinism + OpenLineage
+- Calls pre_flight.py before phase exit gate (structural lint)
+- Calls validate_artifacts.py after pytest but before Lisa (Hard Gate)
+- Emits OpenLineage events for data provenance tracking
 - Generates STALL_REPORT.md on circuit breaker trip
 """
 from __future__ import annotations
@@ -15,13 +17,36 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
+# Import OpenLineage client
+try:
+    from scripts.utils.lineage_client import LineageClient
+    LINEAGE_AVAILABLE = True
+except ImportError:
+    LINEAGE_AVAILABLE = False
+    LineageClient = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = REPO_ROOT / "docs" / "ralph-state.json"
 TESTS_DIR = REPO_ROOT / "tests"
 VALIDATION_FILE = REPO_ROOT / "docs" / "validation.json"
 LOOP_LOG_FILE = REPO_ROOT / "docs" / "loop-log.jsonl"
 ARTIFACT_VALIDATION_FILE = REPO_ROOT / "docs" / "artifact-validation.json"
+PRE_FLIGHT_FILE = REPO_ROOT / "docs" / "pre-flight.json"
+LINEAGE_FILE = REPO_ROOT / "docs" / "lineage.jsonl"
 STALL_REPORT_FILE = REPO_ROOT / "docs" / "STALL_REPORT.md"
+
+# Global lineage client (initialized lazily)
+_lineage_client = None
+
+
+def get_lineage_client() -> LineageClient | None:
+    """Get or create the lineage client."""
+    global _lineage_client
+    if not LINEAGE_AVAILABLE:
+        return None
+    if _lineage_client is None:
+        _lineage_client = LineageClient()
+    return _lineage_client
 
 
 def run_artifact_validation() -> tuple[bool, dict]:
@@ -65,6 +90,50 @@ def run_artifact_validation() -> tuple[bool, dict]:
         return False, {"verdict": "TIMEOUT", "reason": "validation timed out"}
     except Exception as e:
         print(f"ARTIFACT_VALIDATION=ERROR: {e}", file=sys.stderr)
+        return False, {"verdict": "ERROR", "reason": str(e)}
+
+
+def run_pre_flight() -> tuple[bool, dict]:
+    """Run pre_flight.py and return (passes, result_dict).
+    
+    This is the Structural Lint - runs BEFORE phase exit gate.
+    Verifies required classes/functions exist in src/.
+    """
+    script_path = REPO_ROOT / "scripts" / "pre_flight.py"
+    if not script_path.exists():
+        print("PRE_FLIGHT=SKIP (script not found)", file=sys.stderr)
+        return True, {"verdict": "SKIP", "reason": "script not found"}
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            timeout=60,
+        )
+        
+        # Print output for visibility
+        if result.stdout:
+            for line in result.stdout.strip().split("\n"):
+                print(f"  {line}")
+        
+        # Load detailed result
+        pre_flight_result = {}
+        if PRE_FLIGHT_FILE.exists():
+            try:
+                pre_flight_result = json.loads(PRE_FLIGHT_FILE.read_text())
+            except json.JSONDecodeError:
+                pass
+        
+        passes = result.returncode == 0
+        return passes, pre_flight_result
+        
+    except subprocess.TimeoutExpired:
+        print("PRE_FLIGHT=TIMEOUT", file=sys.stderr)
+        return False, {"verdict": "TIMEOUT", "reason": "pre-flight timed out"}
+    except Exception as e:
+        print(f"PRE_FLIGHT=ERROR: {e}", file=sys.stderr)
         return False, {"verdict": "ERROR", "reason": str(e)}
 
 
@@ -728,6 +797,15 @@ def main() -> None:
         state["blocker"] = None
         state_mgr.save_state(state)
 
+    # Emit START lineage event
+    lineage_client = get_lineage_client()
+    if lineage_client:
+        phase = state.get("phase", "?")
+        lineage_client.emit_start(
+            f"phase-{phase}-sync",
+            description=f"MissHoover V2 sync for phase {phase}",
+        )
+
     if handle_view_mode(view_arg, state):
         return
 
@@ -794,6 +872,57 @@ def main() -> None:
         ]
         state_mgr.save_validation(validation)
         verdict = "REJECT"  # Update local verdict for subsequent logic
+        
+        # Emit FAIL lineage event
+        lineage_client = get_lineage_client()
+        if lineage_client:
+            lineage_client.emit_fail(
+                f"phase-{state.get('phase', '?')}-pipeline",
+                error=artifact_summary,
+                failing_nodes=[
+                    {"file": c.get("path", "unknown"), "error": c.get("message", "")}
+                    for c in artifact_result.get("checks", [])
+                    if c.get("status") == "FAIL"
+                ],
+            )
+
+    # 1.6. MissHoover V2: Pre-Flight Structural Lint
+    # Run BEFORE phase exit gate. If structural requirements fail, REJECT.
+    pre_flight_passes, pre_flight_result = run_pre_flight()
+    if not pre_flight_passes:
+        print("HARD_GATE=PRE_FLIGHT_FAIL", file=sys.stderr)
+        print("ACTION=SKIP_PHASE_EXIT_AUTO_REJECT", file=sys.stderr)
+        # Auto-set validation to REJECT with structural errors
+        if validation is None:
+            validation = {}
+        validation["verdict"] = "REJECT"
+        validation["last_reviewed_commit"] = head_sha
+        validation["reviewed_at"] = datetime.now(timezone.utc).astimezone().isoformat()
+        pre_flight_summary = pre_flight_result.get("summary", "Unknown pre-flight failure")
+        validation["summary"] = f"Pre-flight structural lint failed: {pre_flight_summary}"
+        validation["criteria"] = [
+            {
+                "id": f"STRUCT-{m.get('type', '?').upper()}-{i}",
+                "name": f"Missing {m.get('type', 'requirement')}: {m.get('name', '?')}",
+                "status": "FAIL",
+                "evidence": f"Expected in {m.get('file_pattern', '?')}",
+            }
+            for i, m in enumerate(pre_flight_result.get("missing", []), 1)
+        ]
+        state_mgr.save_validation(validation)
+        verdict = "REJECT"  # Update local verdict for subsequent logic
+        
+        # Emit FAIL lineage event
+        lineage_client = get_lineage_client()
+        if lineage_client:
+            lineage_client.emit_fail(
+                f"phase-{state.get('phase', '?')}-pipeline",
+                error=pre_flight_summary,
+                failing_nodes=[
+                    {"type": m.get("type"), "name": m.get("name"), "file_pattern": m.get("file_pattern")}
+                    for m in pre_flight_result.get("missing", [])
+                ],
+            )
 
     # 2. Pipeline Execution
     tripped = update_circuit_breaker(state, head_sha, validation, verdict)
@@ -842,6 +971,19 @@ def main() -> None:
     # 5. Git Logistics
     committed = auto_commit_if_changed() if auto_commit else False
     append_loop_log(state, head_sha, phase_advanced, committed, verdict)
+
+    # 6. Emit COMPLETE lineage event
+    lineage_client = get_lineage_client()
+    if lineage_client:
+        phase = state.get("phase", "?")
+        lineage_client.emit_complete(
+            f"phase-{phase}-sync",
+            outputs=[
+                {"name": str(STATE_FILE.relative_to(REPO_ROOT))},
+                {"name": str(VALIDATION_FILE.relative_to(REPO_ROOT))},
+                {"name": str(LOOP_LOG_FILE.relative_to(REPO_ROOT))},
+            ]
+        )
 
 
 if __name__ == "__main__":

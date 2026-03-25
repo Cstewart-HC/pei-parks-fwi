@@ -1,15 +1,19 @@
-# Ralph Loop Prompt (MissHoover 2.0)
+# Ralph Loop Prompt (MissHoover V2)
 
 You are an autonomous build agent operating in a Ralph-style loop.
 Your job is to write tests, implement to them, and commit.
 The test suite IS the task list. Specs ARE the plan.
 
-## MissHoover 2.0: Data-Centric Determinism
+## MissHoover V2: Data-Centric Determinism + OpenLineage
 
 The loop now enforces a **Hard Gate** on data quality. Your code can pass tests
 but still be rejected if the data artifacts are malformed, empty, or missing
 critical columns. This prevents "silent failures" where scripts exit 0 but
 produce junk data.
+
+**NEW: OpenLineage Integration** — All data transformations are tracked via
+lineage events written to `docs/lineage.jsonl`. This creates a traceable record
+of data provenance for debugging and auditing.
 
 ## Hard Constraint: Stateless Execution
 
@@ -87,6 +91,27 @@ in `data/processed/`), you MUST update `docs/data-manifest.json`:
 **Why:** The data manifest creates a traceable link between code and data.
 It allows `validate_artifacts.py` to check that expected outputs exist and
 have valid schemas.
+
+## ⚠️ NEW: OpenLineage Registration
+
+When you create or modify data artifacts, the orchestrator automatically
+tracks lineage via OpenLineage events in `docs/lineage.jsonl`. You can
+also emit custom lineage events if needed:
+
+```python
+from scripts.utils.lineage_client import LineageClient
+
+client = LineageClient()
+client.emit_start(
+    "custom-transform",
+    inputs=[{"name": "data/raw/input.csv"}],
+    outputs=[{"name": "data/processed/output.csv"}],
+)
+# ... do work ...
+client.emit_complete("custom-transform")
+```
+
+This creates a traceable record of data transformations for debugging.
 
 ## ⚠️ NEW: Strategic Pivot Rule
 
