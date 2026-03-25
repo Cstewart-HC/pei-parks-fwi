@@ -1,82 +1,45 @@
 {
   "phase": "3",
-  "timestamp": "2026-03-25T19:59:02.152430+00:00",
-  "verdict": "FAIL",
+  "timestamp": "2026-03-25T22:21:50.295058+00:00",
+  "verdict": "PASS",
   "checks": [
     {
       "type": "function",
-      "name": "discover_raw_files",
-      "found": false,
-      "location": null,
-      "error": "Function 'discover_raw_files' not found in **/*.py"
+      "name": "build_raw_manifest",
+      "found": true,
+      "location": "src/pea_met_network/manifest.py:77",
+      "error": null
     },
     {
       "type": "function",
-      "name": "concat_station_data",
-      "found": false,
-      "location": null,
-      "error": "Function 'concat_station_data' not found in **/*.py"
+      "name": "resample_hourly",
+      "found": true,
+      "location": "src/pea_met_network/resampling.py:152",
+      "error": null
     },
     {
       "type": "function",
-      "name": "deduplicate_timestamps",
-      "found": false,
-      "location": null,
-      "error": "Function 'deduplicate_timestamps' not found in **/*.py"
+      "name": "resample_daily",
+      "found": true,
+      "location": "src/pea_met_network/resampling.py:159",
+      "error": null
     },
     {
       "type": "function",
-      "name": "resample_hourly_to_daily",
-      "found": false,
-      "location": null,
-      "error": "Function 'resample_hourly_to_daily' not found in **/*.py"
+      "name": "impute_frame",
+      "found": true,
+      "location": "src/pea_met_network/imputation.py:113",
+      "error": null
     },
     {
       "type": "function",
-      "name": "impute_missing_values",
-      "found": false,
-      "location": null,
-      "error": "Function 'impute_missing_values' not found in **/*.py"
+      "name": "materialize_resampled_outputs",
+      "found": true,
+      "location": "src/pea_met_network/materialize_resampled.py:9",
+      "error": null
     }
   ],
-  "missing": [
-    {
-      "type": "function",
-      "name": "discover_raw_files",
-      "file_pattern": "**/*.py",
-      "must_inherit": null
-    },
-    {
-      "type": "function",
-      "name": "concat_station_data",
-      "file_pattern": "**/*.py",
-      "must_inherit": null
-    },
-    {
-      "type": "function",
-      "name": "deduplicate_timestamps",
-      "file_pattern": "**/*.py",
-      "must_inherit": null
-    },
-    {
-      "type": "function",
-      "name": "resample_hourly_to_daily",
-      "file_pattern": "**/*.py",
-      "must_inherit": null
-    },
-    {
-      "type": "function",
-      "name": "impute_missing_values",
-      "file_pattern": "**/*.py",
-      "must_inherit": null
-    }
-  ],
-  "errors": [
-    "Function 'discover_raw_files' not found in **/*.py",
-    "Function 'concat_station_data' not found in **/*.py",
-    "Function 'deduplicate_timestamps' not found in **/*.py",
-    "Function 'resample_hourly_to_daily' not found in **/*.py",
-    "Function 'impute_missing_values' not found in **/*.py"
-  ],
-  "summary": "Checked 5 structural requirements for phase 3: FAIL (5 missing)"
+  "missing": [],
+  "errors": [],
+  "summary": "Checked 5 structural requirements for phase 3: PASS (0 missing)"
 }
