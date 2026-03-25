@@ -1,8 +1,63 @@
 {
-  "last_reviewed_commit": "39f67d5",
-  "verdict": "PENDING",
-  "phase": 2,
-  "reviewed_at": "2026-03-25T11:33:32.978782+00:00",
-  "criteria": [],
-  "summary": "Phase 3 activated; awaiting Lisa review."
+  "last_reviewed_commit": "df87b15",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-25T12:54:15.624876+00:00",
+  "phase": 3,
+  "criteria": [
+    {
+      "id": "AC-INT-1",
+      "name": "cleaning.py runs end-to-end without error",
+      "status": "PASS",
+      "evidence": "Pipeline materialize_resampled.py runs successfully; no cleaning.py exists (restructured). Pipeline completes for all stations."
+    },
+    {
+      "id": "AC-INT-2",
+      "name": "All 6 stations have station_hourly.csv",
+      "status": "PASS",
+      "evidence": "Verified: all 6 station dirs (cavendish, greenwich, north_rustico, stanhope, stanley_bridge, tracadie) contain station_hourly.csv."
+    },
+    {
+      "id": "AC-INT-3",
+      "name": "All 6 stations have station_daily.csv",
+      "status": "PASS",
+      "evidence": "Verified: all 6 station dirs contain station_daily.csv."
+    },
+    {
+      "id": "AC-INT-4",
+      "name": "Hourly CSVs have FWI columns",
+      "status": "FAIL",
+      "evidence": "cavendish/station_hourly.csv is missing all 6 FWI columns (ffmc, dmc, dc, isi, bui, fwi). Header only contains weather measurement columns. All other 5 stations have FWI columns."
+    },
+    {
+      "id": "AC-INT-5",
+      "name": "Daily CSVs have FWI columns",
+      "status": "FAIL",
+      "evidence": "cavendish/station_daily.csv is missing all 6 FWI columns. Same root cause as AC-INT-4."
+    },
+    {
+      "id": "AC-INT-6",
+      "name": "Imputation report exists",
+      "status": "PASS",
+      "evidence": "data/processed/imputation_report.csv exists with 2984 rows and expected columns (station, variable, time_start, time_end, method, count_affected)."
+    },
+    {
+      "id": "AC-INT-7",
+      "name": "Imputation runs after concat+dedup",
+      "status": "PASS",
+      "evidence": "Pipeline code in materialize_resampled.py applies imputation on concatenated hourly data, not per-file."
+    },
+    {
+      "id": "AC-INT-8",
+      "name": "Long gaps remain NaN",
+      "status": "PASS",
+      "evidence": "Imputation report shows 'preserve' method for gaps exceeding interpolation limits, leaving them as NaN."
+    },
+    {
+      "id": "AC-INT-9",
+      "name": "FWI calculated on imputed data",
+      "status": "FAIL",
+      "evidence": "cavendish has no FWI columns at all \u2014 FWI was never calculated for this station. Downstream of AC-INT-4 failure."
+    }
+  ],
+  "summary": "REJECT: cavendish station is missing all 6 FWI columns (ffmc, dmc, dc, isi, bui, fwi) in both station_hourly.csv and station_daily.csv. All other 5 stations pass. The pipeline appears to skip FWI calculation for cavendish \u2014 likely the station has data characteristics (e.g., missing required inputs like air_temperature_c at key timestamps) that cause FWI calculation to fail silently or be skipped. Ralph must fix the FWI pipeline to handle cavendish correctly or document why it should be excluded. Tests are also non-deterministic: test_hourly_csvs_have_fwi_columns and test_daily_csvs_have_fwi_columns iterate DATA_PROCESSED.iterdir() which has undefined ordering, causing intermittent pass/fail."
 }
