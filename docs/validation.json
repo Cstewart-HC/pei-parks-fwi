@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "1e9d131",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-25T21:58:54.886137+00:00",
+  "last_reviewed_commit": "e6f56da",
+  "verdict": "PASS",
+  "reviewed_at": "2026-03-25T22:49:10.837526+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -16,7 +16,62 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [],
+  "criteria": [
+    {
+      "id": "AC-INT-1",
+      "name": "Pipeline E2E",
+      "status": "PASS",
+      "evidence": "9/9 tests pass in TestAC_PIPE_3_PipelineIntegration"
+    },
+    {
+      "id": "AC-INT-2",
+      "name": "Hourly CSVs exist",
+      "status": "PASS",
+      "evidence": "All 6 stations: cavendish(25763), greenwich(28715), north_rustico(25779), tracadie(21353), stanley_bridge(22256), stanhope(32180)"
+    },
+    {
+      "id": "AC-INT-3",
+      "name": "Daily CSVs exist",
+      "status": "PASS",
+      "evidence": "All 6 stations have station_daily.csv"
+    },
+    {
+      "id": "AC-INT-4",
+      "name": "Hourly FWI columns",
+      "status": "PASS",
+      "evidence": "ffmc,dmc,dc,isi,bui,fwi present in all hourly CSVs"
+    },
+    {
+      "id": "AC-INT-5",
+      "name": "Daily FWI columns",
+      "status": "PASS",
+      "evidence": "ffmc,dmc,dc,isi,bui,fwi present in all daily CSVs"
+    },
+    {
+      "id": "AC-INT-6",
+      "name": "Imputation report",
+      "status": "PASS",
+      "evidence": "data/processed/imputation_report.csv exists (2983 rows)"
+    },
+    {
+      "id": "AC-INT-7",
+      "name": "Imputation after concat+dedup",
+      "status": "PASS",
+      "evidence": "cleaning.py line 366: impute runs on combined_hourly after drop_duplicates at line 362"
+    },
+    {
+      "id": "AC-INT-8",
+      "name": "Long gaps remain NaN",
+      "status": "PASS",
+      "evidence": "ImputationConfig.long_gap_method=preserve (imputation.py line 23)"
+    },
+    {
+      "id": "AC-INT-9",
+      "name": "FWI on imputed data",
+      "status": "PASS",
+      "evidence": "cleaning.py line 371: _compute_fwi_codes(imputed) runs after imputation"
+    }
+  ],
   "failing_nodes": [],
-  "summary": "Phase 3 activated; stale PASS reset. Awaiting Lisa review."
+  "summary": "Phase 3 pipeline integration complete. All 9 acceptance criteria pass. Pipeline flows correctly: discover \u2192 adapt \u2192 concat \u2192 dedup \u2192 impute \u2192 FWI \u2192 write. All 6 stations produce hourly/daily CSVs with FWI columns. Architecture checks pass: all adapters inherit BaseAdapter, router uses ADAPTER_REGISTRY."
 }
