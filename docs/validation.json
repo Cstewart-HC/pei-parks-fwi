@@ -1,7 +1,7 @@
 {
   "last_reviewed_commit": "2eee1f3",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-26T23:40:00Z",
+  "reviewed_at": "2026-03-26T23:00:48Z",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -12,8 +12,8 @@
   },
   "architecture_check": {
     "adapters_inherit_base": true,
-    "router_uses_registry": true,
     "canonical_schema_compliant": true,
+    "router_uses_registry": true,
     "issues": []
   },
   "criteria": [
@@ -21,25 +21,25 @@
       "id": "AC-E2E-1",
       "name": "Pipeline completes exit code 0",
       "status": "PASS",
-      "evidence": "Previously verified. cleaning.py runs successfully."
+      "evidence": "Previously verified. python -m pea_met_network runs successfully (subprocess timeout issue in test, not pipeline)."
     },
     {
       "id": "AC-E2E-2",
       "name": "All 6 stations have hourly + daily CSVs",
       "status": "PASS",
-      "evidence": "Manifest lists all 6 stations with artifacts."
+      "evidence": "Previously verified. All 6 station output directories contain station_hourly.csv and station_daily.csv."
     },
     {
       "id": "AC-E2E-3",
-      "name": "Stations with RH have populated FWI columns",
+      "name": "Stations with RH data have populated FWI columns",
       "status": "PASS",
-      "evidence": "Previously verified. FWI calculation correct where RH data exists."
+      "evidence": "Previously verified. FWI columns populated where RH data exists."
     },
     {
       "id": "AC-E2E-4",
       "name": "All 4 report artifacts exist",
       "status": "PASS",
-      "evidence": "pipeline_manifest.json, imputation_report.csv, qa_qc_report.csv, stanhope_validation.csv all present."
+      "evidence": "Previously verified. pipeline_manifest.json, imputation_report.csv, qa_qc_report.csv, stanhope_validation.csv all present."
     },
     {
       "id": "AC-E2E-5",
@@ -63,25 +63,25 @@
       "id": "AC-E2E-8",
       "name": "Full test suite passes",
       "status": "FAIL",
-      "evidence": "3 test failures remain after Ralph fixes: (1) test_data_refresh.py:81 pd not defined (missing pandas import after refactor), (2) test_v2_pipeline.py:645 test_race_condition_fixed fails because serial marker was removed from test_data_refresh.py when ouroboros class deleted, (3) test_data_refresh.py:176 jupyter not installed (infra). Ralph fixed all 7 original failing nodes but introduced 1 new bug and 1 cascading issue. 7/8 AC passing."
+      "evidence": "Ralph correctly fixed all 3 previously failing nodes (pandas import, race condition gate test removal, e2e marker on notebook test). However 2 tests still fail when running the full suite: (1) test_data_refresh.py:180 TestACREF7_AnalysisNotebookUpdated.test_notebook_executes_without_error fails with FileNotFoundError: jupyter not installed — marked @pytest.mark.e2e but not excluded from default test run; (2) test_v2_pipeline.py:648 test_cleaning_py_completes times out because pytest-timeout (30s) kills the subprocess before the 600s subprocess timeout completes — also marked @pytest.mark.e2e. Root cause: pyproject.toml addopts does not exclude e2e tests, so they run in the default pytest invocation. Fix: either add -m 'not e2e' to addopts in pyproject.toml, or make both tests skip when their dependencies are unavailable."
     }
   ],
   "failing_nodes": [
     {
+      "file": "pyproject.toml",
+      "line": 1,
+      "message": "addopts = \"-q\" does not exclude e2e tests. Change to addopts = \"-q -m 'not e2e'\" so that tests requiring jupyter or long pipeline runs are excluded from the default suite. Alternatively, the e2e-marked tests should use pytest.importorskip('nbconvert') and subprocess availability checks to skip gracefully."
+    },
+    {
       "file": "tests/test_data_refresh.py",
-      "line": 81,
-      "message": "NameError name pd is not defined. The refactored test_north_rustico_dec2022_loads_without_error uses pd.concat() but pandas is not imported at module level. Add import pandas as pd to the module imports."
+      "line": 180,
+      "message": "test_notebook_executes_without_error fails with FileNotFoundError: 'jupyter' not installed. Already marked @pytest.mark.e2e but still collected. Needs either addopts exclusion or importorskip guard."
     },
     {
       "file": "tests/test_v2_pipeline.py",
-      "line": 645,
-      "message": "test_race_condition_fixed checks for pytest.mark.serial in test_data_refresh.py. Ralph correctly deleted the ouroboros TestACREF3 class which had the serial marker. Fix: update test to check for pytest.mark.e2e instead, or remove this gate test since the ouroboros recursion was the actual race condition."
-    },
-    {
-      "file": "tests/test_data_refresh.py",
-      "line": 176,
-      "message": "test_notebook_executes_without_error fails because jupyter is not installed in the environment. Mark with pytest.mark.e2e and add jupyter to requirements-dev.txt, or skip when jupyter unavailable."
+      "line": 648,
+      "message": "test_cleaning_py_completes fails with pytest-timeout (>30s). The subprocess has timeout=600 but pytest-timeout kills at 30s. Already marked @pytest.mark.e2e. Needs either addopts exclusion or pytest.mark.timeout(600) override on this specific test."
     }
   ],
-  "summary": "Phase 7 E2E validation: REJECT. Ralph fixed all 7 original failing nodes from the prior review. test_validation.py now passes completely, imputation_report schema check works, manifest rows field added, glob patterns fixed, and ouroboros tests deleted. However 3 new failures appeared: a missing pandas import in test_data_refresh.py from the refactor, a cascading failure in test_race_condition_fixed because the serial marker was removed with the ouroboros class, and jupyter not available. First two are code issues for Ralph; third is infra. 7/8 AC criteria now passing."
+  "summary": "Phase 7 E2E validation: REJECT. Ralph fixed all 3 previously failing nodes correctly — pandas import added, race condition gate test removed, e2e marker added to notebook test. All non-e2e tests now pass (184/185 collected). However AC-E2E-8 (full test suite) still fails because 2 e2e-marked tests are not excluded from the default pytest run: the notebook test needs jupyter (not installed), and the pipeline completion test needs >30s (pytest-timeout kills it). The fix is to add -m 'not e2e' to pyproject.toml addopts so the default suite excludes e2e tests. 7/8 AC criteria passing."
 }
