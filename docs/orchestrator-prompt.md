@@ -60,6 +60,17 @@ Apply these rules IN ORDER:
 5. **No validation.json exists** → Run Ralph.
    First loop, no reviews yet.
 
+6. **Martin lint check** → Run Martin.
+   Check for lint violations that need repair:
+   ```bash
+   # Run Martin's linter deterministically
+   python3 scripts/martin-lint.py tests/
+   ```
+   - If `docs/martin-lint.json` exists AND `verdict == "FAIL"` AND
+     there are `critical` or `high` severity violations → **Run Martin**.
+   - If the linter passes or only has `medium`/`low` violations →
+     **Fall through to Rule 3.** Low-severity issues do not block the loop.
+
 ### Step 3: Execute
 
 If you decided to **run Lisa**:
@@ -85,6 +96,17 @@ of truth for gate results this tick.
 If you decided to **run Ralph**:
 - Read `docs/ralph-prompt.md` and follow it exactly.
 - That prompt contains all instructions for the build loop.
+
+If you decided to **run Martin**:
+- Read `docs/martin-prompt.md` and follow it exactly.
+- That prompt contains all instructions for test repair.
+- After Martin finishes, commit any changes with:
+  ```bash
+  git add docs/martin-lint.json docs/test-inventory.json tests/
+  git commit -m "martin: test repair <brief description>"
+  ```
+- Do NOT run Lisa after Martin. The next tick will detect new commits
+  touching `tests/` and dispatch Lisa automatically.
 
 If you decided to **STOP** (rule 1 or 4):
 - Print a one-line status summary and exit immediately.

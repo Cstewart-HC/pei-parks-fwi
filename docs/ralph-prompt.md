@@ -43,6 +43,14 @@ Key entry points:
 - Fix the code, not the tests (unless the test is genuinely incorrect)
 - Run tests again to confirm
 
+## Test Infrastructure is Not Your Job
+
+- If a test failure is caused by test infrastructure (missing markers, no timeouts,
+  notebook execution not marked e2e, etc.), do NOT fix the test yourself.
+- Note the issue in your commit message so Lisa can flag it for Martin.
+- Martin is the test engineer. He handles test design, repair, and maintenance.
+- You fix production code. He fixes tests.
+
 ## Anti-Patterns
 
 - Do NOT leave `data/processed/` dirty at end of tick

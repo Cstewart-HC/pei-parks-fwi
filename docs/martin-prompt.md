@@ -428,20 +428,27 @@ Edit `docs/martin-rules.json`. Git tracks version history. No prompt changes nee
 
 ## 8. Martin in the MissHoover Loop
 
-### When MissHoover Dispatches Martin
+### Dispatch: Rule 6 (Deterministic)
 
-Martin is dispatched INSTEAD of Ralph or Lisa in these situations:
+The orchestrator runs `scripts/martin-lint.py` as part of Step 1 (gather state).
+If the linter produces `critical` or `high` violations, the orchestrator dispatches
+Martin instead of Ralph or Lisa.
 
-1. **Lisa flags test infrastructure problems** in her review (e.g., "tests are slow", "tests hang")
-2. **Circuit breaker detects resource exhaustion** (hung pytest processes)
-3. **Manual dispatch** by MrCoins
-4. **Phase transition** — Martin designs tests for the new phase before Ralph starts building
+Martin does NOT decide whether to run. The linter output IS the trigger.
+This is the same principle as Ralph not deciding whether to run Lisa.
+
+### Flow After Martin Commits
+
+1. Martin fixes lint violations and commits
+2. Next tick: orchestrator sees new commits touching `tests/`
+3. Rule 2 fires → Lisa reviews Martin's changes
+4. Lisa may REJECT if Martin's fixes are wrong → Ralph or Martin fixes
+5. Lisa may PASS → loop continues normally
 
 ### Martin's State Interaction
 
 Martin does NOT modify `docs/ralph-state.json` or `docs/validation.json`.
 Martin writes to `docs/test-assessment.json` (assessment output) and commits test code changes.
-After Martin commits, the next tick sees "new commits touching tests/" and dispatches Lisa for review.
 
 ### Martin Does NOT
 - Fix production code (that's Ralph's job)

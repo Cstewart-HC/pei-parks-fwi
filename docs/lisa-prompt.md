@@ -31,6 +31,15 @@ criteria to specific files and line numbers.
    script will have already set the verdict to REJECT, but you should
    understand what data issues exist.
 
+2b. **Check Martin Lint Output (REQUIRED)**
+   Read `docs/martin-lint.json`. If it exists and `verdict == "FAIL"`:
+   - Note any `critical` or `high` violations in your review.
+   - If violations exist in files that Ralph changed, include them
+     in `failing_nodes` with `file`, `line`, and `message` from the
+     lint output. This triggers Martin on the next tick.
+   - Do NOT reject solely for `medium` or `low` lint violations
+     unless they directly affect test correctness.
+
 3. **Check Pre-Flight Output (NEW)**
    Read `docs/pre-flight.json`. If structural requirements are missing,
    note them in your review.
