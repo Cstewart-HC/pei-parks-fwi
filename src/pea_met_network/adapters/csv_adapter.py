@@ -33,6 +33,10 @@ def _load_peinp_csv(path: Path) -> pd.DataFrame:
     df = rename_columns(df)
     df = derive_wind_speed_kmh(df)
 
+    # Drop duplicate columns that may arise from rename
+    # (e.g., two "Dew Point" columns mapping to "dew_point_c")
+    df = df.loc[:, ~df.columns.duplicated()]
+
     # Parse timestamps from Date + Time columns
     if "Date" in df.columns and "Time" in df.columns:
         date_str = df["Date"].astype(str).str.strip()
@@ -68,6 +72,9 @@ def _load_eccc_csv(path: Path) -> pd.DataFrame:
 
     df = rename_columns(df)
     df = derive_wind_speed_kmh(df)
+
+    # Drop duplicate columns that may arise from rename
+    df = df.loc[:, ~df.columns.duplicated()]
 
     # ECCC has a combined "Date/Time (LST)" column
     ts_col = None

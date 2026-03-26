@@ -17,6 +17,7 @@ COLUMN_MAPS: dict[str, str] = {
     "S-THB: RH - %": "relative_humidity_pct",
     "S-THC: RH - %": "relative_humidity_pct",
     "RH (%)": "relative_humidity_pct",
+    "RH": "relative_humidity_pct",
     # Rain
     "Rain - mm": "rain_mm",
     "Precip (mm)": "rain_mm",
