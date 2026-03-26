@@ -62,7 +62,7 @@ max-complexity = 15
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-q"
+addopts = "-q -m 'not e2e'"
 testpaths = ["tests"]
 timeout = 300
 markers = [
