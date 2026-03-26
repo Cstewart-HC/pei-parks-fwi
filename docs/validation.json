@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "bae9efe",
+  "last_reviewed_commit": "7519008",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-26T17:14:58Z",
+  "reviewed_at": "2026-03-26T17:55:46.463173+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -57,51 +57,51 @@
       "id": "AC-E2E-7",
       "name": "Manifest reports 0 unprocessed files",
       "status": "PASS",
-      "evidence": "Ralph's fix (9251ada, d9e3f1c) correctly excluded _licor_all pseudo-station. Manifest shows unprocessed_count=0."
+      "evidence": "Ralph's fix (9251ada) correctly excluded _licor_all pseudo-station. Manifest shows unprocessed_count=0."
     },
     {
       "id": "AC-E2E-8",
       "name": "Full test suite passes",
       "status": "FAIL",
-      "evidence": "11 test failures across 4 files. test_validation.py: 8 failures (tests call compare_station_data(str,df,df) but function expects (df,df,on,value_cols)). test_repo_shape.py: 1 failure (requirements.lock not in ALLOWED_ROOT_FILES). test_pipeline_execution.py: 3 failures (daily CSV artifacts missing 'rows' field, imputation_report not typed in manifest). test_data_refresh.py: 2 NEW failures from broken imports in 9251ada."
+      "evidence": "10 test failures remain across 3 files after Ralph's fixes. test_validation.py: 7 failures (compare_station_data called with wrong 3-arg pattern, str passed where df expected). test_pipeline_execution.py: 3 failures (imputation_report empty, not tracked in manifest, daily CSV artifacts missing 'rows' field). test_data_refresh.py: 2 failures (no hourly/daily processed files found). test_repo_shape.py: NOW PASSING (requirements.lock fix in 4ab16df worked). test_v2_pipeline.py and other files pass but some tests hang indefinitely (test_data_refresh, test_v2_pipeline serial tests)."
     }
   ],
   "failing_nodes": [
     {
       "file": "tests/test_validation.py",
       "line": 53,
-      "message": "All TestCompareStationData tests call compare_station_data('greenwich', df, df) with wrong 3-arg pattern. Function signature at validation.py:14 is compare_station_data(ref_df, cmp_df, on=, value_cols=). Tests use old validate_against_reference call pattern. Fix: change to compare_station_data(stanhope_daily, greenwich_daily)."
+      "message": "compare_station_data called with wrong 3-arg pattern (str, df, df). Function expects (ref_df, cmp_df, on=, value_cols=)."
     },
     {
       "file": "tests/test_validation.py",
       "line": 113,
-      "message": "TestValidateAgainstReference.test_delegates_to_compare also calls compare_station_data with wrong 3-arg pattern (str, df, df). Same root cause."
+      "message": "test_delegates_to_compare same wrong call signature"
     },
     {
-      "file": "tests/test_repo_shape.py",
-      "line": 48,
-      "message": "ALLOWED_ROOT_FILES set does not include 'requirements.lock'. File exists at repo root."
+      "file": "tests/test_pipeline_execution.py",
+      "line": 94,
+      "message": "imputation_report.csv is empty"
     },
     {
-      "file": "src/pea_met_network/cleaning.py",
-      "line": 755,
-      "message": "Daily CSV manifest entries missing 'rows' field. test_pipeline_execution.py:169 expects 'rows' in every artifact with 'station' key."
+      "file": "tests/test_pipeline_execution.py",
+      "line": 99,
+      "message": "imputation_report not tracked in manifest"
     },
     {
-      "file": "src/pea_met_network/cleaning.py",
-      "line": 755,
-      "message": "imputation_report not tracked as typed artifact in manifest. Only 'processed_csv' and 'qa_qc_report' types exist."
-    },
-    {
-      "file": "tests/test_data_refresh.py",
-      "line": 64,
-      "message": "NEW FAILURE: ImportError: cannot import 'load_station_files' from normalized_loader. Broken by Ralph's fix 9251ada."
+      "file": "tests/test_pipeline_execution.py",
+      "line": 169,
+      "message": "daily CSV manifest entries missing rows field"
     },
     {
       "file": "tests/test_data_refresh.py",
-      "line": 92,
-      "message": "NEW FAILURE: ModuleNotFoundError: No module named 'src'. Test uses __import__('src.pea_met_network.manifest'). Broken by 9251ada."
+      "line": 140,
+      "message": "no hourly processed files found"
+    },
+    {
+      "file": "tests/test_data_refresh.py",
+      "line": 146,
+      "message": "no daily processed files found"
     }
   ],
-  "summary": "Phase 7 E2E validation: REJECT. AC-E2E-7 now PASS (pseudo-station fix works). AC-E2E-8 still FAIL with 11 test failures across 4 files. 3 previously identified failing nodes remain unfixed. Ralph introduced 2 NEW failures via broken imports in 9251ada. Total: 5 distinct failing nodes (7 root causes). Next Ralph run should: (1) fix test_validation.py call signatures, (2) add requirements.lock to ALLOWED_ROOT_FILES, (3) add rows field to daily manifest entries and imputation_report type, (4) revert broken import changes in test_data_refresh.py."
+  "summary": "Phase 7 E2E validation: REJECT. Ralph's fixes partially addressed prior findings \u2014 test_repo_shape.py now passes (requirements.lock fix) and AC-E2E-7 passes (pseudo-station exclusion). However AC-E2E-8 still FAILS with 10 test failures across 3 files. test_validation.py has 7 failures from wrong function call signatures (unchanged from prior review). test_pipeline_execution.py has 3 failures from empty imputation_report and incomplete manifest schema (unchanged). test_data_refresh.py has 2 failures from missing processed output files. Total: 7 distinct failing nodes. Additionally, test suites in test_data_refresh.py and test_v2_pipeline.py hang when run with other tests, suggesting serial mark or long-running pipeline calls blocking parallel execution."
 }
