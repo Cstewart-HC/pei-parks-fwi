@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "9550395",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-26T05:13:14.266682+00:00",
+  "last_reviewed_commit": "d5d08c3",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-26T05:22:03.198704+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -16,38 +16,7 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [
-    {
-      "id": "AC-VAL-1",
-      "name": "Stanhope has station_daily.csv with FWI columns",
-      "status": "PASS",
-      "evidence": "git show HEAD:data/processed/stanhope/station_daily.csv \u2014 1461 rows with ffmc, dmc, dc, isi, bui, fwi columns present."
-    },
-    {
-      "id": "AC-VAL-2",
-      "name": "stanhope_validation.csv exists",
-      "status": "PASS",
-      "evidence": "git show HEAD:data/processed/stanhope_validation.csv \u2014 file exists with 5 station rows."
-    },
-    {
-      "id": "AC-VAL-3",
-      "name": "Validation report includes row for each local station",
-      "status": "PASS",
-      "evidence": "Report contains greenwich, cavendish, north_rustico, stanley_bridge, tracadie \u2014 all 5 local stations."
-    },
-    {
-      "id": "AC-VAL-4",
-      "name": "Validation report has overlap_days and MAE columns",
-      "status": "PASS",
-      "evidence": "Columns: station, overlap_days, mean_abs_diff_ffmc, mean_abs_diff_dmc, mean_abs_diff_dc, mean_abs_diff_fwi."
-    },
-    {
-      "id": "AC-VAL-5",
-      "name": "Greenwich-Stanhope MAE < 5 for FWI",
-      "status": "PASS",
-      "evidence": "greenwich mean_abs_diff_fwi = 0.0159, well below threshold of 5."
-    }
-  ],
+  "criteria": [],
   "failing_nodes": [],
-  "summary": "Phase 4 Stanhope Validation: all 5 acceptance criteria pass. Artifact validation PASS (Stanhope hourly 35064 rows, daily 1461 rows). Pre-flight PASS (validate_against_reference and compare_station_data found). All adapters inherit BaseAdapter. Greenwich-Stanhope FWI agreement is excellent (MAE 0.016). Note: stanley_bridge and tracadie have no FWI comparison data (nulls) but still appear in the report with overlap day counts."
+  "summary": "Phase 5 activated; awaiting Lisa review."
 }
