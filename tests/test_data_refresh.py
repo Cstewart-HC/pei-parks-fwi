@@ -172,6 +172,7 @@ class TestACREF6_FWIComputed:
 class TestACREF7_AnalysisNotebookUpdated:
     """AC-REF-7: analysis notebook uses expanded time range."""
 
+    @pytest.mark.e2e
     def test_notebook_executes_without_error(self):
         import subprocess
 

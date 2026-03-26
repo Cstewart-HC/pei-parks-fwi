@@ -8,12 +8,12 @@ ALLOWED_ROOT_FILES = {
     "requirements.txt",
     ".gitignore",
     ".pre-commit-config.yaml",
-    "IMPLEMENTATION_PLAN.md",
     "analysis.ipynb",
     "Makefile",
     "requirements-dev.txt",
     "codemap.md",
     "requirements.lock",
+    "analysis_executed.ipynb",
 }
 
 ALLOWED_ROOT_DIRS = {

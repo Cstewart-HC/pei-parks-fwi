@@ -75,6 +75,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
         assert inspect.isabstract(BaseAdapter)
         assert hasattr(BaseAdapter, "load")
 
+    @pytest.mark.e2e
     def test_dry_run_flag_reports_file_counts(self):
         """AC-ARCH-6: pea_met_network --dry-run reports
     file counts without writing."""
@@ -90,6 +91,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
         assert ("station" in result.stdout.lower()
             or "file" in result.stdout.lower())
 
+    @pytest.mark.e2e
     def test_dry_run_does_not_write_outputs(self):
         """AC-ARCH-7: dry-run does not create any files in data/processed/."""
         # Ensure test marker file doesn't exist before
@@ -108,6 +110,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
         # No marker file should be created
         assert not test_marker.exists(), "dry-run should not write any files"
 
+    @pytest.mark.e2e
     def test_unknown_file_format_causes_error(self):
         """AC-ARCH-8: Unknown file format in data/raw/ causes hard error."""
         # Create a fake unknown format file
@@ -299,6 +302,7 @@ class TestAC_PIPE_3_PipelineIntegration:
     """Phase 3: Full pipeline wired:
     concat → dedup → resample → impute → FWI."""
 
+    @pytest.mark.e2e
     def test_cleaning_py_runs_end_to_end(self):
         """AC-INT-1: pea_met_network runs end-to-end without error."""
         result = subprocess.run(
@@ -387,10 +391,11 @@ class TestAC_PIPE_3_PipelineIntegration:
             pytest.skip("No processed data yet")
 
         df = pd.read_csv(hourly_path)
-        # Check some NaN values remain
-        # (not everything was imputed)
-        # This is a soft check - the imputation should leave long gaps
-        assert df["air_temperature_c"].isna().sum() >= 0  # At least no error
+        nan_count = df["air_temperature_c"].isna().sum()
+        assert nan_count > 0, (
+            f"Expected some NaN values from long gaps, "
+            f"but air_temperature_c has none"
+        )
 
     def test_fwi_calculated_on_imputed_data(self):
         """AC-INT-9: FWI calculated on imputed data (few NaN in FWI columns)."""
@@ -535,6 +540,7 @@ class TestAC_PIPE_5_QAQCReporting:
 class TestAC_PIPE_6_Determinism:
     """Phase 6: Reproducible, deterministic outputs."""
 
+    @pytest.mark.e2e
     def test_byte_identical_on_rerun(self):
         """AC-DET-1: Two consecutive runs produce byte-identical CSV outputs."""
         station = "greenwich"
@@ -601,6 +607,7 @@ class TestAC_PIPE_6_Determinism:
         assert "checksums" in manifest, "Manifest missing checksums"
         assert len(manifest["checksums"]) > 0, "No checksums in manifest"
 
+    @pytest.mark.e2e
     def test_force_flag_behavior(self):
         """AC-DET-5: --force overwrites; without it, skips if newer."""
         station = "greenwich"
@@ -610,7 +617,7 @@ class TestAC_PIPE_6_Determinism:
             pytest.skip("No processed data yet")
 
         # Get original mtime
-        hourly_path.stat().st_mtime
+        original_mtime = hourly_path.stat().st_mtime
 
         # Run without --force (should skip if newer)
         subprocess.run(
@@ -620,8 +627,12 @@ class TestAC_PIPE_6_Determinism:
             timeout=300,
         )
 
-        # mtime should not change (or test is inconclusive if it does)
-        # This is a soft test
+        # mtime should not change when --force is absent
+        new_mtime = hourly_path.stat().st_mtime
+        assert new_mtime == original_mtime, (
+            "File mtime changed without --force: "
+            f"{original_mtime} -> {new_mtime}"
+        )
 
     def test_race_condition_fixed(self):
         """AC-DET-6: test_cleaning_py_runs marked as serial."""
@@ -642,6 +653,7 @@ class TestAC_PIPE_6_Determinism:
 class TestAC_PIPE_7_E2EValidation:
     """Phase 7: Full end-to-end validation."""
 
+    @pytest.mark.e2e
     def test_cleaning_py_completes(self):
         """AC-E2E-1: pea_met_network completes with exit code 0."""
         result = subprocess.run(
