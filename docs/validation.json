@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "13576e3",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-26T02:43:08.585441+00:00",
+  "last_reviewed_commit": "b5ae694",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-26T02:43:41.085653+00:00",
   "artifact_validation": {
     "status": "FAIL",
     "errors": [
@@ -18,7 +18,20 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [],
+  "criteria": [
+    {
+      "id": "STRUCT-FUNCTION-1",
+      "name": "Missing function: validate_against_reference",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
+    },
+    {
+      "id": "STRUCT-FUNCTION-2",
+      "name": "Missing function: compare_station_data",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
+    }
+  ],
   "failing_nodes": [],
-  "summary": "Phase 4 activated; awaiting Lisa review."
+  "summary": "Pre-flight structural lint failed: Checked 2 structural requirements for phase 4: FAIL (2 missing)"
 }
