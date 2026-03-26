@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "4b1a8dab17a41e5e2b93fd795172a9ea8b073f72",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-26T11:05:21.279967+00:00",
+  "last_reviewed_commit": "a7f332f",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-26T11:43:30.432566+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -19,44 +19,7 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [
-    {
-      "id": "AC-QC-1",
-      "name": "data/processed/qa_qc_report.csv exists after pipeline run",
-      "status": "PASS",
-      "evidence": "git show HEAD:data/processed/qa_qc_report.csv \u2014 file exists with 7 rows (6 stations + header)"
-    },
-    {
-      "id": "AC-QC-2",
-      "name": "Report has row for every station processed",
-      "status": "PASS",
-      "evidence": "6 stations in report: greenwich, cavendish, north_rustico, stanley_bridge, tracadie, stanhope"
-    },
-    {
-      "id": "AC-QC-3",
-      "name": "Report includes per-variable missingness percentages",
-      "status": "PASS",
-      "evidence": "Multiple missing_pct_* columns present (missing_pct_air_temperature_c, missing_pct_relative_humidity_pct, missing_pct_rain_mm, etc.)"
-    },
-    {
-      "id": "AC-QC-4",
-      "name": "Report includes duplicate timestamp counts per station",
-      "status": "PASS",
-      "evidence": "duplicate_count column present in qa_qc_report.csv"
-    },
-    {
-      "id": "AC-QC-5",
-      "name": "Report flags out-of-range values",
-      "status": "PASS",
-      "evidence": "out_of_range_temp_count, out_of_range_rh_count, out_of_range_wind_count columns present"
-    },
-    {
-      "id": "AC-QC-6",
-      "name": "Report is added to pipeline manifest artifacts",
-      "status": "PASS",
-      "evidence": "pipeline_manifest.json has 418 artifacts including qa_qc_report (type=qa_qc_report, rows=6). Previously failed at 417 artifacts; Ralph added manifest registration in cleaning.py lines 678-695."
-    }
-  ],
+  "criteria": [],
   "failing_nodes": [],
-  "summary": "Phase 5 QA/QC reporting: all 6 acceptance criteria pass. AC-QC-6 previously failed (qa_qc_report not in manifest) is now fixed \u2014 cleaning.py registers the artifact at lines 678-695. All 5 Phase 5 pytest tests pass. Pre-flight is stale (functions exist but pre-flight ran before refactoring commit 7e72943). Note: 4 non-Phase-5 test files have import errors (normalized_loader, fwi modules missing) \u2014 outside Phase 5 scope."
+  "summary": "Phase 6 activated; awaiting Lisa review."
 }
