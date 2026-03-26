@@ -1,0 +1,205 @@
+{
+  "assessed_at": "2026-03-26T22:35:00-03:00",
+  "inventory_hash": "92ea59b",
+  "fast_suite_result": "PASS_WITH_1_FAILURE",
+  "fast_suite_duration_seconds": 3.8,
+  "fast_suite_test_count": 95,
+  "fast_suite_excluded_files": [
+    "tests/test_v2_pipeline.py (50 tests, 9 subprocess calls)",
+    "tests/test_data_refresh.py (16 tests, 3 subprocess calls)",
+    "tests/test_analysis_notebook.py (15 tests, notebook execution)",
+    "tests/test_explore_smoke.py (3 tests, 1 notebook execution)"
+  ],
+  "anti_patterns_found": [
+    {
+      "severity": "CRITICAL",
+      "pattern": "ourobouros",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 745,
+      "test": "test_full_test_suite_passes",
+      "description": "Runs 'pytest tests/ -v --tb=short' as a subprocess within the test suite. Causes recursive execution — the test spawns a new pytest process that includes this test, which spawns another, etc.",
+      "recommendation": "DELETE this test entirely. E2E test coverage should be achieved by running the suite externally, not from within itself."
+    },
+    {
+      "severity": "CRITICAL",
+      "pattern": "ourobouros",
+      "file": "tests/test_data_refresh.py",
+      "line": 244,
+      "test": "test_no_failures",
+      "description": "Runs '.venv/bin/pytest -q --tb=short' as a subprocess. Same recursive execution problem as test_v2_pipeline.py::test_full_test_suite_passes.",
+      "recommendation": "DELETE this test entirely."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "no_timeout",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 647,
+      "test": "test_cleaning_py_completes",
+      "description": "Runs 'python -m pea_met_network' (all 6 stations) with timeout=600s. This is the primary CPU hog that caused tonight's hang. In the loop context, 600s is effectively infinite.",
+      "recommendation": "Reduce timeout to 120s or move to tests/e2e/ with @pytest.mark.e2e marker. In the loop, this should NEVER run as part of the fast suite."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "subprocess_bloat",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 544,
+      "test": "test_byte_identical_on_rerun",
+      "description": "Runs the full greenwich pipeline TWICE (subprocess × 2, timeout=300s each) to check determinism. Total worst case: 600s for one test.",
+      "recommendation": "Replace with a unit test on the hashing/checksum function using synthetic data. Determinism of the pipeline is a property of individual functions, not the whole system."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "subprocess_bloat",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 304,
+      "test": "test_cleaning_py_runs_end_to_end",
+      "description": "Runs 'python -m pea_met_network --stations greenwich' with timeout=300s. Full pipeline execution as a test.",
+      "recommendation": "Move to tests/e2e/ with @pytest.mark.e2e marker and reduce timeout to 120s."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "subprocess_bloat",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 616,
+      "test": "test_force_flag_behavior",
+      "description": "Runs 'python -m pea_met_network --stations greenwich' with timeout=300s. Checks --force flag by running the real pipeline.",
+      "recommendation": "Move to tests/e2e/ with @pytest.mark.e2e marker."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "subprocess_bloat",
+      "file": "tests/test_data_refresh.py",
+      "line": 116,
+      "test": "test_cleaning_py_runs",
+      "description": "Runs 'python -m pea_met_network' (all stations) with timeout=300s.",
+      "recommendation": "DELETE or move to tests/e2e/. Duplicates test_v2_pipeline.py::test_cleaning_py_completes."
+    },
+    {
+      "severity": "HIGH",
+      "pattern": "notebook_execution",
+      "file": "tests/test_data_refresh.py",
+      "line": 198,
+      "test": "test_notebook_executes_without_error",
+      "description": "Runs 'jupyter nbconvert --execute analysis.ipynb' with timeout=600s. Executes entire notebook as a test.",
+      "recommendation": "Move to tests/e2e/ with @pytest.mark.e2e marker."
+    },
+    {
+      "severity": "MEDIUM",
+      "pattern": "tautology",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 393,
+      "test": "test_long_gaps_remain_nan",
+      "description": "Assertion 'df[\"air_temperature_c\"].isna().sum() >= 0' is a tautology — isna().sum() is always >= 0 for any DataFrame. This test always passes regardless of whether long gaps are actually preserved.",
+      "recommendation": "Replace with a specific check: load the hourly data, find gaps > threshold, verify they are NaN. E.g.: assert df['air_temperature_c'].isna().sum() > 0, 'Expected some NaN values from long gaps'"
+    },
+    {
+      "severity": "MEDIUM",
+      "pattern": "shared_state",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 544,
+      "test": "test_byte_identical_on_rerun",
+      "description": "Writes to data/processed/greenwich/ without using tmp_path. Pollutes shared state for other tests and requires --force to clean up.",
+      "recommendation": "Use --output-dir pointing to tmp_path, or add @pytest.mark.serial and document state dependency."
+    },
+    {
+      "severity": "MEDIUM",
+      "pattern": "shared_state",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 616,
+      "test": "test_force_flag_behavior",
+      "description": "Runs pipeline without --force, modifying data/processed/ in place. Depends on existing processed data.",
+      "recommendation": "Use tmp_path for output isolation."
+    },
+    {
+      "severity": "MEDIUM",
+      "pattern": "shared_state",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 304,
+      "test": "test_cleaning_py_runs_end_to_end",
+      "description": "Runs pipeline writing to data/processed/greenwich/ without isolation.",
+      "recommendation": "Use tmp_path for output isolation."
+    },
+    {
+      "severity": "LOW",
+      "pattern": "soft_check",
+      "file": "tests/test_v2_pipeline.py",
+      "line": 624,
+      "test": "test_force_flag_behavior",
+      "description": "Comment says 'This is a soft test'. No actual assertion on mtime — the test always passes regardless of whether --force was respected.",
+      "recommendation": "Add an actual assertion or delete the test."
+    },
+    {
+      "severity": "LOW",
+      "pattern": "broken_import",
+      "file": "tests/test_data_refresh.py",
+      "line": 64,
+      "test": "test_pipeline_creates_manifest",
+      "description": "Uses __import__('src.pea_met_network.manifest') which is an incorrect import path. Should be 'from pea_met_network.manifest import ...'. Known blocker from previous Lisa review.",
+      "recommendation": "Fix import to use standard package import."
+    }
+  ],
+  "slow_tests": [
+    {
+      "file": "tests/test_v2_pipeline.py",
+      "test": "test_cleaning_py_completes",
+      "estimated_duration_seconds": 120,
+      "recommendation": "Move to tests/e2e/"
+    },
+    {
+      "file": "tests/test_v2_pipeline.py",
+      "test": "test_byte_identical_on_rerun",
+      "estimated_duration_seconds": 240,
+      "recommendation": "Replace with unit test"
+    },
+    {
+      "file": "tests/test_v2_pipeline.py",
+      "test": "test_cleaning_py_runs_end_to_end",
+      "estimated_duration_seconds": 60,
+      "recommendation": "Move to tests/e2e/"
+    },
+    {
+      "file": "tests/test_v2_pipeline.py",
+      "test": "test_force_flag_behavior",
+      "estimated_duration_seconds": 60,
+      "recommendation": "Move to tests/e2e/"
+    },
+    {
+      "file": "tests/test_data_refresh.py",
+      "test": "test_cleaning_py_runs",
+      "estimated_duration_seconds": 120,
+      "recommendation": "DELETE (duplicate)"
+    },
+    {
+      "file": "tests/test_data_refresh.py",
+      "test": "test_notebook_executes_without_error",
+      "estimated_duration_seconds": 120,
+      "recommendation": "Move to tests/e2e/"
+    },
+    {
+      "file": "tests/test_analysis_notebook.py",
+      "test": "15 notebook execution tests",
+      "estimated_duration_seconds": 300,
+      "recommendation": "Move to tests/e2e/"
+    }
+  ],
+  "existing_good_tests": {
+    "unit_tests": 68,
+    "fast_suite_runtime": "3.8 seconds for 95 tests",
+    "quality_assessment": "The existing unit tests (test_imputation.py, test_qa_qc.py, test_resampling_policy.py, test_validation.py, test_fwi_vectors.py, test_stanhope_cache.py) are well-structured with proper fixtures, parametrization, and assertions. These form a solid foundation."
+  },
+  "recommended_actions": [
+    "1. DELETE test_v2_pipeline.py::test_full_test_suite_passes (CRITICAL: Ouroboros)",
+    "2. DELETE test_data_refresh.py::test_no_failures (CRITICAL: Ouroboros)",
+    "3. DELETE test_data_refresh.py::test_cleaning_py_runs (HIGH: duplicate of v2 test)",
+    "4. FIX tautology in test_v2_pipeline.py::test_long_gaps_remain_nan (line 393)",
+    "5. FIX soft check in test_v2_pipeline.py::test_force_flag_behavior (line 624)",
+    "6. FIX broken import in test_data_refresh.py::test_pipeline_creates_manifest (line 64)",
+    "7. ADD pytest-timeout to pyproject.toml dependencies",
+    "8. ADD pytest markers (e2e, slow) to pyproject.toml",
+    "9. MOVE 7 subprocess tests to tests/e2e/ directory with @pytest.mark.e2e",
+    "10. REPLACE test_byte_identical_on_rerun with unit test on checksum function",
+    "11. ADD tmp_path isolation to remaining subprocess tests",
+    "12. ADD analysis_executed.ipynb to ALLOWED_ROOT_FILES in test_repo_shape.py"
+  ],
+  "summary": "The project has 183 tests. The 'clean' suite (95 tests excluding 4 problematic files) runs in 3.8s — excellent. The problem is concentrated in 4 files (84 tests) that use subprocess calls to run the full pipeline, execute notebooks, or recursively invoke pytest. Two tests are Ouroboros patterns (recursive pytest) that must be deleted immediately. The remaining subprocess tests should be moved to tests/e2e/ and only run on explicit request. The fix is surgical: delete 3 tests, move ~15 tests, fix 3 assertions, add pytest-timeout plugin. Estimated post-repair fast suite: ~4 seconds for ~80 tests."
+}
