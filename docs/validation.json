@@ -1,13 +1,15 @@
 {
-  "last_reviewed_commit": "85f1ef8",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-26T00:10:25.724770+00:00",
+  "last_reviewed_commit": "09d6f5b",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-26T00:20:25.317337+00:00",
   "artifact_validation": {
-    "status": "PASS",
-    "errors": []
+    "status": "FAIL",
+    "errors": [
+      "data/processed/qa_qc_report.csv does not exist in committed tree (AC-QC-1)"
+    ]
   },
   "pre_flight": {
-    "status": "PASS",
+    "status": "SKIP",
     "missing": []
   },
   "architecture_check": {
@@ -16,7 +18,55 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [],
-  "failing_nodes": [],
-  "summary": "Phase 5 activated; awaiting Lisa review."
+  "criteria": [
+    {
+      "id": "AC-QC-1",
+      "name": "QA/QC report exists after pipeline run",
+      "status": "FAIL",
+      "evidence": "data/processed/qa_qc_report.csv not found in git HEAD (09d6f5b). File has never been committed."
+    },
+    {
+      "id": "AC-QC-2",
+      "name": "Report has row for every station processed",
+      "status": "FAIL",
+      "evidence": "Cannot evaluate \u2014 report file does not exist."
+    },
+    {
+      "id": "AC-QC-3",
+      "name": "Report includes per-variable missingness percentages",
+      "status": "FAIL",
+      "evidence": "Cannot evaluate \u2014 report file does not exist."
+    },
+    {
+      "id": "AC-QC-4",
+      "name": "Report includes duplicate timestamp counts per station",
+      "status": "FAIL",
+      "evidence": "Cannot evaluate \u2014 report file does not exist."
+    },
+    {
+      "id": "AC-QC-5",
+      "name": "Report flags out-of-range values",
+      "status": "FAIL",
+      "evidence": "Cannot evaluate \u2014 report file does not exist."
+    },
+    {
+      "id": "AC-QC-6",
+      "name": "Report added to pipeline manifest artifacts",
+      "status": "FAIL",
+      "evidence": "Cannot evaluate \u2014 report file does not exist."
+    }
+  ],
+  "failing_nodes": [
+    {
+      "file": "src/pea_met_network/cleaning.py",
+      "line": 1,
+      "message": "No generate_qa_qc_report() function found. Pipeline does not call qa_qc module or produce qa_qc_report.csv."
+    },
+    {
+      "file": "data/processed/qa_qc_report.csv",
+      "line": 0,
+      "message": "Artifact does not exist."
+    }
+  ],
+  "summary": "Phase 5 REJECT: qa_qc_report.csv has never been committed. The qa_qc.py module exists with missingness_summary(), duplicate_timestamps(), out_of_range_values(), and coverage_summary() functions, but cleaning.py has no integration \u2014 no generate_qa_qc_report() function, no import of qa_qc functions, and no pipeline step that writes the report. All 6 acceptance criteria fail because the core deliverable (the report artifact) is missing. Exit gate: 1 failed, 4 skipped."
 }
