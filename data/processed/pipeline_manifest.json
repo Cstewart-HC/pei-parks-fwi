@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-26T06:50:53.705129+00:00",
+  "generated_at": "2026-03-26T07:11:32.104844+00:00",
   "artifacts": [
     {
       "station": "cavendish",
@@ -3327,7 +3327,7 @@
       "type": "qa_qc_report",
       "path": "data/processed/qa_qc_report.csv",
       "rows": 6,
-      "timestamp": "2026-03-26T06:51:41.277896+00:00"
+      "timestamp": "2026-03-26T07:11:32.104830+00:00"
     }
   ]
 }
