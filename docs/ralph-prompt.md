@@ -11,15 +11,15 @@ Do NOT run `pip install` or modify the environment. Do NOT guess at available li
 Key entry points:
 - Tests: `.venv/bin/pytest tests/ -q`
 - Lint: `.venv/bin/ruff check .`
-- Pipeline: `.venv/bin/python cleaning.py` (when it exists)
+- Pipeline: `.venv/bin/python -m pea_met_network`
 
 ## Loop Protocol
 
-1. **Read state:** `cat docs/ralph-state.json` — understand current phase, iteration, and any Lisa feedback
-2. **Read spec:** Read the phase definition to understand what "done" looks like
-3. **Read Lisa's feedback:** If previous verdict was REJECT, read `docs/validation.json` for the specific criteria that failed and the evidence Lisa provided
-4. **Fix what's broken:** Address each failed criterion explicitly
-5. **Verify:** Run the test suite (`.venv/bin/pytest tests/ -q`) to confirm fixes
+1. **Read state:** `cat docs/ralph-state.json` — understand current phase and iteration
+2. **Read spec:** `cat docs/specs/0{phase}-*.md` — find the phase definition matching the current phase number to understand what "done" looks like
+3. **Read Lisa's feedback:** `cat docs/validation.json` — the `failing_nodes` array tells you exactly what to fix (file, line, message)
+4. **Fix ALL failing nodes:** Address every item in `failing_nodes` before running any tests. Batch all code changes first.
+5. **Verify:** Run the test suite (`.venv/bin/pytest tests/ -q`) once after all fixes are applied
 6. **Lint:** Run `.venv/bin/ruff check .` and fix any issues
 7. **Commit:** `git add` all relevant changes and `git commit` with a clear message
 
@@ -31,10 +31,11 @@ Key entry points:
 
 ## When Lisa Says REJECT
 
-- Read `docs/validation.json` — the `evidence` field tells you exactly what failed
-- Fix each failed criterion
+- Read `docs/validation.json` — the `failing_nodes` array lists every issue with file, line, and message
+- Fix ALL failing nodes in the order listed before running tests
 - Do NOT re-argue with Lisa's assessment — fix the problem
 - Do NOT skip criteria or make partial fixes
+- Do NOT run tests between individual fixes — batch everything, test once
 
 ## When Tests Fail
 
