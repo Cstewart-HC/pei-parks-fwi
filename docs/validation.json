@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "d5d08c3",
-  "verdict": "PENDING",
-  "reviewed_at": "2026-03-26T05:22:03.198704+00:00",
+  "last_reviewed_commit": "df6226f",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-26T05:34:36.274193+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -16,7 +16,20 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [],
+  "criteria": [
+    {
+      "id": "STRUCT-FUNCTION-1",
+      "name": "Missing function: generate_qa_qc_report",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
+    },
+    {
+      "id": "STRUCT-FUNCTION-2",
+      "name": "Missing function: calculate_completeness",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
+    }
+  ],
   "failing_nodes": [],
-  "summary": "Phase 5 activated; awaiting Lisa review."
+  "summary": "Pre-flight structural lint failed: Checked 2 structural requirements for phase 5: FAIL (2 missing)"
 }
