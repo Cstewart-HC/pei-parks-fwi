@@ -27,7 +27,7 @@
     {
       "id": 3,
       "name": "Pipeline Integration",
-      "status": "active",
+      "status": "done",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -38,7 +38,7 @@
     {
       "id": 4,
       "name": "Stanhope Validation",
-      "status": "pending",
+      "status": "active",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -80,15 +80,15 @@
       "exit": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_7_E2EValidation -v"
     }
   ],
-  "current_phase": 3,
+  "current_phase": 4,
   "circuit_breaker": {
     "stall_count": 0,
     "last_stall_at": null,
     "max_stalls": 3,
     "consecutive_stalls": 0,
-    "last_commit": "aeab187",
-    "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "c44788c67e5dff2c",
+    "last_commit": "13576e3",
+    "last_verdict": "PASS",
+    "last_fail_criteria_hash": null,
     "tripped": false,
     "trip_reason": null,
     "trip_at": null,
@@ -140,9 +140,9 @@
   ],
   "last_reviewed_commit": null,
   "blockers": [],
-  "phase": "3",
-  "iteration": 1,
+  "phase": "4",
+  "iteration": 2,
   "status": "running",
-  "updated_at": "2026-03-26T01:52:41.302976+00:00",
+  "updated_at": "2026-03-26T02:43:08.585469+00:00",
   "blocker": null
 }

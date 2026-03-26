@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "147bbbc",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-26T02:30:07.443080+00:00",
+  "last_reviewed_commit": "13576e3",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-26T02:43:08.585441+00:00",
   "artifact_validation": {
     "status": "FAIL",
     "errors": [
@@ -18,62 +18,7 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [
-    {
-      "id": "AC-INT-1",
-      "name": "cleaning.py runs end-to-end without error",
-      "status": "PASS",
-      "evidence": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v \u2014 9/9 tests passed in 39.55s"
-    },
-    {
-      "id": "AC-INT-2",
-      "name": "All 6 stations have station_hourly.csv",
-      "status": "PASS",
-      "evidence": "git ls-tree confirms: cavendish, greenwich, north_rustico, stanley_bridge, stanhope, tracadie all have station_hourly.csv committed"
-    },
-    {
-      "id": "AC-INT-3",
-      "name": "All 6 stations have station_daily.csv",
-      "status": "PASS",
-      "evidence": "git ls-tree confirms all 6 stations have station_daily.csv committed"
-    },
-    {
-      "id": "AC-INT-4",
-      "name": "Hourly CSVs have FWI columns (ffmc, dmc, dc, isi, bui, fwi)",
-      "status": "PASS",
-      "evidence": "git show HEAD confirms ffmc,dmc,dc,isi,bui,fwi in hourly headers for all stations including Stanhope (ECCC format)"
-    },
-    {
-      "id": "AC-INT-5",
-      "name": "Daily CSVs have FWI columns",
-      "status": "PASS",
-      "evidence": "git show HEAD confirms ffmc,dmc,dc,isi,bui,fwi in daily headers for all 6 stations"
-    },
-    {
-      "id": "AC-INT-6",
-      "name": "Imputation report exists at data/processed/imputation_report.csv",
-      "status": "PASS",
-      "evidence": "git show HEAD:data/processed/imputation_report.csv \u2014 committed with columns: station,variable,time_start,time_end,method,count_affected"
-    },
-    {
-      "id": "AC-INT-7",
-      "name": "Imputation runs after concat+dedup (not per-file)",
-      "status": "PASS",
-      "evidence": "Pipeline flow in code: discover \u2192 adapt \u2192 concat \u2192 dedup \u2192 resample \u2192 impute \u2192 FWI. Tests validate this ordering."
-    },
-    {
-      "id": "AC-INT-8",
-      "name": "Long gaps (>6h hourly, >3d daily) remain NaN",
-      "status": "PASS",
-      "evidence": "imputation.py uses interpolate(method='linear', limit=6) \u2014 long gaps exceed the limit and remain NaN. Tests validate."
-    },
-    {
-      "id": "AC-INT-9",
-      "name": "FWI calculated on imputed data",
-      "status": "PASS",
-      "evidence": "Pipeline ordering: impute \u2192 FWI \u2192 write. Committed hourly/daily files contain FWI columns with non-null values confirming calculation on imputed data."
-    }
-  ],
+  "criteria": [],
   "failing_nodes": [],
-  "summary": "Phase 3 Pipeline Integration: PASS. All 9 acceptance criteria verified. Exit gate tests pass (9/9). All 6 stations have committed hourly/daily CSVs with FWI columns. Imputation report exists. Architecture clean \u2014 all adapters inherit BaseAdapter, router uses registry. Pre-flight structural lint PASS (0 missing functions). Artifact validation showed FAIL on working-tree stale data (Greenwich NaN station values) but committed HEAD data is clean \u2014 verified via git show."
+  "summary": "Phase 4 activated; awaiting Lisa review."
 }
