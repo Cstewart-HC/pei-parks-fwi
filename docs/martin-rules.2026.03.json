@@ -1,0 +1,350 @@
+{
+  "version": "2026.03",
+  "description": "Deterministic test quality rules \u2014 consumed by scripts/martin-lint.py",
+  "anti_patterns": [
+    {
+      "id": "AP001",
+      "name": "ouroboros",
+      "category": "safety",
+      "severity": "critical",
+      "detect": "subprocess\\..*(pytest|unittest|nosetests)",
+      "scope": "test_function",
+      "rationale": "Test that runs a test runner from within a test \u2014 infinite recursion risk",
+      "auto_fix": "delete"
+    },
+    {
+      "id": "AP002",
+      "name": "unmarked_subprocess",
+      "category": "isolation",
+      "severity": "high",
+      "detect": "subprocess\\.(run|call|Popen|check_output|check_call)",
+      "scope": "test_function",
+      "requires_marker": "e2e",
+      "rationale": "Subprocess calls spawn real processes \u2014 must be in e2e suite",
+      "auto_fix": "add_marker"
+    },
+    {
+      "id": "AP003",
+      "name": "unmarked_notebook_execution",
+      "category": "isolation",
+      "severity": "high",
+      "detect": "nbconvert|execute_notebook|_execute_notebook|nbformat\\.execute",
+      "scope": "test_function",
+      "requires_marker": "e2e",
+      "rationale": "Notebook execution is expensive \u2014 must be in e2e suite",
+      "auto_fix": "add_marker"
+    },
+    {
+      "id": "AP004",
+      "name": "missing_subprocess_timeout",
+      "category": "safety",
+      "severity": "high",
+      "detect": "subprocess\\.(run|call|Popen|check_output|check_call)",
+      "scope": "call_site",
+      "requires_kwarg": "timeout",
+      "rationale": "Unbounded subprocess = potential hang, blocks entire suite",
+      "auto_fix": null
+    },
+    {
+      "id": "AP005",
+      "name": "tautological_assertion",
+      "category": "assertions",
+      "severity": "medium",
+      "detect": "assert\\s+.*\\.isna\\(\\)\\.sum\\(\\)\\s*(>=|<=|>|<)\\s*0|assert\\s+.*\\.sum\\(\\)\\s*(>=|<=|>|<)\\s*0|assert\\s+.*is\\s+(not\\s+)?None|assert\\s+True$|assert\\s+.*==\\s+True$|assert\\s+.*!=\\s+False$|assert\\s+.*is\\s+True$|assert\\s+.*is\\s+False$",
+      "scope": "line",
+      "rationale": "Assertion that always passes \u2014 tests nothing",
+      "auto_fix": null
+    },
+    {
+      "id": "AP006",
+      "name": "shared_state_write",
+      "category": "isolation",
+      "severity": "medium",
+      "detect": "data/(processed|raw|external)",
+      "scope": "test_function",
+      "context": "write",
+      "rationale": "Test writes to shared data directory \u2014 use tmp_path instead",
+      "auto_fix": null
+    },
+    {
+      "id": "AP007",
+      "name": "duplicate_test_name",
+      "category": "structure",
+      "severity": "medium",
+      "detect": null,
+      "scope": "test_function",
+      "rationale": "Two tests with the same name \u2014 one silently overwrites the other",
+      "auto_fix": null
+    },
+    {
+      "id": "AP008",
+      "name": "unmarked_network_call",
+      "category": "isolation",
+      "severity": "high",
+      "detect": "requests\\.(get|post|put|delete|patch)|urllib\\.request|httpx\\.(get|post)|aiohttp",
+      "scope": "test_function",
+      "requires_marker": "integration",
+      "rationale": "Test makes network calls \u2014 should use mocking or be in integration suite",
+      "auto_fix": null
+    },
+    {
+      "id": "AP009",
+      "name": "unmarked_database_access",
+      "category": "isolation",
+      "severity": "high",
+      "detect": "sqlite3\\.connect|psycopg2|create_engine|Session|connect\\(|cursor\\(",
+      "scope": "test_function",
+      "requires_marker": "integration",
+      "rationale": "Test accesses a database \u2014 should use fixtures or be in integration suite",
+      "auto_fix": null
+    },
+    {
+      "id": "AP010",
+      "name": "sleep_in_test",
+      "category": "performance",
+      "severity": "medium",
+      "detect": "time\\.sleep|asyncio\\.sleep",
+      "scope": "test_function",
+      "rationale": "time.sleep() makes tests slow and non-deterministic \u2014 use mocking or freezegun",
+      "auto_fix": null
+    },
+    {
+      "id": "AP011",
+      "name": "hardcoded_path_in_test",
+      "category": "isolation",
+      "severity": "low",
+      "detect": "open\\(['\"][/(~]",
+      "scope": "test_function",
+      "rationale": "Hardcoded file path \u2014 use tmp_path or fixtures for portability",
+      "auto_fix": null
+    },
+    {
+      "id": "AP012",
+      "name": "bare_assert",
+      "category": "assertions",
+      "severity": "low",
+      "detect": "^\\s*assert\\s+[a-zA-Z_]\\w*\\s*$",
+      "scope": "line",
+      "rationale": "Bare assert on single variable \u2014 intent unclear, add comparison or message",
+      "auto_fix": null
+    },
+    {
+      "id": "AP013",
+      "name": "overly_broad_except",
+      "category": "reliability",
+      "severity": "medium",
+      "detect": "except(\\s*:|\\s+Exception\\s*:|\\s+BaseException\\s*:)",
+      "scope": "test_function",
+      "rationale": "Catching all exceptions hides real failures \u2014 catch specific exceptions",
+      "auto_fix": null
+    },
+    {
+      "id": "AP014",
+      "name": "float_assertion_without_approx",
+      "category": "assertions",
+      "severity": "medium",
+      "detect": "assert\\s+.*==\\s*[0-9]+\\.[0-9]+|assert\\s+.*!=\\s*[0-9]+\\.[0-9]+",
+      "scope": "line",
+      "rationale": "Exact float comparison is fragile \u2014 use pytest.approx()",
+      "auto_fix": null
+    },
+    {
+      "id": "AP015",
+      "name": "test_too_long",
+      "category": "structure",
+      "severity": "low",
+      "detect": null,
+      "scope": "test_function",
+      "threshold": {
+        "metric": "line_count",
+        "max": 50
+      },
+      "rationale": "Test function exceeds 50 lines \u2014 consider splitting into focused tests",
+      "auto_fix": null
+    },
+    {
+      "id": "AP016",
+      "name": "test_missing_description",
+      "category": "structure",
+      "severity": "low",
+      "detect": null,
+      "scope": "test_function",
+      "rationale": "Test name is too short or generic \u2014 describe expected behavior",
+      "auto_fix": null,
+      "threshold": {
+        "metric": "name_length",
+        "min": 10,
+        "exclude_patterns": [
+          "^test_[a-z]$",
+          "^test_\\d+$"
+        ]
+      }
+    },
+    {
+      "id": "AP017",
+      "name": "unmarked_disk_write",
+      "category": "isolation",
+      "severity": "medium",
+      "detect": "\\.to_csv\\(|\\.to_json\\(|\\.to_parquet\\(|\\.to_pickle\\(|\\.to_feather\\(|open\\(.*(?:'w'|\"w\")",
+      "scope": "test_function",
+      "rationale": "Test writes to disk \u2014 use tmp_path fixture for test isolation",
+      "auto_fix": null
+    },
+    {
+      "id": "AP018",
+      "name": "environment_mutation",
+      "category": "isolation",
+      "severity": "medium",
+      "detect": "os\\.environ\\[.*\\]\\s*=|os\\.environ\\.pop\\(|monkeypatch\\.setenv",
+      "scope": "test_function",
+      "rationale": "Test mutates environment variables \u2014 use monkeypatch fixture for cleanup",
+      "auto_fix": null
+    },
+    {
+      "id": "AP019",
+      "name": "non_tmp_path_file_creation",
+      "category": "isolation",
+      "severity": "low",
+      "detect": "Path\\(['\"]/(?!tmp)|Path\\(['\"]~/",
+      "scope": "test_function",
+      "rationale": "File creation outside tmp_path \u2014 use tmp_path fixture for automatic cleanup",
+      "auto_fix": null
+    },
+    {
+      "id": "AP020",
+      "name": "missing_test_prefix",
+      "category": "structure",
+      "severity": "critical",
+      "detect": null,
+      "scope": "file",
+      "rationale": "Test file does not start with 'test_' \u2014 pytest will not discover it",
+      "auto_fix": null
+    },
+    {
+      "id": "AP021",
+      "name": "unused_import_in_test",
+      "category": "structure",
+      "severity": "low",
+      "detect": null,
+      "scope": "file",
+      "rationale": "Unused imports clutter test files \u2014 remove them",
+      "auto_fix": null
+    },
+    {
+      "id": "AP022",
+      "name": "import_side_effects",
+      "category": "isolation",
+      "severity": "medium",
+      "detect": "from\\s+__main__\\s+import|if\\s+__name__\\s*==\\s*['\"]__main__['\"]",
+      "scope": "file",
+      "rationale": "Import triggers side effects (e.g., pipeline run on import) \u2014 refactor to guard with main block",
+      "auto_fix": null
+    },
+    {
+      "id": "AP023",
+      "name": "print_in_test",
+      "category": "reliability",
+      "severity": "low",
+      "detect": "^\\s*print\\(",
+      "scope": "test_function",
+      "rationale": "print() in tests pollutes output \u2014 use logging or remove",
+      "auto_fix": null
+    },
+    {
+      "id": "AP024",
+      "name": "hardcoded_timestamp",
+      "category": "reliability",
+      "severity": "low",
+      "detect": "datetime\\((20\\d{2}|19\\d{2})|pd\\.Timestamp\\(['\"]20\\d{2}",
+      "scope": "test_function",
+      "rationale": "Hardcoded timestamp \u2014 tests may break over time, use relative dates or fixtures",
+      "auto_fix": null
+    },
+    {
+      "id": "AP025",
+      "name": "unmarked_io_operation",
+      "category": "isolation",
+      "severity": "medium",
+      "detect": "requests\\.get|urlopen|ftp|s3|gcs|azure\\.storage",
+      "scope": "test_function",
+      "requires_marker": "integration",
+      "rationale": "Test performs I/O to external services \u2014 should use mocking or be in integration suite",
+      "auto_fix": null
+    },
+    {
+      "id": "AP026",
+      "name": "test_class_wrong_prefix",
+      "category": "structure",
+      "severity": "medium",
+      "detect": null,
+      "scope": "test_class",
+      "rationale": "Test class does not start with 'Test' \u2014 pytest will not discover it",
+      "auto_fix": null
+    },
+    {
+      "id": "AP027",
+      "name": "complex_test_logic",
+      "category": "structure",
+      "severity": "medium",
+      "detect": null,
+      "scope": "test_function",
+      "threshold": {
+        "metric": "branch_count",
+        "max": 3
+      },
+      "rationale": "Test has too many branches (if/else/for/while) \u2014 tests should be linear, not complex",
+      "auto_fix": null
+    },
+    {
+      "id": "AP028",
+      "name": "pytest_raises_too_broad",
+      "category": "reliability",
+      "severity": "medium",
+      "detect": "pytest\\.raises\\(Exception\\)|pytest\\.raises\\(BaseException\\)",
+      "scope": "line",
+      "rationale": "Catching too-broad exception in pytest.raises \u2014 catch specific exception type",
+      "auto_fix": null
+    },
+    {
+      "id": "AP029",
+      "name": "missing_tmp_path_for_writes",
+      "category": "isolation",
+      "severity": "low",
+      "detect": null,
+      "scope": "test_function",
+      "rationale": "Test writes files but doesn't accept tmp_path fixture \u2014 risk of leftover files",
+      "auto_fix": null
+    },
+    {
+      "id": "AP030",
+      "name": "test_depends_on_cwd",
+      "category": "reliability",
+      "severity": "low",
+      "detect": "os\\.getcwd|Path\\.(cwd|absolute)\\(\\)|open\\(['\"]\\.{1,2}/",
+      "scope": "test_function",
+      "rationale": "Test depends on current working directory \u2014 use tmp_path or explicit paths",
+      "auto_fix": null
+    }
+  ],
+  "thresholds": {
+    "fast_suite_max_seconds": 60,
+    "per_test_timeout_seconds": 10,
+    "e2e_timeout_seconds": 300,
+    "test_max_lines": 50,
+    "test_min_name_length": 10,
+    "test_max_branches": 3
+  },
+  "markers": {
+    "e2e": "End-to-end tests \u2014 run with pytest -m e2e",
+    "slow": "Tests taking >10s \u2014 run with pytest -m slow",
+    "integration": "Tests requiring external resources (network, databases, filesystem)"
+  },
+  "categories": {
+    "safety": "Rules that prevent system damage (infinite loops, hangs, data loss)",
+    "isolation": "Rules that ensure tests don't depend on each other or external state",
+    "assertions": "Rules about assertion quality and correctness",
+    "structure": "Rules about test organization and discoverability",
+    "performance": "Rules that prevent tests from being unnecessarily slow",
+    "reliability": "Rules that prevent flaky or non-deterministic test behavior"
+  }
+}
