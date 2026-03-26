@@ -15,7 +15,7 @@
     },
     {
       "id": 2,
-      "name": "Format Adapters — All Formats (CSV/XLSX/XLE/JSON)",
+      "name": "Format Adapters \u2014 All Formats (CSV/XLSX/XLE/JSON)",
       "status": "done",
       "iteration": 0,
       "started_at": null,
@@ -32,7 +32,7 @@
       "started_at": null,
       "completed_at": null,
       "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v",
-      "notes": "Wire adapters into cleaning.py: concat → dedup → resample → impute → FWI. Single SSOT output.",
+      "notes": "Wire adapters into cleaning.py: concat \u2192 dedup \u2192 resample \u2192 impute \u2192 FWI. Single SSOT output.",
       "exit": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v"
     },
     {
@@ -86,9 +86,13 @@
     "last_stall_at": null,
     "max_stalls": 3,
     "consecutive_stalls": 0,
-    "last_commit": "85f1ef8",
-    "last_verdict": "PASS",
-    "last_fail_criteria_hash": null
+    "last_commit": "aeab187",
+    "last_verdict": "REJECT",
+    "last_fail_criteria_hash": "c44788c67e5dff2c",
+    "tripped": false,
+    "trip_reason": null,
+    "trip_at": null,
+    "consecutive_errors": 0
   },
   "decisions": [
     {
@@ -130,14 +134,15 @@
     {
       "id": "v2-d7",
       "decision": "Tests define the contract",
-      "rationale": "Each phase has failing tests that pass when implementation is complete. Red → green.",
+      "rationale": "Each phase has failing tests that pass when implementation is complete. Red \u2192 green.",
       "date": "2026-03-25"
     }
   ],
   "last_reviewed_commit": null,
   "blockers": [],
   "phase": "3",
-  "iteration": 0,
+  "iteration": 1,
   "status": "running",
-  "updated_at": "2026-03-26T00:10:25.724806+00:00"
+  "updated_at": "2026-03-26T01:52:41.302976+00:00",
+  "blocker": null
 }

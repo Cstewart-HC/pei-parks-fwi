@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "7a1cb0b",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-26T01:30:48.944259+00:00",
+  "last_reviewed_commit": "aeab187",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-26T01:52:41.302725+00:00",
   "artifact_validation": {
     "status": "STALE",
     "errors": [
@@ -22,60 +22,36 @@
   },
   "criteria": [
     {
-      "id": "AC-INT-1",
-      "name": "cleaning.py runs end-to-end",
-      "status": "PASS",
-      "evidence": "cleaning.py exists at project root and produces all outputs; exit gate tests pass"
+      "id": "STRUCT-FUNCTION-1",
+      "name": "Missing function: build_raw_manifest",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
     },
     {
-      "id": "AC-INT-2",
-      "name": "All 6 stations have station_hourly.csv",
-      "status": "PASS",
-      "evidence": "All 6 station dirs confirmed via git show HEAD:data/processed/<station>/station_hourly.csv"
+      "id": "STRUCT-FUNCTION-2",
+      "name": "Missing function: resample_hourly",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
     },
     {
-      "id": "AC-INT-3",
-      "name": "All 6 stations have station_daily.csv",
-      "status": "PASS",
-      "evidence": "All 6 station dirs confirmed via git show HEAD:data/processed/<station>/station_daily.csv"
+      "id": "STRUCT-FUNCTION-3",
+      "name": "Missing function: resample_daily",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
     },
     {
-      "id": "AC-INT-4",
-      "name": "Hourly CSVs have FWI columns",
-      "status": "PASS",
-      "evidence": "ffmc,dmc,dc,isi,bui,fwi present in all station_hourly.csv headers"
+      "id": "STRUCT-FUNCTION-4",
+      "name": "Missing function: impute_frame",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
     },
     {
-      "id": "AC-INT-5",
-      "name": "Daily CSVs have FWI columns",
-      "status": "PASS",
-      "evidence": "ffmc,dmc,dc,isi,bui,fwi present in all station_daily.csv headers"
-    },
-    {
-      "id": "AC-INT-6",
-      "name": "Imputation report exists",
-      "status": "PASS",
-      "evidence": "data/processed/imputation_report.csv exists in HEAD"
-    },
-    {
-      "id": "AC-INT-7",
-      "name": "Imputation runs after concat+dedup",
-      "status": "PASS",
-      "evidence": "Verified by test_hourly_csvs_have_fwi_columns \u2014 FWI on imputed data"
-    },
-    {
-      "id": "AC-INT-8",
-      "name": "Long gaps remain NaN",
-      "status": "PASS",
-      "evidence": "Test test_long_gaps_remain_nan passes"
-    },
-    {
-      "id": "AC-INT-9",
-      "name": "FWI calculated on imputed data",
-      "status": "PASS",
-      "evidence": "Test test_fwi_calculated_on_imputed_data passes"
+      "id": "STRUCT-FUNCTION-5",
+      "name": "Missing function: materialize_resampled_outputs",
+      "status": "FAIL",
+      "evidence": "Expected in **/*.py"
     }
   ],
   "failing_nodes": [],
-  "summary": "Phase 3 (Pipeline Integration) PASS. All 9 acceptance criteria verified. Exit gate tests pass 9/9. Architecture checks clean: all adapters inherit BaseAdapter, router uses registry. Note: cleaning.py is untracked in git (functional but not committed). artifact-validation.json and pre-flight.json are stale (phase 4). Future-phase tests in test_v2_pipeline.py have expected failures."
+  "summary": "Pre-flight structural lint failed: Checked 5 structural requirements for phase 3: FAIL (5 missing)"
 }
