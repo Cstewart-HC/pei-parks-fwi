@@ -60,7 +60,7 @@
     {
       "id": 6,
       "name": "Determinism",
-      "status": "active",
+      "status": "done",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -71,7 +71,7 @@
     {
       "id": 7,
       "name": "E2E Validation",
-      "status": "pending",
+      "status": "active",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -80,12 +80,12 @@
       "exit": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_7_E2EValidation -v"
     }
   ],
-  "current_phase": 6,
+  "current_phase": 7,
   "circuit_breaker": {
     "tripped": false,
     "trip_reason": "",
     "consecutive_stalls": 0,
-    "last_commit": "a7f332f",
+    "last_commit": "0ae1940",
     "last_verdict": "PASS",
     "last_fail_criteria_hash": null
   },
@@ -135,9 +135,9 @@
   ],
   "last_reviewed_commit": null,
   "blockers": [],
-  "phase": "6",
-  "iteration": 7,
+  "phase": "7",
+  "iteration": 8,
   "status": "running",
-  "updated_at": "2026-03-26T11:43:30.432589+00:00",
+  "updated_at": "2026-03-26T13:58:44.170841+00:00",
   "blocker": null
 }

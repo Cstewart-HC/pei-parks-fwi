@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "7dd7f9120827938dddf040fea851fe8936c0fea6",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-26T13:44:52.787913+00:00",
+  "last_reviewed_commit": "0ae1940",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-26T13:58:44.170811+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -16,50 +16,7 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [
-    {
-      "id": "AC-DET-1",
-      "name": "Two consecutive runs of cleaning.py produce byte-identical CSV outputs",
-      "status": "PASS",
-      "evidence": "test_byte_identical_on_rerun passes. Now runs pipeline twice with --force and compares SHA256 checksums. --force is accepted by argparse (line 807) and wired through run_pipeline() to should_process(). Both runs produce identical output."
-    },
-    {
-      "id": "AC-DET-2",
-      "name": "All outputs sorted by (station, timestamp_utc)",
-      "status": "PASS",
-      "evidence": "resample_hourly() calls sort_index() at line 211. test_outputs_sorted_by_timestamp passes."
-    },
-    {
-      "id": "AC-DET-3",
-      "name": "Column order is deterministic (alphabetical)",
-      "status": "PASS",
-      "evidence": "Line 714: hourly = hourly[sorted(hourly.columns)]. Line 719: daily = daily[sorted(daily.columns)]. test_column_order_is_deterministic passes."
-    },
-    {
-      "id": "AC-DET-4",
-      "name": "Pipeline manifest includes SHA256 checksums (first 16 chars) for all output files",
-      "status": "PASS",
-      "evidence": "86 checksums in committed manifest. compute_checksum() at line 605 computes full SHA256. Note: checksums are 64 chars (full digest) not 16 chars as spec suggests, but no test enforces truncation. Functional requirement met."
-    },
-    {
-      "id": "AC-DET-5",
-      "name": "--force flag overwrites existing outputs; without it, skips if output newer than inputs",
-      "status": "PASS",
-      "evidence": "--force added to argparse at line 807. should_process(station, force) at line 633: returns True if force=True, True if no output exists, compares mtimes otherwise. run_pipeline() passes force to should_process() at line 676. Pipeline skips stations when output is up to date."
-    },
-    {
-      "id": "AC-DET-6",
-      "name": "test_cleaning_py_runs no longer has race condition (marked serial)",
-      "status": "PASS",
-      "evidence": "tests/test_data_refresh.py line 115: @pytest.mark.serial decorator present. xdist not configured in addopts (-q only), so serial behavior is default."
-    },
-    {
-      "id": "AC-DET-7",
-      "name": "Checksum comparison between runs shows no differences",
-      "status": "PASS",
-      "evidence": "Covered by test_byte_identical_on_rerun (AC-DET-1): computes SHA256 checksums after two --force runs and asserts equality. Test passes. No dedicated AC-DET-7 test exists but the checksum comparison is inherent in AC-DET-1's test logic."
-    }
-  ],
+  "criteria": [],
   "failing_nodes": [],
-  "summary": "Phase 6 Determinism: all 7 acceptance criteria PASS. Ralph addressed the 3 prior failures: --force flag added to argparse and wired through run_pipeline/should_process (AC-DET-1, AC-DET-5), making the byte-identical test run the actual pipeline instead of passing vacuously (AC-DET-7). All 6 determinism tests pass. Minor note: manifest checksums are full 64-char SHA256 rather than spec's 16 chars, but no test enforces truncation and the functional requirement is satisfied."
+  "summary": "Phase 7 activated; awaiting Lisa review."
 }
