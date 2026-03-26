@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""cleaning.py — PEA Met Network pipeline entry point.
+"""pea_met_network.cleaning — PEA Met Network pipeline entry point.
 
 Usage:
-    python cleaning.py --stations all
-    python cleaning.py --stations greenwich
-    python cleaning.py --stations greenwich,cavendish
+    python -m pea_met_network --stations all
+    python -m pea_met_network --stations greenwich
+    python -m pea_met_network --stations greenwich,cavendish
 
 Pipeline: discover raw files → load via adapters → concat → dedup →
           resample hourly → impute → FWI → write outputs.

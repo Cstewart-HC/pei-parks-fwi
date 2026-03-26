@@ -116,16 +116,16 @@ class TestACREF3_PipelineEndToEnd:
         import subprocess
 
         result = subprocess.run(
-            [sys.executable, "cleaning.py"],
+            [sys.executable, "-m", "pea_met_network],
             capture_output=True,
             text=True,
             cwd=str(REPO_ROOT),
             timeout=300,
         )
-        # cleaning.py may produce warnings but should not crash
+        # pea_met_network may produce warnings but should not crash
         # Check for unhandled exceptions
         assert "Traceback" not in result.stderr, (
-            f"cleaning.py crashed:\n{result.stderr[:500]}"
+            f"pea_met_network crashed:\n{result.stderr[:500]}"
         )
 
 

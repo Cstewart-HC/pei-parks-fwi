@@ -1,6 +1,6 @@
 """Phase 9 exit gate: Pipeline Execution (AC-PIPE-1 through AC-PIPE-7).
 
-Verifies that cleaning.py produces correct materialized outputs for all
+Verifies that pea_met_network.cleaning produces correct materialized outputs for all
 PEINP stations discovered by the manifest.
 """
 
@@ -33,7 +33,7 @@ def _peinp_stations():
 
 
 class TestAC_PIPE_1_PipelineRuns:
-    """AC-PIPE-1: cleaning.py runs on all raw data without errors."""
+    """AC-PIPE-1: pea_met_network runs on all raw data without errors."""
 
     def test_manifest_exists(self):
         assert MANIFEST_PATH.is_file(), (

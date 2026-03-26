@@ -9,7 +9,6 @@ ALLOWED_ROOT_FILES = {
     ".gitignore",
     ".pre-commit-config.yaml",
     "IMPLEMENTATION_PLAN.md",
-    "cleaning.py",
     "analysis.ipynb",
     "Makefile",
     "requirements-dev.txt",

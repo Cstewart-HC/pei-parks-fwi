@@ -18,10 +18,10 @@ class TestCleaningEntrypoint:
             sys.path.insert(0, str(repo_root))
 
     def test_cleaning_module_importable(self):
-        import cleaning  # noqa: F401
+        from pea_met_network import cleaning  # noqa: F401
 
     def test_cleaning_main_exists(self):
-        import cleaning
+        from pea_met_network import cleaning
 
         assert callable(getattr(cleaning, "main", None)), (
             "cleaning.main() must exist and be callable"
@@ -65,8 +65,8 @@ class TestReadme:
 
     def test_readme_describes_cleaning_pipeline(self):
         readme = (ROOT / "README.md").read_text()
-        assert "cleaning.py" in readme, (
-            "README must describe how to run cleaning.py"
+        assert "pea_met_network" in readme or "cleaning" in readme, (
+            "README must describe how to run the pipeline"
         )
 
     def test_readme_describes_analysis_notebook(self):

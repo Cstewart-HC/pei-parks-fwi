@@ -76,10 +76,10 @@ class TestAC_PIPE_1_AdapterArchitecture:
         assert hasattr(BaseAdapter, "load")
 
     def test_dry_run_flag_reports_file_counts(self):
-        """AC-ARCH-6: cleaning.py --dry-run reports
+        """AC-ARCH-6: pea_met_network --dry-run reports
     file counts without writing."""
         result = subprocess.run(
-            [PYTHON, "cleaning.py", "--dry-run"],
+            [PYTHON, "-m", "pea_met_network, "--dry-run"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -98,7 +98,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
             test_marker.unlink()
 
         subprocess.run(
-            [PYTHON, "cleaning.py", "--dry-run", "--stations", "greenwich"],
+            [PYTHON, "-m", "pea_met_network, "--dry-run", "--stations", "greenwich"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -117,7 +117,7 @@ class TestAC_PIPE_1_AdapterArchitecture:
 
         try:
             result = subprocess.run(
-                [PYTHON, "cleaning.py", "--stations", "test_station"],
+                [PYTHON, "-m", "pea_met_network, "--stations", "test_station"],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
                 text=True,
@@ -300,15 +300,15 @@ class TestAC_PIPE_3_PipelineIntegration:
     concat → dedup → resample → impute → FWI."""
 
     def test_cleaning_py_runs_end_to_end(self):
-        """AC-INT-1: cleaning.py runs end-to-end without error."""
+        """AC-INT-1: pea_met_network runs end-to-end without error."""
         result = subprocess.run(
-            [PYTHON, "cleaning.py", "--stations", "greenwich"],
+            [PYTHON, "-m", "pea_met_network, "--stations", "greenwich"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
             timeout=300,
         )
-        assert result.returncode == 0, f"cleaning.py failed: {result.stderr}"
+        assert result.returncode == 0, f"pea_met_network failed: {result.stderr}"
 
     def test_all_stations_have_hourly_csvs(self):
         """AC-INT-2: All 6 stations have station_hourly.csv."""
@@ -542,7 +542,7 @@ class TestAC_PIPE_6_Determinism:
 
         # Run once
         subprocess.run(
-            [PYTHON, "cleaning.py", "--force", "--stations", station],
+            [PYTHON, "-m", "pea_met_network, "--force", "--stations", station],
             cwd=PROJECT_ROOT,
             capture_output=True,
             timeout=300,
@@ -551,7 +551,7 @@ class TestAC_PIPE_6_Determinism:
 
         # Run again
         subprocess.run(
-            ["python", "cleaning.py", "--force", "--stations", station],
+            ["python", "-m", "pea_met_network, "--force", "--stations", station],
             cwd=PROJECT_ROOT,
             capture_output=True,
             timeout=300,
@@ -614,7 +614,7 @@ class TestAC_PIPE_6_Determinism:
 
         # Run without --force (should skip if newer)
         subprocess.run(
-            [PYTHON, "cleaning.py", "--stations", station],
+            [PYTHON, "-m", "pea_met_network, "--stations", station],
             cwd=PROJECT_ROOT,
             capture_output=True,
             timeout=300,
@@ -643,15 +643,15 @@ class TestAC_PIPE_7_E2EValidation:
     """Phase 7: Full end-to-end validation."""
 
     def test_cleaning_py_completes(self):
-        """AC-E2E-1: cleaning.py completes with exit code 0."""
+        """AC-E2E-1: pea_met_network completes with exit code 0."""
         result = subprocess.run(
-            [PYTHON, "cleaning.py"],
+            [PYTHON, "-m", "pea_met_network],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
             timeout=600,
         )
-        assert result.returncode == 0, f"cleaning.py failed: {result.stderr}"
+        assert result.returncode == 0, f"pea_met_network failed: {result.stderr}"
 
     def test_all_stations_have_outputs(self):
         """AC-E2E-2: All 6 stations have hourly + daily CSVs."""

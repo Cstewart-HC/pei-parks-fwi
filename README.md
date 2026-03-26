@@ -34,16 +34,16 @@ make install
 
 ## Running the Pipeline
 
-### Data Cleaning (`cleaning.py`)
+### Data Cleaning (`pea_met_network.cleaning`)
 
-`cleaning.py` is the end-to-end pipeline entrypoint. It loads raw station
+`pea_met_network.cleaning` is the end-to-end pipeline entrypoint. It loads raw station
 CSVs from `data/raw/`, normalizes timestamps, resamples to hourly and daily
 frequencies, applies imputation, and writes cleaned datasets to
 `data/processed/`.
 
 ```bash
-python cleaning.py
-python cleaning.py --output-dir /custom/path
+python -m pea_met_network
+python -m pea_met_network --output-dir /custom/path
 ```
 
 No manual steps are required between start and finished output. If raw data
@@ -81,7 +81,6 @@ make check
 ```text
 pea-met-network/
 ├── analysis.ipynb          # Analytical narrative notebook
-├── cleaning.py             # Pipeline entrypoint
 ├── data/
 │   ├── raw/
 │   ├── processed/

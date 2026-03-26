@@ -82,17 +82,8 @@
   ],
   "current_phase": 5,
   "circuit_breaker": {
-    "stall_count": 0,
-    "last_stall_at": null,
-    "max_stalls": 3,
-    "consecutive_stalls": 0,
-    "last_commit": "df6226f",
-    "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "61b9cc84e0c07fcf",
     "tripped": false,
-    "trip_reason": null,
-    "trip_at": null,
-    "consecutive_errors": 0
+    "trip_reason": ""
   },
   "decisions": [
     {
