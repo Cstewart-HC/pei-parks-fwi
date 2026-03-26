@@ -13,6 +13,7 @@ Pipeline: discover raw files → load via adapters → concat → dedup →
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import warnings
 from pathlib import Path
@@ -673,6 +674,25 @@ def run_pipeline(stations: list[str]) -> None:
         qa_qc_path = PROCESSED_DIR / "qa_qc_report.csv"
         qa_qc_df.to_csv(qa_qc_path, index=False)
         print(f"  QA/QC report: {len(qa_qc_df)} stations")
+
+        # Register QA/QC report in pipeline manifest
+        manifest_path = PROCESSED_DIR / "pipeline_manifest.json"
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text())
+            # Remove any existing qa_qc_report entries to avoid duplicates
+            manifest["artifacts"] = [
+                a for a in manifest["artifacts"]
+                if a.get("type") != "qa_qc_report"
+            ]
+            manifest["artifacts"].append({
+                "type": "qa_qc_report",
+                "path": str(qa_qc_path.relative_to(PROJECT_ROOT)),
+                "rows": len(qa_qc_df),
+                "timestamp": pd.Timestamp.now(tz="UTC").isoformat(),
+            })
+            manifest["generated_at"] = pd.Timestamp.now(tz="UTC").isoformat()
+            manifest_path.write_text(json.dumps(manifest, indent=2))
+            print("  Manifest: qa_qc_report registered")
 
     print("Done.")
 

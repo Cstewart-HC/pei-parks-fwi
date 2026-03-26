@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-26T00:22:00.365795+00:00",
+  "generated_at": "2026-03-26T06:33:48.966422+00:00",
   "artifacts": [
     {
       "station": "cavendish",
@@ -3322,6 +3322,12 @@
       "path": "data/processed/stanhope/station_daily.csv",
       "rows": 1346,
       "timestamp": "2026-03-26T00:22:00.365775+00:00"
+    },
+    {
+      "type": "qa_qc_report",
+      "path": "data/processed/qa_qc_report.csv",
+      "rows": 6,
+      "timestamp": "2026-03-26T06:33:48.966408+00:00"
     }
   ]
 }
