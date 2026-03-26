@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "bae9efe",
+  "last_reviewed_commit": "7a2dc82",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-26T16:43:33Z",
+  "reviewed_at": "2026-03-26T17:15:33.836264+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -21,7 +21,7 @@
       "id": "AC-E2E-1",
       "name": "Pipeline completes exit code 0",
       "status": "PASS",
-      "evidence": "Phase 7 exit gate passed in previous review. cleaning.py runs successfully."
+      "evidence": "Phase 7 exit gate passed previously. cleaning.py runs successfully."
     },
     {
       "id": "AC-E2E-2",
@@ -57,31 +57,46 @@
       "id": "AC-E2E-7",
       "name": "Manifest reports 0 unprocessed files",
       "status": "PASS",
-      "evidence": "pipeline_manifest.json shows unprocessed_count=0. Pseudo-station keys starting with '_' correctly excluded."
+      "evidence": "Ralph's fix (9251ada, d9e3f1c) correctly excluded _licor_all pseudo-station. Manifest now shows unprocessed_count=0."
     },
     {
       "id": "AC-E2E-8",
       "name": "Full test suite passes",
       "status": "FAIL",
-      "evidence": "11 test failures across 3 files: (1) tests/test_validation.py — 7 failures in TestCompareStationData due to compare_station_data() receiving a string instead of DataFrame at validation.py line 89, (2) tests/test_repo_shape.py — 1 failure: requirements.lock not in ALLOWED_ROOT_FILES whitelist at line 48, (3) tests/test_pipeline_execution.py — 3 failures: daily CSV artifacts missing 'rows' field, imputation_report not tracked as typed artifact in manifest."
+      "evidence": "11 test failures across 4 files persist unchanged from prior review. (1) tests/test_validation.py: 7 failures in TestCompareStationData + 1 in TestValidateAgainstReference \u2014 tests call compare_station_data(station_name_str, df, df) but function signature is compare_station_data(ref_df, cmp_df, on=, value_cols=), causing 'str' has no attribute 'merge' at validation.py:39. The TESTS have the wrong call signature, not the function. (2) tests/test_repo_shape.py: 1 failure \u2014 requirements.lock exists in repo root but not in ALLOWED_ROOT_FILES set at line 48. (3) tests/test_pipeline_execution.py: 3 failures \u2014 daily CSV artifacts missing 'rows' field in manifest, imputation_report not tracked as typed artifact. (4) tests/test_data_refresh.py: 2 new failures introduced by Ralph's fix (9251ada) \u2014 ImportError: cannot import 'load_station_files' from normalized_loader, and ModuleNotFoundError: No module named 'src'."
     }
   ],
   "failing_nodes": [
     {
-      "file": "src/pea_met_network/validation.py",
-      "line": 89,
-      "message": "validate_against_reference() calls compare_station_data() with a string instead of DataFrame — causes 7 test failures in TestCompareStationData"
+      "file": "tests/test_validation.py",
+      "line": 53,
+      "message": "Tests call compare_station_data(str, df, df) but function expects (df, df, on, value_cols)"
     },
     {
       "file": "tests/test_repo_shape.py",
-      "line": 5,
-      "message": "ALLOWED_ROOT_FILES set does not include 'requirements.lock', but requirements.lock exists in repo root"
+      "line": 48,
+      "message": "requirements.lock not in ALLOWED_ROOT_FILES"
     },
     {
       "file": "src/pea_met_network/cleaning.py",
       "line": 755,
-      "message": "Manifest artifacts for daily CSVs missing 'rows' field; imputation_report not tracked as a typed artifact in manifest"
+      "message": "Daily CSV manifest entries missing rows field"
+    },
+    {
+      "file": "src/pea_met_network/cleaning.py",
+      "line": 755,
+      "message": "imputation_report not tracked as typed artifact in manifest"
+    },
+    {
+      "file": "tests/test_data_refresh.py",
+      "line": 64,
+      "message": "ImportError: load_station_files not in normalized_loader (broken by 9251ada)"
+    },
+    {
+      "file": "tests/test_data_refresh.py",
+      "line": 92,
+      "message": "ModuleNotFoundError: No module named src (broken by 9251ada)"
     }
   ],
-  "summary": "Phase 7 E2E validation: 7 of 8 acceptance criteria pass. REJECT due to AC-E2E-8 (full test suite fails). Ralph's fix commit (9251ada) addressed AC-E2E-7 (unprocessed_count pseudo-station exclusion) and fixed import paths in test_data_refresh.py, but did NOT address the 3 previously identified failing nodes: (1) validation.py compare_station_data() string-vs-DataFrame bug, (2) requirements.lock missing from repo shape whitelist, (3) manifest daily artifacts missing 'rows' field and imputation_report type. These same 3 issues persist unchanged."
+  "summary": "Phase 7 E2E validation: REJECT. AC-E2E-7 now PASS (Ralph's pseudo-station fix works). AC-E2E-8 still FAIL with 11 test failures across 4 files. The 3 previously identified failing nodes (validation.py test signature mismatch, requirements.lock whitelist, manifest missing rows/imputation_report type) remain UNFIXED. Ralph introduced 2 NEW test failures in test_data_refresh.py via broken imports in commit 9251ada. Total: 5 distinct failing nodes (7 root causes). Next Ralph run should: (1) fix test_validation.py call signatures, (2) add requirements.lock to ALLOWED_ROOT_FILES, (3) add 'rows' field to daily CSV manifest entries and imputation_report type, (4) revert broken import changes in test_data_refresh.py."
 }
