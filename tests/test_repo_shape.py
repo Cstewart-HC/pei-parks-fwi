@@ -13,6 +13,7 @@ ALLOWED_ROOT_FILES = {
     "Makefile",
     "requirements-dev.txt",
     "codemap.md",
+    "requirements.lock",
 }
 
 ALLOWED_ROOT_DIRS = {
