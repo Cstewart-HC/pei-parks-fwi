@@ -50,12 +50,23 @@ Check `docs/artifact-validation.json`:
 - Check the `fingerprints` field for SHA256 hashes of validated files
 - This helps Ralph understand what data issues need fixing
 
-### Step 2: Review Pre-Flight Results (NEW)
+### Step 2: Review Pre-Flight Results (HARD GATE)
 
 Check `docs/pre-flight.json`:
-- If `verdict` is `FAIL`, list the missing structural requirements
-- Note which classes/functions are expected but not found
-- This ensures code structure matches spec requirements
+- **If `verdict` is `PASS`: You MAY NOT claim any structural requirement
+  is missing.** The pre-flight script ran `grep` and `ast.parse` on the
+  actual source tree — it is authoritative. Any "missing function" or
+  "missing class" claim after a pre-flight PASS is a hallucination.
+- If `verdict` is `FAIL`: list the `missing` array items in your review.
+  The pre-flight script provides exact file:line locations — use them.
+
+**ANTI-HALLUCINATION RULE:** If you believe a function or class is missing
+and pre-flight says it exists, you MUST run your own grep to confirm:
+```bash
+grep -rn "def function_name\|class ClassName" src/
+```
+If grep finds it, your claim is wrong. Do not issue a REJECT based on
+a function that exists. This is the #1 cause of false REJECTs.
 
 ### Step 3: Verify Adapter Architecture (for phases 2-4)
 
@@ -159,6 +170,17 @@ Write `docs/validation.json` with this structure before recording the verdict.
 **For REJECT verdicts:** The `failing_nodes` array must contain at least one
 entry mapping the failure to a specific file and line number. This enables
 deterministic tracking in the lineage system.
+
+**MANDATORY:** Every criterion ID in your review MUST come from the actual
+spec file for the current phase (e.g., `AC-INT-1`, `AC-INT-2` from
+`specs/03-pipeline-integration.md`). Do NOT invent criterion IDs like
+`STRUCT-FUNCTION-1` or `STRUCT-MISSING-3`. If you cannot find the criterion
+in the spec, it does not exist as a rejection reason.
+
+**A REJECT with an empty `failing_nodes` array is malformed.** If you
+reject, you must point to a specific file and line. "Expected in **/*.py"
+is not a valid evidence field — you must provide the grep command you ran
+and its output.
 
 ## Review Standards
 
