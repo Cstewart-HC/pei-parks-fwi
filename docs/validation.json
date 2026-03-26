@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "df6226f",
+  "last_reviewed_commit": "5c0900e6cea69c2a8e9aa755b177924541e36a7e",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-26T05:34:36.274193+00:00",
+  "reviewed_at": "2026-03-26T05:53:40+00:00",
   "artifact_validation": {
     "status": "PASS",
     "errors": []
@@ -18,18 +18,48 @@
   },
   "criteria": [
     {
-      "id": "STRUCT-FUNCTION-1",
-      "name": "Missing function: generate_qa_qc_report",
-      "status": "FAIL",
-      "evidence": "Expected in **/*.py"
+      "id": "AC-QC-1",
+      "name": "qa_qc_report.csv exists after pipeline run",
+      "status": "PASS",
+      "evidence": "git show HEAD:data/processed/qa_qc_report.csv — file exists with 7 rows (6 stations + header)"
     },
     {
-      "id": "STRUCT-FUNCTION-2",
-      "name": "Missing function: calculate_completeness",
+      "id": "AC-QC-2",
+      "name": "Report has row for every station processed",
+      "status": "PASS",
+      "evidence": "6 stations in report: greenwich, cavendish, north_rustico, stanley_bridge, tracadie, stanhope"
+    },
+    {
+      "id": "AC-QC-3",
+      "name": "Report includes per-variable missingness percentages",
+      "status": "PASS",
+      "evidence": "Multiple missing_pct_* columns present (missing_pct_air_temperature_c, missing_pct_relative_humidity_pct, missing_pct_rain_mm, etc.)"
+    },
+    {
+      "id": "AC-QC-4",
+      "name": "Report includes duplicate timestamp counts per station",
+      "status": "PASS",
+      "evidence": "duplicate_count column present in qa_qc_report.csv"
+    },
+    {
+      "id": "AC-QC-5",
+      "name": "Report flags out-of-range values",
+      "status": "PASS",
+      "evidence": "out_of_range_temp_count, out_of_range_rh_count, out_of_range_wind_count columns present"
+    },
+    {
+      "id": "AC-QC-6",
+      "name": "Report is added to pipeline manifest artifacts",
       "status": "FAIL",
-      "evidence": "Expected in **/*.py"
+      "evidence": "pipeline_manifest.json has 417 artifacts including imputation_report but no qa_qc_report. cleaning.py writes qa_qc_report.csv at line 673-674 but never registers it in the manifest."
     }
   ],
-  "failing_nodes": [],
-  "summary": "Pre-flight structural lint failed: Checked 2 structural requirements for phase 5: FAIL (2 missing)"
+  "failing_nodes": [
+    {
+      "file": "cleaning.py",
+      "line": 672,
+      "message": "AC-QC-6: qa_qc_report.csv is written to disk but not registered as an artifact in pipeline_manifest.json. The imputation_report IS in the manifest (type=imputation_report), but qa_qc_report is missing. Ralph must add manifest registration after writing the QA/QC report."
+    }
+  ],
+  "summary": "Phase 5 QA/QC reporting: 5 of 6 acceptance criteria pass. AC-QC-6 fails — qa_qc_report.csv exists and contains correct data but is not registered in pipeline_manifest.json. Pre-flight data was stale (run before commit 5c0900e); grep confirms both generate_qa_qc_report and calculate_completeness exist in src/pea_met_network/qa_qc.py. All 5 Phase 5 pytest tests pass."
 }
