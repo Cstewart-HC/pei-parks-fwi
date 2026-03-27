@@ -340,7 +340,7 @@ Triggered when: assessment found fixable issues, or Lisa flagged test problems i
 
 Triggered when: starting a new phase that needs tests, or MissHoover requests test design.
 
-1. **Read the phase spec:** `cat docs/specs/0{phase}-*.md`
+1. **Read the phase spec:** `cat specs/0{phase}-*.md`
 2. **Identify testable acceptance criteria** from the spec
 3. **Design test plan:**
    - For each criterion: unit test(s) needed, fixtures needed, edge cases

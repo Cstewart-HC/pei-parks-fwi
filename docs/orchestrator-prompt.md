@@ -71,6 +71,26 @@ Apply these rules IN ORDER:
    - If the linter passes or only has `medium`/`low` violations →
      **Fall through to Rule 3.** Low-severity issues do not block the loop.
 
+7. **New phase with TDD start** → Run Martin in DESIGN mode.
+   Check if the current phase requires Martin to write tests first:
+   ```bash
+   python3 -c "
+   import json
+   s = json.load(open('docs/ralph-state.json'))
+   phase = [p for p in s['phases'] if p['id'] == s['current_phase']][0]
+   tdd = phase.get('tdd_start')
+   print(f'tdd_start={tdd} status={s[\"status\"]} iteration={s[\"iteration\"]}')
+   "
+   ```
+   - If `tdd_start == "martin"` AND `status == "idle"` AND `iteration == 0`
+     → **Run Martin in DESIGN mode.** Read `docs/martin-prompt.md` and follow
+     the DESIGN procedure (Section 5, Mode: DESIGN). Martin reads the spec at
+     `specs/0{phase}-*.md`, writes failing tests, and commits.
+   - After Martin commits, the next tick will see new commits touching `tests/`
+     and dispatch Lisa to review Martin's tests.
+   - If `tdd_start == "martin"` but `iteration > 0` → TDD is complete,
+     **fall through to Rule 3** (normal Ralph/Lisa flow).
+
 ### Step 3: Execute
 
 If you decided to **run Lisa**:
