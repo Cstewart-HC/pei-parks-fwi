@@ -66,11 +66,21 @@ COLUMN_MAPS: dict[str, str] = {
     # Battery
     "Battery - V": "battery_v",
     "Battery": "battery_v",
-    # Temperature from ECCC
+    # Temperature from ECCC (prefix form after extract_prefix strips parens)
     "Dew Point Temp (°C)": "dew_point_c",
+    "Dew Point Temp": "dew_point_c",
     "Rel Hum (%)": "relative_humidity_pct",
+    "Rel Hum": "relative_humidity_pct",
     "Precip. Amount (mm)": "rain_mm",
+    "Precip. Amount": "rain_mm",
     "Wind Spd (km/h)": "wind_speed_kmh",
+    "Wind Spd": "wind_speed_kmh",
+    "Wind Dir (10s deg)": "wind_direction_deg",
+    "Wind Dir": "wind_direction_deg",
+    "Stn Press (kPa)": "barometric_pressure_kpa",
+    "Stn Press": "barometric_pressure_kpa",
+    "Temp (°C)": "air_temperature_c",
+    "Temp": "air_temperature_c",
 }
 
 # Columns that should be excluded from the output

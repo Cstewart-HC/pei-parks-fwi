@@ -71,7 +71,7 @@ def cluster_station_order(matrix: pd.DataFrame) -> list[str]:
         {
             "station": distance.index,
             "cluster": labels,
-            "distance_to_stanhope": distance.get("stanhope", 0.0).values,
+            "distance_to_stanhope": distance["stanhope"].values if "stanhope" in distance.columns else 0.0,
         }
     )
     ordered = summary.sort_values(
