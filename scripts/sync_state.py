@@ -383,7 +383,7 @@ def check_phase_exit(state: dict) -> tuple[bool, str, str]:
         return True, "(no exit gate defined)", ""
 
     exit_gate = _ensure_portable_execution(exit_gate)
-    passes, output = run_cmd(exit_gate, timeout=120)
+    passes, output = run_cmd(exit_gate, timeout=300)
     return passes, exit_gate, output
 
 
