@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "1476bea68f604bed937502536b003c7c4c4e3139",
+  "last_reviewed_commit": "84e3c12365bc9519ae292d71420b3e6141e7e9a2",
   "verdict": "REJECT",
-  "reviewed_at": "2026-03-27T06:06:20.000000+00:00",
+  "reviewed_at": "2026-03-27T11:11:50.000000+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -21,81 +21,76 @@
       "id": "AC-DQ-1",
       "name": "Cleaning Config",
       "status": "PASS",
-      "evidence": "docs/cleaning-config.json now matches spec: value_ranges corrected (air_temperature_c [-50,60], relative_humidity_pct [0,105]), FWI output ranges use null upper bounds, enforcement.actions has all 5 entries (out_of_range, fwi_out_of_range, cross_variable, rate_of_change, flatline), cross_variable_checks.rain_rh_correlation has enabled/rule/variables/threshold_rh fields."
+      "evidence": "docs/cleaning-config.json exists with all required sections (value_ranges, fwi_output_ranges, cross_variable_checks, rate_of_change, flatline, enforcement). Verified by prior review."
     },
     {
       "id": "AC-DQ-2",
       "name": "enforce_quality() Function",
       "status": "PASS",
-      "evidence": "quality.py now uses _get_enforcement_action() helper to read per-check-type actions from config. All check functions (_check_value_ranges, _check_rate_of_change, _check_cross_variable, _check_flatline) and enforce_fwi_outputs() consult config for action. set_nan action actually modifies values; flag_only only flags."
+      "evidence": "quality.py implements enforce_quality() with config-driven enforcement actions. Verified by prior review."
     },
     {
       "id": "AC-DQ-3",
       "name": "Pipeline Integration",
       "status": "PASS",
-      "evidence": "cleaning.py now imports enforce_quality, enforce_fwi_outputs, truncate_date_range from quality.py. Pipeline calls truncate_date_range() then enforce_quality() before impute, per spec insertion point: load → dedup → resample → enforce_quality → impute → FWI."
+      "evidence": "cleaning.py inserts enforce_quality() after resample, before impute. Verified by prior review."
     },
     {
       "id": "AC-DQ-4",
       "name": "FWI Output Enforcement",
       "status": "PASS",
-      "evidence": "cleaning.py calls enforce_fwi_outputs(hourly, quality_config) after calculate_fwi(hourly). enforce_fwi_outputs() now handles null upper bounds correctly (only checks lower bound when hi is None)."
+      "evidence": "cleaning.py calls enforce_fwi_outputs() after calculate_fwi(). Verified by prior review."
     },
     {
       "id": "AC-DQ-5",
       "name": "Quality Enforcement Report",
       "status": "PASS",
-      "evidence": "cleaning.py writes quality_enforcement_report.csv from all_quality_actions after pipeline completes. Report written to data/processed/quality_enforcement_report.csv with columns station, timestamp_utc, check_type, variable, original_value, action, rule."
+      "evidence": "quality_enforcement_report.csv is generated and registered in manifest. Verified by prior review."
     },
     {
       "id": "AC-DQ-6",
       "name": "Manifest Registration",
       "status": "PASS",
-      "evidence": "cleaning.py registers quality_enforcement_report in pipeline_manifest.json with type, path, rows, and timestamp. Deduplicates by type before appending."
+      "evidence": "Quality enforcement report registered in pipeline_manifest.json. Verified by prior review."
     },
     {
       "id": "AC-DQ-7",
       "name": "Quality Flags Column",
       "status": "PASS",
-      "evidence": "enforce_quality() correctly adds _quality_flags column as JSON-encoded string of flag arrays. All quality flag tests pass."
+      "evidence": "_quality_flags column added by enforce_quality(). Verified by prior review."
     },
     {
       "id": "AC-DQ-8",
       "name": "QA/QC Report Enhancement",
-      "status": "FAIL",
-      "evidence": "qa_qc.py was not modified in this commit. QA/QC report still lacks quality_enforced_count, quality_flagged_count, out_of_range_pre_enforcement, and out_of_range_post_enforcement columns."
+      "status": "PASS",
+      "evidence": "Ralph added quality_enforced_count, quality_flagged_count, out_of_range_pre_enforcement, out_of_range_post_enforcement columns to generate_qa_qc_report(). Function now accepts optional quality_actions parameter. cleaning.py passes all_quality_actions. All 9 QA/QC tests pass."
     },
     {
       "id": "AC-DQ-9",
       "name": "Date Range Truncation",
       "status": "PASS",
-      "evidence": "truncate_date_range() is called in cleaning.py pipeline after loading and before quality enforcement. Records before 2023-04-01 are excluded."
+      "evidence": "truncate_date_range() filters records before 2023-04-01. Verified by prior review."
     },
     {
       "id": "AC-DQ-10",
       "name": "Fast Test Suite Passes",
       "status": "FAIL",
-      "evidence": "4 test failures in test_quality_enforcement.py, all Martin test-design bugs: (1) test_clean_data_passes_through_unchanged: sample_hourly fixture uses 24 identical values for all 3 flatline-monitored variables, triggering flatline; (2) test_flatline_does_not_modify_values: wind_speed_kmh has 15 elements vs 8-row DataFrame (ValueError); (3) test_flatline_action_is_flagged: asserts action=='flagged' but config-driven action is 'flag_only'; (4) test_flatline_with_nan_gap: NaN gap only in temperature but RH/wind have 7 identical values triggering flatline."
+      "evidence": "4 test failures in tests/test_quality_enforcement.py — all Martin test-design bugs, not production code issues: (1) test_clean_data_passes_through_unchanged: sample_hourly fixture uses 24 identical values for all 3 flatline-monitored variables, triggering flatline detection; (2) test_flatline_does_not_modify_values: wind_speed_kmh list has 15 elements vs 8-row DataFrame (ValueError); (3) test_flatline_action_is_flagged: asserts action=='flagged' but config-driven action is 'flag_only'; (4) test_flatline_with_nan_gap: NaN gap only in temperature but RH and wind have 7 identical values each, exceeding threshold. Martin needs to fix these test fixtures."
     },
     {
       "id": "AC-DQ-11",
       "name": "No Out-of-Range FWI Inputs",
       "status": "PASS",
-      "evidence": "enforce_quality() is now called before impute in the pipeline. Out-of-range values are set to NaN before reaching calculate_fwi()."
+      "evidence": "enforce_quality() runs before impute, setting out-of-range values to NaN. Verified by prior review."
     },
     {
       "id": "AC-DQ-12",
       "name": "Flatline Detection",
       "status": "PASS",
-      "evidence": "Flatline detection uses config-driven flag_only action. Does not modify values, only adds quality flags. NaN gaps correctly reset run_length."
+      "evidence": "Flatline detection uses config-driven flag_only action. Does not modify values. Verified by prior review."
     }
   ],
   "failing_nodes": [
-    {
-      "file": "src/pea_met_network/qa_qc.py",
-      "line": 0,
-      "message": "QA/QC report not enhanced with quality enforcement columns (quality_enforced_count, quality_flagged_count, out_of_range_pre_enforcement, out_of_range_post_enforcement). AC-DQ-8. Ralph should add these columns to generate_qa_qc_report()."
-    },
     {
       "file": "tests/test_quality_enforcement.py",
       "line": 40,
@@ -117,5 +112,5 @@
       "message": "Martin test-design bug: test_flatline_with_nan_gap puts NaN gap only in air_temperature_c (3+NaN+3=7, below threshold 6) but relative_humidity_pct and wind_speed_kmh have 7 identical values each, exceeding threshold. All 3 flatline variables need the NaN gap."
     }
   ],
-  "summary": "Ralph fixed 8 of 10 previously failing criteria. Config now matches spec, quality.py uses config-driven enforcement actions, all three quality functions are wired into the pipeline, report generation and manifest registration work. Remaining issues: (1) AC-DQ-8 FAIL — qa_qc.py not enhanced with enforcement count columns, Ralph should add them; (2) AC-DQ-10 FAIL — 4 Martin test-design bugs (fixture constant values triggering flatline, wrong list length, wrong action string assertion, incomplete NaN gap). Martin needs to fix these test bugs."
+  "summary": "Ralph fixed AC-DQ-8: generate_qa_qc_report() now outputs quality_enforced_count, quality_flagged_count, out_of_range_pre_enforcement, and out_of_range_post_enforcement columns, with all_quality_actions passed from cleaning.py. All 9 QA/QC tests pass. 11 of 12 criteria now PASS. AC-DQ-10 still FAILs due to 4 Martin test-design bugs in tests/test_quality_enforcement.py — these are broken test fixtures/assertions, not production code issues. Martin needs to fix: (1) sample_hourly fixture constant values triggering flatline, (2) wrong list length in flatline test, (3) wrong action string assertion, (4) incomplete NaN gap across flatline variables."
 }
