@@ -7,10 +7,10 @@
 
 ## 1. Executive Summary
 
-The MissHoover Pattern is an autonomous development loop where a single agent operates in three modes — **MissHoover** (orchestrator), **Ralph** (builder), and **Lisa** (reviewer) — to iteratively build software against human-reviewed specifications.
+The MissHoover Pattern is an autonomous development loop where a single agent operates in four modes — **MissHoover** (orchestrator), **Ralph** (builder), **Lisa** (reviewer), and **Martin** (test engineer) — to iteratively build software against human-reviewed specifications.
 
 **Key properties:**
-- Single agent, three roles, one cron job
+- Single agent, four roles, one cron job
 - Adversarial review prevents self-approval
 - Deterministic state management via scripts and hooks, not prompt instructions
 - Phase-gated progress with machine-checked exit criteria
@@ -39,6 +39,8 @@ This pattern started as an implementation of Geoffrey Huntley's [Ralph Loop](htt
 - **AgentEnd hook for deterministic pointer management** — state updates happen via infrastructure, not prompt instructions
 - **Circuit breaker** — 3-stall detection with automatic trip
 - **Docs-only commit filtering** — infra commits skip review
+- **Test-first phases (Martin)** — TDD mode where Martin writes failing tests before Ralph implements
+- **Deterministic lint gate** — `martin-lint.py` enforces test quality rules, gating Martin's commits
 
 ### Evolution timeline
 | Stage | What happened |
@@ -48,6 +50,7 @@ This pattern started as an implementation of Geoffrey Huntley's [Ralph Loop](htt
 | Loops 26–40 | Added orchestrator (single job), phase gates, sync_state.py |
 | Loops 41–50 | Fixed iteration budgets, preset issues, infinite loop bugs |
 | Loops 51–63 | AgentEnd hook, deliverables phase, project completion |
+| Loops 64+ | Martin (test engineer), TDD mode, lint gate, 4-role dispatch |
 
 ---
 
@@ -62,27 +65,25 @@ This pattern started as an implementation of Geoffrey Huntley's [Ralph Loop](htt
                     │     MISSHOOVER (orchestrator)    │
                     │                                  │
                     │  1. Read state + git log         │
-                    │  2. Apply decision tree          │
-                    │  3. Become Ralph OR Lisa         │
+                    │  2. Apply decision tree (7 rules)│
+                    │  3. Become Ralph/Lisa/Martin     │
                     │  4. Do the work                  │
                     │  5. Exit                         │
-                    └──────┬────────────────┬──────────┘
-                           │                │
-                    ┌──────▼──────┐  ┌──────▼──────┐
-                    │   RALPH     │  │    LISA     │
-                    │  (builder)  │  │  (reviewer) │
-                    │             │  │             │
-                    │ • Read spec │  │ • Read spec │
-                    │ • Write test│  │ • Inspect   │
-                    │ • Implement │  │   commits   │
-                    │ • Verify    │  │ • Run tests │
-                    │ • Commit    │  │ • Evaluate  │
-                    │             │  │   criteria  │
-                    │             │  │ • Write     │
-                    │             │  │   verdict   │
-                    └──────┬──────┘  └──────┬──────┘
-                           │                │
-                    ┌──────▼────────────────▼──────┐
+                    └──┬──────────┬──────────┬────────┘
+                       │          │          │
+              ┌────────▼───┐ ┌───▼──────┐ ┌─▼──────────┐
+              │   RALPH    │ │   LISA   │ │  MARTIN    │
+              │  (builder) │ │(reviewer)│ │(test eng.) │
+              │            │ │          │ │            │
+              │ • Read spec│ │ • Read   │ │ • Read spec│
+              │ • Write    │ │   commits│ │ • Design   │
+              │   tests    │ │ • Run    │ │   tests    │
+              │ • Implement│ │   tests  │ │ • Repair   │
+              │ • Verify   │ │ • Write  │ │   tests    │
+              │ • Commit   │ │   verdict│ │ • Commit   │
+              └────────┬───┘ └────┬─────┘ └─────┬──────┘
+                       │          │             │
+                    ┌──▼──────────▼─────────────▼───┐
                     │       AGENTEND HOOK           │
                     │  (deterministic, not prompt)  │
                     │                               │
@@ -94,32 +95,39 @@ This pattern started as an implementation of Geoffrey Huntley's [Ralph Loop](htt
                     ┌──────────────▼────────────────┐
                     │       STATE FILES              │
                     │                               │
-                    │  ralp-state.json              │
+                    │  ralph-state.json             │
                     │  validation.json              │
+                    │  martin-lint.json             │
+                    │  loop-log.jsonl               │
+                    │  diary/                        │
                     └───────────────────────────────┘
 ```
 
 ### Data flow
 ```
-Specs (human) → Ralph (build) → Commits → Lisa (review) → validation.json
-                                                         │
-                    sync_state.py ←──────────────────────┘
-                         │
-                    ralp-state.json (phase transitions)
-                         │
-                    Orchestrator reads both on next tick
+Specs (human) → Martin (design tests) → Lisa (review tests) → Ralph (implement)
+                                                          │
+                                              Commits → Lisa (review code)
+                                                          │
+                                         sync_state.py ←──────────────────────┘
+                                              │
+                                         ralph-state.json (phase transitions)
+                                              │
+                                         Orchestrator reads both on next tick
+
+Telemetry: loop-log.jsonl (machine-readable) + diary/ (human-readable)
 ```
 
 ---
 
-## 4. The Three Roles
+## 4. The Four Roles
 
 ### MissHoover (Orchestrator)
-The orchestrator is not a separate agent — it's a **mode** that the single agent enters. It reads state, makes a decision, loads the appropriate prompt, and becomes Ralph or Lisa for the duration of that tick.
+The orchestrator is not a separate agent — it's a **mode** that the single agent enters. It reads state, makes a decision, loads the appropriate prompt, and becomes Ralph, Lisa, or Martin for the duration of that tick.
 
 **Rules:**
 - Read state files and git log first
-- Apply the 5-rule decision tree (see Section 6)
+- Apply the 7-rule decision tree (see Section 6)
 - Load the appropriate prompt file
 - Do NOT manage `last_reviewed_commit` — the hook handles that
 - Do NOT modify `ralph-state.json` directly — `sync_state.py` handles that
@@ -149,6 +157,37 @@ Ralph reads specs, writes tests, implements code, verifies, and commits.
 - Inspect git diff before committing
 - Never modify `ralph-state.json` or `validation.json` directly
 - If blocked after repeated attempts, record a blocker and stop
+
+### Martin (Test Engineer)
+Martin ensures the project's test suite is **correct, fast, isolated, and maintainable**. He is not a code reviewer — he is a test engineer. He operates in three modes:
+
+**DESIGN mode** — triggered when a new phase has `tdd_start: "martin"` (Rule 7):
+- Read the phase spec and identify testable acceptance criteria
+- Design and write failing tests before Ralph implements
+- Commit test code; Lisa reviews on next tick
+- Does NOT modify `ralph-state.json` or `validation.json`
+
+**REPAIR mode** — triggered when the lint gate fires (Rule 6) or Lisa flags test issues:
+- Read `docs/martin-lint.json` for deterministic violation list
+- Fix violations in priority order: critical → high → medium → low
+- Run fast suite after each batch to verify no regressions
+- Same back-pressure pattern as Ralph: read feedback, fix, retry
+
+**ASSESS mode** — triggered on demand:
+- Run the fast suite and measure performance
+- Identify slow tests, hanging tests, and anti-patterns
+- Write structured assessment to `docs/test-assessment.json`
+- Does NOT modify any code in ASSESS mode
+
+**Lint Gate (Deterministic Back-Pressure):**
+Martin's commits are gated by `scripts/martin-lint.py`, which reads `docs/martin-rules.json`. If `verdict == "FAIL"` with `critical` or `high` severity, Martin is dispatched for repair. This is the same pattern as Lisa/Ralph: agent writes code → deterministic evaluator writes verdict → agent reads verdict and fixes.
+
+**Rules:**
+- Do NOT fix production code (that's Ralph's job)
+- Do NOT review code for correctness (that's Lisa's job)
+- Do NOT modify `ralph-state.json` or `validation.json`
+- Run lint and fast suite before every commit
+- Commit each fix immediately after verification
 
 ### Lisa (Reviewer)
 Lisa exists to be adversarial, not polite. Her job is to prove the implementation wrong unless the evidence is strong.
@@ -191,7 +230,8 @@ Lisa exists to be adversarial, not polite. Her job is to prove the implementatio
     "1": {
       "name": "Phase Name",
       "exit": "pytest tests/test_phase1.py -q",
-      "status": "active"
+      "status": "active",
+      "tdd_start": null
     }
   },
   "decisions": [],
@@ -247,7 +287,7 @@ Reset conditions:
 
 ## 6. Decision Tree
 
-The orchestrator follows exactly 5 rules, evaluated in order:
+The orchestrator follows exactly 7 rules, evaluated in order:
 
 ### Rule 1: Circuit breaker
 ```
@@ -258,8 +298,7 @@ IF circuit_breaker.tripped == true:
 
 ### Rule 2: New code commits since last review
 ```
-commits = git log LAST_REVIEWED..HEAD -- src/ tests/ notebooks/ README.md cleaning.py
-# Exclude: docs/, specs/, scripts/, config files
+commits = git log LAST_REVIEWED..HEAD -- src/ tests/
 
 IF commits is not empty:
     Become Lisa
@@ -296,6 +335,39 @@ IF verdict == "NONE" OR no validation exists:
     Start working on active phase
     STOP
 ```
+
+### Rule 6: Martin lint check
+```
+python3 scripts/martin-lint.py tests/
+
+IF docs/martin-lint.json exists AND verdict == "FAIL"
+   AND there are critical or high severity violations:
+    Become Martin (REPAIR mode)
+    Fix violations from martin-lint.json
+    Commit each fix
+    STOP
+ELSE:
+    Fall through to Rule 3
+```
+
+This is a **deterministic gate** — Martin doesn't decide whether to run, the linter output is the trigger. Same principle as Ralph not deciding whether to run Lisa.
+
+### Rule 7: New phase with TDD start
+```
+IF current phase has tdd_start == "martin"
+   AND status == "idle"
+   AND iteration == 0:
+    Become Martin (DESIGN mode)
+    Read phase spec at specs/0{phase}-*.md
+    Write failing tests
+    Commit
+    STOP
+
+IF tdd_start == "martin" but iteration > 0:
+    TDD is complete, fall through to Rule 3 (normal Ralph/Lisa flow)
+```
+
+The TDD gate is closed permanently once `sync_state.py` increments `iteration` from 0 to 1. Martin's "done" signal is Lisa's PASS verdict on his test code, detected through the normal commit-pointer mechanism.
 
 ---
 
@@ -370,12 +442,29 @@ deny = ["spawn_agent", "browser", "memory_save", "cron"]
 **Critical:** The orchestrator must NOT use a `delegate_only = true` preset. The default `orchestrator` preset in Moltis has `delegate_only = true` and `max_iterations = 20`, which blocks `exec` and caps iterations too low. Always use a dedicated preset.
 
 ### Prompt Files
-Three prompt files under `docs/`:
+Four prompt files under `docs/`:
 - `docs/orchestrator-prompt.md` — decision logic
 - `docs/ralph-prompt.md` — Ralph's instructions
 - `docs/lisa-prompt.md` — Lisa's instructions
+- `docs/martin-prompt.md` — Martin's instructions (test design, repair, assessment)
 
 **Rule for prompts:** Every section should justify itself. For each section, ask: what failure does this prevent? What context does this provide? What happens if it is removed?
+
+### `martin-lint.py` and `martin-rules.json`
+Deterministic lint gate for Martin's test code.
+
+- `scripts/martin-lint.py` — reads test files, checks against rules, writes `docs/martin-lint.json`
+- `docs/martin-rules.json` — rule definitions (ourobouros detection, timeout enforcement, tautology detection, etc.)
+- `docs/martin-lint.json` — linter output (verdict: PASS/FAIL, violations with severity)
+
+The linter runs as part of orchestrator Step 1 (Rule 6). Martin reads the output but does NOT run the linter himself. Same separation as Ralph/Lisa — agent does work, deterministic script evaluates.
+
+### Diary and Loop Log
+Two complementary telemetry mechanisms:
+
+- **`docs/diary/`** — Human-readable per-day markdown files. Each loop entry has: Task, Test, Result, Gate, Blocker, Next, Artifacts, Commits. This is the stateless-agent antidote — gives the next tick's agent a "what happened last time" summary. Written by Ralph at end of each tick.
+
+- **`docs/loop-log.jsonl`** — Machine-readable structured log. Each line is a JSON object with `ts`, `iteration`, `phase`, `phase_name`, `phase_status`, `verdict`, `head_sha`, `phase_advanced`, `new_commits`, `files_changed`, `working_tree_clean`. Written by `sync_state.py` after every tick. Used by heartbeat monitor and circuit breaker analysis, not for agent consumption.
 
 ### `specs-readme.md` (The Pin)
 A lookup table that maps concepts to synonyms, spec files, test files, and source files. This improves search tool hit rate and reduces hallucination.
@@ -392,8 +481,9 @@ Source: src/app/auth.py
 ### State Integrity Rules
 1. `ralph-state.json` is owned by `sync_state.py`. Do not manually edit for normal progress.
 2. `validation.json` is written by Lisa and the AgentEnd hook. Do not manually edit.
-3. The AgentEnd hook must always run after the orchestrator. If it fails, the loop will break.
-4. State files are committed to the repo. `sync_state.py` can restore them from HEAD if dirty.
+3. `martin-lint.json` is written by `martin-lint.py`. Do not manually edit.
+4. The AgentEnd hook must always run after the orchestrator. If it fails, the loop will break.
+5. State files are committed to the repo. `sync_state.py` can restore them from HEAD if dirty.
 
 ---
 
@@ -469,38 +559,44 @@ Source: src/app/auth.py
 - [ ] 9. Write `docs/ralph-prompt.md` (Ralph's instructions)
 - [ ] 10. Write `docs/lisa-prompt.md` (Lisa's instructions)
 - [ ] 11. Write `docs/orchestrator-prompt.md` (decision tree)
+- [ ] 12. Write `docs/martin-prompt.md` (Martin's instructions — if using TDD or lint gate)
 
 ### Infrastructure
-- [ ] 12. Create `scripts/sync_state.py` (state machine operator)
-- [ ] 13. Create `scripts/orchestrator_end_hook.py` (AgentEnd hook)
-- [ ] 14. Register the AgentEnd hook in Moltis configuration
-- [ ] 15. Install pre-commit hook
-- [ ] 16. Create `miss-hoover` preset with correct tool permissions
-- [ ] 17. Set `default_preset = "miss-hoover"` in Moltis config (or assign preset to cron job)
+- [ ] 13. Create `scripts/sync_state.py` (state machine operator)
+- [ ] 14. Create `scripts/orchestrator_end_hook.py` (AgentEnd hook)
+- [ ] 15. Create `scripts/martin-lint.py` (test lint gate — if using Martin)
+- [ ] 16. Create `docs/martin-rules.json` (lint rule definitions — if using Martin)
+- [ ] 17. Register the AgentEnd hook in Moltis configuration
+- [ ] 18. Install pre-commit hook
+- [ ] 19. Create `miss-hoover` preset with correct tool permissions
+- [ ] 20. Set `default_preset = "miss-hoover"` in Moltis config (or assign preset to cron job)
+- [ ] 21. Create `docs/diary/` directory for per-loop notes
 
 ### Validation
-- [ ] 18. Run a few manual/attended loops
-- [ ] 19. Verify Lisa produces meaningful reviews
-- [ ] 20. Verify Ralph commits green work
-- [ ] 21. Verify the AgentEnd hook advances the pointer
-- [ ] 22. Verify sync_state.py advances phases correctly
-- [ ] 23. Verify the circuit breaker trips on stalls
+- [ ] 22. Run a few manual/attended loops
+- [ ] 23. Verify Lisa produces meaningful reviews
+- [ ] 24. Verify Ralph commits green work
+- [ ] 25. Verify the AgentEnd hook advances the pointer
+- [ ] 26. Verify sync_state.py advances phases correctly
+- [ ] 27. Verify the circuit breaker trips on stalls
+- [ ] 28. Verify martin-lint.py catches test anti-patterns (if using Martin)
+- [ ] 29. Verify Martin TDD gate opens and closes correctly (if using TDD phases)
 
 ### Launch
-- [ ] 24. Create single orchestrator cron job
-- [ ] 25. Configure Discord delivery to project channel
-- [ ] 26. Configure escalation to DMs for circuit breaker trips
-- [ ] 27. Watch early loops closely
-- [ ] 28. Fix loop-level failure domains as they appear
-- [ ] 29. Let it run unattended
+- [ ] 30. Create single orchestrator cron job
+- [ ] 31. Configure Discord delivery to project channel
+- [ ] 32. Configure escalation to DMs for circuit breaker trips
+- [ ] 33. Watch early loops closely
+- [ ] 34. Fix loop-level failure domains as they appear
+- [ ] 35. Let it run unattended
 
 ### Project Completion
-- [ ] 30. Add deliverables phase (README, entrypoint scripts, notebooks)
-- [ ] 31. Add convention sweep phase if needed
-- [ ] 32. Verify all phases pass
-- [ ] 33. Disable cron job
-- [ ] 34. Save lessons learned
-- [ ] 35. Archive prompts and state files
+- [ ] 36. Add deliverables phase (README, entrypoint scripts, notebooks)
+- [ ] 37. Add convention sweep phase if needed
+- [ ] 38. Verify all phases pass
+- [ ] 39. Disable cron job
+- [ ] 40. Save lessons learned
+- [ ] 41. Archive prompts and state files
 
 ---
 
@@ -520,6 +616,9 @@ Source: src/app/auth.py
 12. **Exclude infra commits from review** — Only code changes trigger Lisa
 13. **Conventions can be a separate phase** — Don't block feature work on style
 14. **Every loop failure is a design lesson** — Fix the loop, not just the code
+15. **Tests before implementation (TDD phases)** — Martin writes tests, Lisa validates them, Ralph implements against passing tests
+16. **Deterministic lint gates for test code** — `martin-lint.py` catches anti-patterns that LLMs reliably produce
+17. **Diary entries overcome statelessness** — Each tick's agent leaves structured notes for the next tick's agent
 
 ---
 
@@ -527,8 +626,10 @@ Source: src/app/auth.py
 
 | Aspect | Huntley's Ralph | MissHoover Pattern |
 |---|---|---|
-| Roles | Single role (Ralph) | Three modes (Hoover/Ralph/Lisa) |
+| Roles | Single role (Ralph) | Four modes (Hoover/Ralph/Lisa/Martin) |
 | Review | None (self-approval) | Mandatory adversarial review (Lisa) |
+| Test quality | No enforcement | Deterministic lint gate + Martin (test engineer) |
+| Test design | Ad-hoc | TDD mode for new phases (Martin designs, Lisa validates) |
 | State tracking | None | Phase-gated state machine |
 | Progress verification | Manual observation | Automated exit gates + 2×2 grid |
 | Scheduling | `while true` in terminal | Single cron job with decision tree |
@@ -536,9 +637,10 @@ Source: src/app/auth.py
 | Context management | Deterministic array allocation | Fresh session per tick + AgentEnd hook |
 | Spec generation | Conversation → review | Same, plus specs-readme.md lookup table |
 | Commit frequency | One per loop | One per fix (reject-repair mode) |
+| Cross-tick continuity | None | Diary entries + loop-log.jsonl |
 | Post-loop cleanup | Separate Ralph loop for conventions | Optional convention sweep phase |
 | Failure recovery | "Another Ralph loop" | Circuit breaker + escalation to DMs |
-| Infrastructure | Bash loop + Claude Code | Cron + sync_state.py + AgentEnd hook |
+| Infrastructure | Bash loop + Claude Code | Cron + sync_state.py + AgentEnd hook + martin-lint.py |
 
 ---
 
@@ -562,6 +664,7 @@ Source: src/app/auth.py
 2. **Test the preset first** — Verify the preset gives the agent the right tools before writing any prompts. We wasted time debugging tool access issues.
 3. **Smaller phases** — Our later phases (remediation, deliverables) were too broad. Smaller phases with tighter exit criteria would give faster feedback loops.
 4. **Commit the lookup table earlier** — `specs-readme.md` was added late. Having it from the start would have reduced hallucination in early loops.
+5. **Start Martin earlier** — We added the test engineer role late. LLMs produce predictable test anti-patterns (ourobouros, missing timeouts, tautologies). A deterministic lint gate from day one would have caught these immediately instead of burning Lisa's review budget on test infrastructure issues.
 
 ---
 
