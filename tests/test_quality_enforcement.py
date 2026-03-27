@@ -45,9 +45,9 @@ def sample_hourly():
                 "2024-06-01", periods=24, freq="h", tz="UTC"
             ),
             "station": ["test_station"] * 24,
-            "air_temperature_c": [20.0] * 24,
-            "relative_humidity_pct": [60.0] * 24,
-            "wind_speed_kmh": [15.0] * 24,
+            "air_temperature_c": [20.0 + 0.5 * i for i in range(24)],
+            "relative_humidity_pct": [60.0 + 0.3 * i for i in range(24)],
+            "wind_speed_kmh": [15.0 + 0.2 * i for i in range(24)],
             "rain_mm": [0.0] * 24,
         }
     )
@@ -474,7 +474,7 @@ class TestFlatlineDetection:
                 "station": ["test"] * 8,
                 "air_temperature_c": [22.5] * 8,
                 "relative_humidity_pct": [60.0] * 8,
-                "wind_speed_kmh": [15.0] * 15,
+                "wind_speed_kmh": [15.0] * 8,
                 "rain_mm": [0.0] * 8,
             }
         )
@@ -498,7 +498,7 @@ class TestFlatlineDetection:
         df_out, actions = enforce_quality(df, cleaning_config)
         flatline_actions = [a for a in actions if a["check_type"] == "flatline"]
         for action in flatline_actions:
-            assert action["action"] == "flagged"
+            assert action["action"] == "flag_only"
 
     def test_no_flatline_below_threshold(self, cleaning_config):
         """5 identical values should not trigger flatline (threshold=6)."""
@@ -523,13 +523,15 @@ class TestFlatlineDetection:
         from pea_met_network.quality import enforce_quality
 
         temps = [22.5] * 3 + [float("nan")] + [22.5] * 3
+        rh = [60.0] * 3 + [float("nan")] + [60.0] * 3
+        wind = [15.0] * 3 + [float("nan")] + [15.0] * 3
         df = pd.DataFrame(
             {
                 "timestamp_utc": pd.date_range("2024-06-01", periods=7, freq="h", tz="UTC"),
                 "station": ["test"] * 7,
                 "air_temperature_c": temps,
-                "relative_humidity_pct": [60.0] * 7,
-                "wind_speed_kmh": [15.0] * 7,
+                "relative_humidity_pct": rh,
+                "wind_speed_kmh": wind,
                 "rain_mm": [0.0] * 7,
             }
         )
