@@ -13,7 +13,9 @@ Pipeline: discover raw files → load via adapters → concat → dedup →
 from __future__ import annotations
 
 import argparse
+import gc
 import hashlib
+import shutil
 import json
 import sys
 import warnings
@@ -27,6 +29,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from pea_met_network.adapters.registry import route_by_extension  # noqa: E402
+from pea_met_network.cross_station_impute import (  # noqa: E402
+    DonorAssignment,
+    ImputedValue,
+    impute_cross_station,
+    propagate_fwi_quality_flags,
+)
 from pea_met_network.fwi_diagnostics import (  # noqa: E402
     chain_breaks_to_dataframe,
     diagnose_chain_breaks,
@@ -40,6 +48,18 @@ from pea_met_network.quality import (  # noqa: E402
 
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+DONOR_STAGING_DIR = PROCESSED_DIR / ".donor_staging"
+
+DONOR_KEEP_COLS = [
+    "timestamp_utc",
+    "air_temperature_c",
+    "relative_humidity_pct",
+    "dew_point_c",
+    "wind_speed_kmh",
+    "wind_direction_deg",
+    "solar_radiation_w_m2",
+    "rain_mm",
+]
 
 ALL_STATIONS = [
     "greenwich",
@@ -58,6 +78,110 @@ FWI_REQUIRED = [
     "wind_speed_kmh",
     "rain_mm",
 ]
+
+# ---------------------------------------------------------------------------
+# Cross-station donor config — loaded from cleaning-config.json
+# ---------------------------------------------------------------------------
+
+ECCC_CACHE_DIR = RAW_DIR / "eccc"
+
+# Map cleaning-config.json variable shorthand to canonical column names
+_VARIABLE_NAME_MAP = {
+    "rh": "relative_humidity_pct",
+    "relative_humidity_pct": "relative_humidity_pct",
+    "wind_speed_kmh": "wind_speed_kmh",
+    "wind": "wind_speed_kmh",
+    "air_temperature_c": "air_temperature_c",
+    "temp": "air_temperature_c",
+}
+
+
+def _topological_station_order(
+    stations: list[str],
+    donor_assignments: list[DonorAssignment],
+) -> list[str]:
+    """Compute processing order so donors are always available before targets.
+
+    Internal donors must have their staging parquet written before a target
+    station needs to read it.  External donors (ECCC) are always on disk
+    and impose no ordering constraint.
+
+    Uses Kahn's algorithm on the internal-donor sub-graph.
+    Stations with no internal dependencies come first.
+    """
+    station_set = set(stations)
+
+    # Build adjacency: edge (donor → target) means donor must come first.
+    internal_edges: list[tuple[str, str]] = []
+    for da in donor_assignments:
+        if da.donor_type == "internal" and da.target in station_set:
+            if da.donor_key in station_set:
+                internal_edges.append((da.donor_key, da.target))
+
+    # In-degree count (only for stations in our set)
+    in_degree: dict[str, int] = {s: 0 for s in stations}
+    adj: dict[str, list[str]] = {s: [] for s in stations}
+    for src, dst in internal_edges:
+        adj[src].append(dst)
+        in_degree[dst] = in_degree.get(dst, 0) + 1
+
+    # Kahn's algorithm — stable (processes in input order when tied)
+    queue = [s for s in stations if in_degree[s] == 0]
+    order: list[str] = []
+    while queue:
+        node = queue.pop(0)
+        order.append(node)
+        for neighbor in adj[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    # If there's a cycle, append any remaining stations (fallback)
+    remaining = [s for s in stations if s not in order]
+    order.extend(remaining)
+    return order
+
+
+def load_donor_config(
+    config: dict | None = None,
+) -> tuple[list[DonorAssignment], set[str]]:
+    """Load cross-station donor assignments from cleaning-config.json.
+
+    Returns (donor_assignments, target_stations).
+    Falls back to empty list if config missing or disabled.
+    """
+    if config is None:
+        config_path = PROJECT_ROOT / "docs" / "cleaning-config.json"
+        if config_path.exists():
+            config = json.loads(config_path.read_text())
+        else:
+            return [], set()
+
+    cross_cfg = config.get("cross_station_impute", {})
+    if not cross_cfg.get("enabled", False):
+        return [], set()
+
+    max_gap = cross_cfg.get("max_gap_hours", 3)
+    assignments_raw = cross_cfg.get("donor_assignments", {})
+
+    assignments: list[DonorAssignment] = []
+    targets: set[str] = set()
+
+    for variable, entries in assignments_raw.items():
+        canonical_var = _VARIABLE_NAME_MAP.get(variable, variable)
+        for entry in entries:
+            da = DonorAssignment(
+                target=entry["target"],
+                variable=canonical_var,
+                priority=entry["priority"],
+                donor_key=entry["donor"],
+                donor_type=entry["type"],
+                max_gap_hours=max_gap,
+            )
+            assignments.append(da)
+            targets.add(entry["target"])
+
+    return assignments, targets
 
 # ---------------------------------------------------------------------------
 # Data discovery — map station names to raw data files
@@ -763,6 +887,55 @@ def should_process(station: str, force: bool = False) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Donor staging helpers (disk-based cross-station imputation)
+# ---------------------------------------------------------------------------
+
+
+def _save_donor_parquet(station: str, hourly_df: pd.DataFrame) -> Path:
+    """Save slimmed donor data to staging parquet for later disk-based loading.
+    
+    Keeps only DONOR_KEEP_COLS and sets timestamp_utc as index.
+    Returns the path to the saved parquet file.
+    """
+    DONOR_STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Slim to donor-relevant columns
+    available = [c for c in DONOR_KEEP_COLS if c in hourly_df.columns]
+    slim = hourly_df[available].copy()
+    
+    # Ensure timestamp_utc is a proper DatetimeIndex
+    if "timestamp_utc" in slim.columns:
+        slim["timestamp_utc"] = pd.to_datetime(slim["timestamp_utc"], utc=True)
+        slim = slim.set_index("timestamp_utc")
+    
+    out_path = DONOR_STAGING_DIR / f"{station}.parquet"
+    slim.to_parquet(out_path, engine="pyarrow", index=True)
+    return out_path
+
+
+def _load_donor_from_disk(station: str) -> pd.DataFrame | None:
+    """Load slimmed donor data from staging parquet.
+    
+    Returns DataFrame with timestamp_utc as DatetimeIndex, or None if not found.
+    """
+    parquet_path = DONOR_STAGING_DIR / f"{station}.parquet"
+    if not parquet_path.exists():
+        return None
+    df = pd.read_parquet(parquet_path, engine="pyarrow")
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index, utc=True)
+    return df
+
+
+def _cleanup_donor_staging() -> None:
+    """Remove the donor staging directory and all its contents."""
+    if DONOR_STAGING_DIR.exists():
+        shutil.rmtree(DONOR_STAGING_DIR, ignore_errors=True)
+
+
+
+
+# ---------------------------------------------------------------------------
 # Main pipeline
 # ---------------------------------------------------------------------------
 
@@ -826,7 +999,18 @@ def _register_manifest_artifact(
 
 
 def run_pipeline(stations: list[str], force: bool = False) -> None:
-    """Execute the full pipeline for given stations."""
+    """Execute the full pipeline for given stations.
+
+    Serial disk-based approach:
+      1. Topologically sort stations so internal donors are processed first.
+      2. For each station (one at a time):
+         a. Load → dedup → resample hourly → truncate → quality → impute.
+         b. Save donor-relevant columns to staging parquet.
+         c. If cross-station target: load donors from staging disk, impute.
+         d. Calculate FWI → enforce FWI outputs → chain break diagnostics.
+         e. Write hourly/daily CSVs → free memory.
+      3. Write aggregate reports (manifest, QA/QC, etc.) reading from disk.
+    """
     print(f"Pipeline: {len(stations)} stations")
 
     station_files = discover_raw_files()
@@ -834,67 +1018,108 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
     all_reports: list[dict] = []
     all_quality_actions: list[dict] = []
     all_chain_breaks: list = []
-    all_hourly: list[pd.DataFrame] = []
-    all_daily: list[pd.DataFrame] = []
+    all_cross_records: list[ImputedValue] = []
+    processed_stations: list[str] = []
 
-    for station in stations:
+    # Load cleaning config once
+    config_path = PROJECT_ROOT / "docs" / "cleaning-config.json"
+    quality_config = (
+        json.loads(config_path.read_text())
+        if config_path.exists()
+        else {}
+    )
+    fwi_config = quality_config.get("fwi", {})
+    gap_threshold = fwi_config.get("gap_threshold_hours", 24)
+
+    # Load cross-station donor config
+    donor_assignments, cross_station_targets = load_donor_config(quality_config)
+
+    # Compute serial processing order (donors before targets)
+    ordered_stations = _topological_station_order(stations, donor_assignments)
+    print(
+        f"  Processing order: {', '.join(ordered_stations)}",
+        file=sys.stderr,
+    )
+
+    # Ensure clean donor staging directory
+    _cleanup_donor_staging()
+    DONOR_STAGING_DIR.mkdir(parents=True, exist_ok=True)
+
+    # =========================================================================
+    # SERIAL PASS: process one station at a time
+    # =========================================================================
+    for station in ordered_stations:
+        # --- Skip stale check ---
         if not should_process(station, force=force):
             print(f"  {station}: skipping (output up to date)")
             continue
 
-        # Load station data on-demand to avoid OOM with many stations
+        # --- Load and clean through standard pipeline stages ---
         df = load_station_files(station_files, station)
         if df is None:
             print(f"  WARNING: no data for {station}", file=sys.stderr)
             continue
-        print(
-            f"  {station}: {len(df)} raw rows",
-            file=sys.stderr,
-        )
+        print(f"  {station}: {len(df)} raw rows", file=sys.stderr)
 
         df = dedup(df)
         hourly = resample_hourly(df)
-        print(
-            f"  {station}: {len(hourly)} hourly rows",
-            file=sys.stderr,
-        )
+        print(f"  {station}: {len(hourly)} hourly rows", file=sys.stderr)
+        del df
+        gc.collect()
 
-        # Load cleaning config for quality enforcement
-        config_path = PROJECT_ROOT / "docs" / "cleaning-config.json"
-        quality_config = (
-            json.loads(config_path.read_text())
-            if config_path.exists()
-            else {}
-        )
-
-        # Truncate date range to configured start date
         hourly = truncate_date_range(hourly, quality_config)
 
-        # Quality enforcement before imputation
         hourly, quality_actions = enforce_quality(hourly, quality_config)
         all_quality_actions.extend(quality_actions)
 
         hourly, report = impute(hourly, station)
         all_reports.extend(report)
 
-        # Read FWI config for chain recovery threshold
-        fwi_config = quality_config.get("fwi", {})
-        gap_threshold = fwi_config.get("gap_threshold_hours", 24)
+        # --- Save donor staging parquet for downstream stations ---
+        _save_donor_parquet(station, hourly)
+        gc.collect()
 
+        # --- Cross-station imputation (if this station is a target) ---
+        is_cross_target = station in cross_station_targets
+        if is_cross_target and donor_assignments:
+            hourly, records = impute_cross_station(
+                hourly,
+                station,
+                donor_assignments=donor_assignments,
+                internal_hourly=None,  # donors loaded from disk
+                eccc_cache_dir=ECCC_CACHE_DIR,
+                disk_donor_dir=DONOR_STAGING_DIR,
+            )
+            all_cross_records.extend(records)
+
+            # Restore timestamp_utc as column for downstream processing
+            if isinstance(hourly.index, pd.DatetimeIndex):
+                hourly = hourly.reset_index()
+
+            # Propagate quality flags to FWI columns
+            hourly = propagate_fwi_quality_flags(hourly)
+            print(
+                f"  {station}: cross-station imputed {len(records)} values",
+                file=sys.stderr,
+            )
+
+        # --- FWI calculation ---
         hourly = calculate_fwi(hourly, gap_threshold_hours=gap_threshold)
 
-        # FWI output enforcement after FWI calculation
+        # --- FWI output enforcement ---
         hourly, fwi_actions = enforce_fwi_outputs(hourly, quality_config)
         all_quality_actions.extend(fwi_actions)
 
-        # FWI chain break diagnostics
+        # --- FWI chain break diagnostics ---
         station_breaks = diagnose_chain_breaks(
             hourly, station, quality_actions
         )
         all_chain_breaks.extend(station_breaks)
 
+        # --- Aggregate daily ---
         daily = aggregate_daily(hourly)
 
+        # --- Write outputs ---
         out_dir = PROCESSED_DIR / station
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -908,11 +1133,38 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
         daily.to_csv(daily_path, index=False)
         print(f"  {station}: {len(daily)} daily rows")
 
-        all_hourly.append(hourly)
-        all_daily.append(daily)
+        processed_stations.append(station)
 
-        # Free per-station memory before loading next
-        del df, hourly, daily
+        # --- Free all per-station memory ---
+        del hourly, daily
+        gc.collect()
+
+    # Clean up donor staging
+    _cleanup_donor_staging()
+
+    # =========================================================================
+    # AGGREGATE REPORTS (reading station data from disk as needed)
+    # =========================================================================
+
+    # Write cross-station imputation audit trail
+    if all_cross_records:
+        audit_rows = [
+            {
+                "station": r.station,
+                "timestamp_utc": r.timestamp_utc,
+                "variable": r.variable,
+                "imputed_value": r.imputed_value,
+                "quality_flag": r.quality_flag,
+                "source": r.source,
+                "method": r.method,
+                "donor_priority": r.donor_priority,
+            }
+            for r in all_cross_records
+        ]
+        audit_df = pd.DataFrame(audit_rows)
+        audit_path = PROCESSED_DIR / "cross_station_imputation_audit.csv"
+        audit_df.to_csv(audit_path, index=False)
+        print(f"  Cross-station audit: {len(audit_df)} records")
 
     # Write pipeline manifest with SHA256 checksums
     manifest_path = PROCESSED_DIR / "pipeline_manifest.json"
@@ -946,9 +1198,7 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
         stations_summary[s] = stations_summary.get(s, 0) + 1
     manifest["stations"] = stations_summary
 
-    # Compute unprocessed files: raw files for stations that have no
-    # processed output on disk (hourly CSV). This ensures a single-station
-    # re-run doesn't inflate unprocessed_count.
+    # Compute unprocessed files
     all_station_files = discover_raw_files()
     stations_with_output = {
         s for s in ALL_STATIONS
@@ -986,9 +1236,9 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
         "imputation_report", report_path, len(report_df)
     )
 
-    # QA/QC report — include all stations with processed output
+    # QA/QC report — read all station data from disk (no in-memory accumulation)
     all_qa_hourly, all_qa_daily = _collect_qa_qc_data(
-        all_hourly, all_daily, stations
+        [], [], processed_stations
     )
 
     if all_qa_hourly and all_qa_daily:
@@ -1006,6 +1256,8 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
         _register_manifest_artifact(
             "qa_qc_report", qa_qc_path, len(qa_qc_df)
         )
+        del combined_hourly, combined_daily
+        gc.collect()
 
     # FWI chain break missingness report
     if all_chain_breaks:

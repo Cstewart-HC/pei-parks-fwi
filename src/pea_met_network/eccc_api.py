@@ -29,6 +29,15 @@ class EcccStation:
     anemometer_height_m: float  # default 10.0 (WMO standard)
 
 
+def _station_key(station: EcccStation) -> str:
+    """Derive a filesystem-safe key from station name.
+
+    Maps to the canonical key used in cleaning-config.json eccc_stations.
+    """
+    return station.name.lower().replace(" ", "_").replace(".", "")
+
+
+
 ECCC_DONOR_STATIONS: dict[str, EcccStation] = {
     "st_peters": EcccStation(
         "8300562", 41903, "St. Peters", "America/Halifax", 10.0
@@ -39,6 +48,11 @@ ECCC_DONOR_STATIONS: dict[str, EcccStation] = {
     "harrington_cda": EcccStation(
         "830P001", 30308, "Harrington CDA CS", "America/Halifax", 10.0
     ),
+}
+
+# Map config keys to filesystem-safe cache directory names
+ECCC_CACHE_KEY_MAP: dict[str, str] = {
+    key: _station_key(stn) for key, stn in ECCC_DONOR_STATIONS.items()
 }
 
 _BASE_URL = "https://api.weather.gc.ca/collections/climate-hourly/items"
@@ -71,7 +85,7 @@ def normalize_eccc_response(
     rows: list[dict[str, Any]] = []
     for feat in features:
         props = feat.get("properties", {})
-        obs_ts = props.get("OBSERVATION_DATE")
+        obs_ts = props.get("OBSERVATION_DATE") or props.get("UTC_DATE")
         if not obs_ts:
             continue
 
@@ -199,8 +213,3 @@ def _safe_float(value: Any) -> float | None:
         return v
     except (ValueError, TypeError):
         return None
-
-
-def _station_key(station: EcccStation) -> str:
-    """Derive a filesystem-safe key from station name."""
-    return station.name.lower().replace(" ", "_")
