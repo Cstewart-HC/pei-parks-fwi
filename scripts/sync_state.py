@@ -1074,6 +1074,8 @@ def main() -> None:
         print("PHASE_REVERTED=true (validation REJECT)", file=sys.stderr)
 
     phase_advanced = advance_phase_if_done(state, validation, verdict, exit_passes, exit_cmd)
+    if phase_advanced:
+        verdict = validation.get("verdict", verdict)
 
     state["iteration"] = state.get("iteration", 0) + 1
     state["status"] = "running"
