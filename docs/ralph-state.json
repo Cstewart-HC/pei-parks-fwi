@@ -106,13 +106,13 @@
     {
       "id": 10,
       "name": "Cross-Station Variable Imputation (RH, Wind, Temp)",
-      "status": "in_progress",
+      "status": "done",
       "iteration": 0,
       "started_at": "2026-03-28T02:42:00.000000+00:00",
       "completed_at": null,
-      "exit_gate": "pytest tests/ -m not e2e -v",
+      "exit_gate": "pytest tests/ -m \"not e2e\" -v",
       "notes": "MSC GeoMet API donor data, vapor pressure continuity, dew-point fallback, wind height correction, spatial temp proxy, quality flag audit trail.",
-      "exit": "pytest tests/ -m not e2e -v",
+      "exit": "pytest tests/ -m \"not e2e\" -v",
       "tdd_start": "martin"
     }
   ],
@@ -121,9 +121,12 @@
     "tripped": false,
     "consecutive_stalls": 0,
     "last_tripped": null,
-    "last_commit": "a362618",
-    "last_verdict": "PENDING",
-    "last_fail_criteria_hash": null
+    "last_commit": "999f57e",
+    "last_verdict": "PASS",
+    "last_fail_criteria_hash": "33aea2f4f48dd3b9",
+    "trip_reason": null,
+    "trip_at": null,
+    "consecutive_errors": 0
   },
   "decisions": [
     {
@@ -186,7 +189,7 @@
   "phase": "10",
   "iteration": 2,
   "status": "running",
-  "updated_at": "2026-03-28T03:47:38.858887+00:00",
+  "updated_at": "2026-03-28T05:04:02.032925+00:00",
   "blocker": null,
   "last_commit": "721610a",
   "last_verdict": null,
