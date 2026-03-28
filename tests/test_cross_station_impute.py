@@ -43,19 +43,19 @@ class TestSaturationVaporPressure:
         assert result[0] == pytest.approx(0.61094, abs=0.0001)
 
     def test_twenty_celsius(self) -> None:
-        """es(20 deg C) ~ 2.3388 kPa (WMO standard reference)."""
+        """es(20 deg C) ~ 2.3334 kPa (ARM formula)."""
         result = saturation_vapor_pressure(np.array([20.0]))
-        assert result[0] == pytest.approx(2.3388, abs=0.001)
+        assert result[0] == pytest.approx(2.3334, abs=0.001)
 
     def test_thirty_celsius(self) -> None:
-        """es(30 deg C) ~ 4.2450 kPa."""
+        """es(30 deg C) ~ 4.2367 kPa (ARM formula)."""
         result = saturation_vapor_pressure(np.array([30.0]))
-        assert result[0] == pytest.approx(4.2450, abs=0.001)
+        assert result[0] == pytest.approx(4.2367, abs=0.001)
 
     def test_negative_ten_celsius(self) -> None:
-        """es(-10 deg C) ~ 0.2600 kPa."""
+        """es(-10 deg C) ~ 0.2868 kPa (ARM formula)."""
         result = saturation_vapor_pressure(np.array([-10.0]))
-        assert result[0] == pytest.approx(0.2600, abs=0.001)
+        assert result[0] == pytest.approx(0.2868, abs=0.001)
 
     def test_returns_array_same_shape(self) -> None:
         """Output shape matches input shape."""
@@ -73,12 +73,12 @@ class TestActualVaporPressure:
     """AC-10-01: e = (RH/100) x es(T)."""
 
     def test_known_value(self) -> None:
-        """At 20 deg C, RH=50%: e = 0.5 x 2.3388 ~ 1.1694 kPa."""
+        """At 20 deg C, RH=50%: e = 0.5 x es(20) ~ 1.1667 kPa (ARM)."""
         result = actual_vapor_pressure(
             np.array([20.0]),
             np.array([50.0]),
         )
-        assert result[0] == pytest.approx(1.1694, abs=0.001)
+        assert result[0] == pytest.approx(1.1667, abs=0.001)
 
     def test_zero_rh(self) -> None:
         """RH=0% -> e=0."""
@@ -132,11 +132,11 @@ class TestRhFromDewPoint:
         assert result[0] == pytest.approx(100.0, abs=0.01)
 
     def test_dew_far_below_temp_gives_low_rh(self) -> None:
-        """Td = 0 deg C, T = 25 deg C -> RH ~ 32.1%."""
+        """Td = 0 deg C, T = 25 deg C -> RH ~ 19.3% (ARM formula)."""
         t = np.array([25.0])
         td = np.array([0.0])
         result = rh_from_dew_point(t, td)
-        assert result[0] == pytest.approx(32.1, abs=0.5)
+        assert result[0] == pytest.approx(19.3, abs=0.5)
 
     def test_precision_advantage_over_integer_rh(self) -> None:
         """0.1 deg C dew point change produces measurable RH change."""
@@ -250,7 +250,7 @@ class TestNormalizeEcccResponse:
         )
         ts = df["timestamp_utc"].iloc[0]
         assert ts.tz is not None
-        assert ts.tz.zone == "UTC"
+        assert str(ts.tz) == "UTC"
 
     def test_empty_features_returns_empty_dataframe(self) -> None:
         df = normalize_eccc_response(
@@ -354,14 +354,14 @@ class TestHeightCorrection:
     """AC-10-08: Wind height correction dataclass and power law."""
 
     def test_power_law_10m_to_3m(self) -> None:
-        """10m->3m: v(3) = v(10) x (3/10)^0.14 ~ 0.827 x v(10)."""
+        """10m->3m: v(3) = v(10) x (3/10)^0.14 ~ 0.845 x v(10)."""
         hc = HeightCorrection(
             donor_height_m=10.0,
             target_height_m=3.0,
             alpha=0.14,
         )
         ratio = (hc.target_height_m / hc.donor_height_m) ** hc.alpha
-        assert ratio == pytest.approx(0.827, abs=0.005)
+        assert ratio == pytest.approx(0.845, abs=0.005)
 
     def test_empirical_flag(self) -> None:
         hc = HeightCorrection(
@@ -431,13 +431,13 @@ class TestTransferWind:
     """AC-10-08: Wind speed transfer with height correction."""
 
     def test_height_correction_applied(self) -> None:
-        """10m donor -> 3m target: wind reduced by ~17%."""
+        """10m donor -> 3m target: wind reduced by ~15.5%."""
         hc = HeightCorrection(
             donor_height_m=10.0, target_height_m=3.0, alpha=0.14,
         )
         wind, method = _transfer_wind(20.0, hc)
         assert method == "HEIGHT_SCALED"
-        assert wind == pytest.approx(20.0 * 0.827, abs=0.3)
+        assert wind == pytest.approx(20.0 * 0.845, abs=0.3)
 
     def test_no_correction_raw_proxy(self) -> None:
         """No height correction -> raw spatial proxy."""
@@ -890,6 +890,7 @@ def _make_eccc_feature(
 ) -> dict[str, Any]:
     """Build a minimal OGC API GeoJSON feature for testing."""
     props: dict[str, Any] = {}
+    props["OBSERVATION_DATE"] = dt
     if temp is not None:
         props["TEMP"] = temp
     if rh is not None:

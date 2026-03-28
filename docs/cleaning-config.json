@@ -93,5 +93,65 @@
       "dmc": 6.0,
       "dc": 15.0
     }
+  },
+  "cross_station_impute": {
+    "enabled": true,
+    "max_gap_hours": 3,
+    "height_corrections": {
+      "default_donor_height_m": 10.0,
+      "default_target_height_m": null,
+      "alpha": 0.14,
+      "empirical_min_overlap_hours": 168
+    },
+    "temp_outlier_caps": {
+      "warm_bias_max_c": 2.0,
+      "cool_bias_max_c": 3.0
+    },
+    "donor_assignments": {
+      "rh": [
+        {"target": "stanley_bridge", "priority": 1, "donor": "cavendish", "type": "internal"},
+        {"target": "stanley_bridge", "priority": 2, "donor": "charlottetown_a", "type": "external"},
+        {"target": "stanley_bridge", "priority": 3, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 1, "donor": "cavendish", "type": "internal"},
+        {"target": "tracadie", "priority": 2, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 3, "donor": "charlottetown_a", "type": "external"},
+        {"target": "greenwich", "priority": 1, "donor": "st_peters", "type": "external"},
+        {"target": "greenwich", "priority": 2, "donor": "harrington_cda", "type": "external"},
+        {"target": "greenwich", "priority": 3, "donor": "north_rustico", "type": "internal"}
+      ],
+      "wind_speed_kmh": [
+        {"target": "stanley_bridge", "priority": 1, "donor": "cavendish", "type": "internal"},
+        {"target": "stanley_bridge", "priority": 2, "donor": "charlottetown_a", "type": "external"},
+        {"target": "stanley_bridge", "priority": 3, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 1, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 2, "donor": "cavendish", "type": "internal"},
+        {"target": "tracadie", "priority": 3, "donor": "charlottetown_a", "type": "external"},
+        {"target": "greenwich", "priority": 1, "donor": "st_peters", "type": "external"},
+        {"target": "greenwich", "priority": 2, "donor": "stanhope", "type": "internal"},
+        {"target": "greenwich", "priority": 3, "donor": "harrington_cda", "type": "external"},
+        {"target": "north_rustico", "priority": 1, "donor": "stanhope", "type": "internal"},
+        {"target": "north_rustico", "priority": 2, "donor": "charlottetown_a", "type": "external"},
+        {"target": "north_rustico", "priority": 3, "donor": "cavendish", "type": "internal"},
+        {"target": "cavendish", "priority": 1, "donor": "north_rustico", "type": "internal"},
+        {"target": "cavendish", "priority": 2, "donor": "stanhope", "type": "internal"},
+        {"target": "cavendish", "priority": 3, "donor": "charlottetown_a", "type": "external"}
+      ],
+      "air_temperature_c": [
+        {"target": "stanley_bridge", "priority": 1, "donor": "cavendish", "type": "internal"},
+        {"target": "stanley_bridge", "priority": 2, "donor": "charlottetown_a", "type": "external"},
+        {"target": "stanley_bridge", "priority": 3, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 1, "donor": "north_rustico", "type": "internal"},
+        {"target": "tracadie", "priority": 2, "donor": "cavendish", "type": "internal"},
+        {"target": "tracadie", "priority": 3, "donor": "charlottetown_a", "type": "external"},
+        {"target": "greenwich", "priority": 1, "donor": "st_peters", "type": "external"},
+        {"target": "greenwich", "priority": 2, "donor": "stanhope", "type": "internal"},
+        {"target": "greenwich", "priority": 3, "donor": "harrington_cda", "type": "external"}
+      ]
+    },
+    "eccc_stations": {
+      "st_peters":       {"climate_id": "8300562", "stn_id": 41903, "name": "St. Peters",         "anemometer_height_m": 10.0},
+      "charlottetown_a": {"climate_id": "8300300", "stn_id": 6526,  "name": "Charlottetown A",   "anemometer_height_m": 10.0},
+      "harrington_cda":  {"climate_id": "830P001", "stn_id": 30308, "name": "Harrington CDA CS",  "anemometer_height_m": 10.0}
+    }
   }
 }

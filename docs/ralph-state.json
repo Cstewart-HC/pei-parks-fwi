@@ -15,7 +15,7 @@
     },
     {
       "id": 2,
-      "name": "Format Adapters \u2014 All Formats (CSV/XLSX/XLE/JSON)",
+      "name": "Format Adapters — All Formats (CSV/XLSX/XLE/JSON)",
       "status": "done",
       "iteration": 0,
       "started_at": null,
@@ -32,7 +32,7 @@
       "started_at": null,
       "completed_at": null,
       "exit_gate": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v",
-      "notes": "Wire adapters into cleaning.py: concat \u2192 dedup \u2192 resample \u2192 impute \u2192 FWI. Single SSOT output.",
+      "notes": "Wire adapters into cleaning.py: concat → dedup → resample → impute → FWI. Single SSOT output.",
       "exit": "pytest tests/test_v2_pipeline.py::TestAC_PIPE_3_PipelineIntegration -v"
     },
     {
@@ -109,7 +109,7 @@
       "status": "done",
       "iteration": 0,
       "started_at": "2026-03-28T02:42:00.000000+00:00",
-      "completed_at": null,
+      "completed_at": "2026-03-28T05:04:02.000000+00:00",
       "exit_gate": "pytest tests/ -m \"not e2e\" -v",
       "notes": "MSC GeoMet API donor data, vapor pressure continuity, dew-point fallback, wind height correction, spatial temp proxy, quality flag audit trail.",
       "exit": "pytest tests/ -m \"not e2e\" -v",
@@ -121,7 +121,7 @@
     "tripped": false,
     "consecutive_stalls": 0,
     "last_tripped": null,
-    "last_commit": "a7e2cb6",
+    "last_commit": "52ba36f",
     "last_verdict": "PASS",
     "last_fail_criteria_hash": "33aea2f4f48dd3b9",
     "trip_reason": null,
@@ -168,30 +168,30 @@
     {
       "id": "v2-d7",
       "decision": "Tests define the contract",
-      "rationale": "Each phase has failing tests that pass when implementation is complete. Red \u2192 green.",
+      "rationale": "Each phase has failing tests that pass when implementation is complete. Red → green.",
       "date": "2026-03-25"
     },
     {
       "id": "v2-d8",
-      "decision": "Phase 8 uses TDD \u2014 Martin writes tests first",
+      "decision": "Phase 8 uses TDD — Martin writes tests first",
       "rationale": "Data quality enforcement is new functionality. Tests define the contract before Ralph implements.",
       "date": "2026-03-27"
     },
     {
       "id": "v2-d9",
-      "decision": "Phase 9 uses TDD \u2014 Martin writes tests first",
+      "decision": "Phase 9 uses TDD — Martin writes tests first",
       "rationale": "FWI chain recovery is new logic modifying existing calc functions. Tests must define recovery behavior.",
       "date": "2026-03-27"
     }
   ],
-  "last_reviewed_commit": null,
+  "last_reviewed_commit": "869de4aa3c1e3a0bc09ee1bc3ccb0d84ae3ded7c",
   "blockers": [],
   "phase": "10",
   "iteration": 4,
-  "status": "running",
-  "updated_at": "2026-03-28T05:57:45.235260+00:00",
+  "status": "complete",
+  "updated_at": "2026-03-28T15:16:14.560923+00:00",
   "blocker": null,
-  "last_commit": "721610a",
-  "last_verdict": null,
+  "last_commit": "52ba36f",
+  "last_verdict": "PASS",
   "last_updated": "2026-03-27T03:00:00.000000+00:00"
 }

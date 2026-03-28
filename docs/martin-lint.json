@@ -1,29 +1,30 @@
 {
-  "linted_at": "2026-03-28T00:11:14.319964+00:00",
+  "linted_at": "2026-03-28T04:19:36.299250+00:00",
   "rules_version": "2026.03",
   "verdict": "FAIL",
-  "files_scanned": 21,
-  "total_violations": 66,
+  "files_scanned": 22,
+  "total_violations": 80,
   "by_severity": {
-    "medium": 40,
-    "low": 26
+    "medium": 47,
+    "low": 33
   },
   "by_rule": {
     "AP027": 5,
     "AP006": 14,
-    "AP005": 12,
-    "AP014": 7,
+    "AP007": 1,
+    "AP014": 8,
+    "AP005": 17,
     "AP026": 2,
-    "AP021": 12,
+    "AP021": 13,
+    "AP024": 18,
     "AP012": 1,
-    "AP024": 12,
     "AP015": 1
   },
   "by_category": {
-    "structure": 20,
+    "structure": 22,
     "isolation": 14,
-    "assertions": 20,
-    "reliability": 12
+    "assertions": 26,
+    "reliability": 18
   },
   "violations": [
     {
@@ -42,6 +43,69 @@
       "line": 85,
       "test": "test_loads_processed_data_files",
       "message": "[shared_state_write] \"\"\"AC-ANA-1: Notebook references data/processed/ files.\"\"\"",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP007",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 151,
+      "test": "test_capped_at_100",
+      "message": "[duplicate_test_name] 'test_capped_at_100' also defined at line 110",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP014",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 190,
+      "test": null,
+      "message": "[float_assertion_without_approx] assert st.anemometer_height_m == 10.0",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP005",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 252,
+      "test": null,
+      "message": "[tautological_assertion] assert ts.tz is not None",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP005",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 373,
+      "test": null,
+      "message": "[tautological_assertion] assert hc.empirically_derived is True",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP005",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 752,
+      "test": null,
+      "message": "[tautological_assertion] assert result is not None",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP005",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 753,
+      "test": null,
+      "message": "[tautological_assertion] assert result.empirically_derived is True",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP005",
+      "severity": "medium",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 773,
+      "test": null,
+      "message": "[tautological_assertion] assert result is None",
       "auto_fix": null
     },
     {
@@ -389,6 +453,69 @@
     {
       "rule_id": "AP021",
       "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 13,
+      "test": null,
+      "message": "[unused_import_in_test] Possibly unused import: from __future__ import annotations",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 280,
+      "test": "test_fetch_returns_dataframe",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-01\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 281,
+      "test": "test_fetch_returns_dataframe",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-31\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 303,
+      "test": "test_cache_write_and_read",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-01\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 304,
+      "test": "test_cache_write_and_read",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-31\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 309,
+      "test": "test_cache_write_and_read",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-01\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP024",
+      "severity": "low",
+      "file": "tests/test_cross_station_impute.py",
+      "line": 310,
+      "test": "test_cache_write_and_read",
+      "message": "[hardcoded_timestamp] pd.Timestamp(\"2024-07-31\", tz=\"UTC\"),",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP021",
+      "severity": "low",
       "file": "tests/test_data_refresh.py",
       "line": 3,
       "test": null,
@@ -621,5 +748,5 @@
       "auto_fix": null
     }
   ],
-  "summary": "66 violation(s) across 21 file(s): 40 medium, 26 low"
+  "summary": "80 violation(s) across 22 file(s): 47 medium, 33 low"
 }
