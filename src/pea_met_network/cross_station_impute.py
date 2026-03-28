@@ -19,8 +19,16 @@ from pea_met_network.vapor_pressure import (
     rh_from_vapor_pressure,
 )
 
+try:
+    from pea_met_network.eccc_api import ECCC_CACHE_KEY_MAP
+except ImportError:
+    ECCC_CACHE_KEY_MAP = {}
+
 # Stations that must NEVER be donors (no RH sensor, 100% missing)
 _BLOCKED_DONORS = {"stanley_bridge", "tracadie"}
+
+# Module-level cache for external donor CSVs (keyed by cache_path string)
+_eccc_donor_cache: dict[str, pd.DataFrame] = {}
 
 # Default asymmetric temperature outlier caps (deg C)
 _DEFAULT_WARM_CAP = 2.0
@@ -236,6 +244,7 @@ def _get_donor_df(
     donor_type: str,
     internal_hourly: dict[str, pd.DataFrame] | None,
     eccc_cache_dir: Path | None,
+    disk_donor_dir: Path | None = None,
 ) -> pd.DataFrame | None:
     """Load donor data from internal pre-loaded data or ECCC cache."""
     if donor_key in _BLOCKED_DONORS:
@@ -247,12 +256,26 @@ def _get_donor_df(
             if "timestamp_utc" in df.columns and not isinstance(df.index, pd.DatetimeIndex):
                 df = df.set_index("timestamp_utc")
             return df
+        # Disk fallback: load from staging parquet
+        if disk_donor_dir is not None:
+            parquet_path = Path(disk_donor_dir) / f"{donor_key}.parquet"
+            if parquet_path.exists():
+                df = pd.read_parquet(parquet_path, engine="pyarrow")
+                if not isinstance(df.index, pd.DatetimeIndex):
+                    df.index = pd.to_datetime(df.index, utc=True)
+                return df
         return None
     elif donor_type == "external":
         if eccc_cache_dir is not None:
-            cache_path = Path(eccc_cache_dir) / donor_key / f"{donor_key}.parquet"
+            cache_key = ECCC_CACHE_KEY_MAP.get(donor_key, donor_key)
+            cache_path = Path(eccc_cache_dir) / cache_key / f"{cache_key}.csv"
+            cache_path_str = str(cache_path)
+            if cache_path_str in _eccc_donor_cache:
+                return _eccc_donor_cache[cache_path_str]
             if cache_path.exists():
-                return pd.read_parquet(cache_path)
+                df = pd.read_csv(cache_path, parse_dates=["timestamp_utc"])
+                _eccc_donor_cache[cache_path_str] = df
+                return df
         return None
     return None
 
@@ -316,6 +339,7 @@ def impute_cross_station(
     height_corrections: dict[str, HeightCorrection] | None = None,
     internal_hourly: dict[str, pd.DataFrame] | None = None,
     eccc_cache_dir: Path | None = None,
+    disk_donor_dir: Path | None = None,
 ) -> tuple[pd.DataFrame, list[ImputedValue]]:
     """Synthesize missing variables using cross-station transfer.
 
@@ -380,6 +404,7 @@ def impute_cross_station(
                 donor_df = _get_donor_df(
                     da.donor_key, da.donor_type,
                     internal_hourly, eccc_cache_dir,
+                    disk_donor_dir,
                 )
                 if donor_df is None:
                     continue
