@@ -182,6 +182,7 @@ class TestAC11CliAndConfig:
         assert "fwi" in config
         assert config["fwi"]["fwi_mode"] == "extended"
 
+    @pytest.mark.e2e
     def test_cli_accepts_fwi_mode_compliant(self):
         """AC-11-08: CLI parser accepts --fwi-mode compliant."""
         result = subprocess.run(
