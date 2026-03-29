@@ -281,15 +281,19 @@ def load_station_files(
         except Exception as e:
             errors.append(f"Licor load error {fpath}: {e}")
 
-    # Load per-station files
+    # Load per-station files — incremental concat to limit peak memory
+    df: pd.DataFrame | None = None
     for fpath in station_files.get(station, []):
         try:
             adapter = route_by_extension(fpath)
-            df = adapter.load(fpath)
-            if len(df) > 0:
-                if "station" not in df.columns:
-                    df["station"] = station
-                frames.append(df)
+            chunk = adapter.load(fpath)
+            if len(chunk) > 0:
+                if "station" not in chunk.columns:
+                    chunk["station"] = station
+                # Dedup per-file to reduce concat memory footprint
+                chunk = chunk.drop_duplicates(subset=["timestamp_utc"], keep="first") if "timestamp_utc" in chunk.columns else chunk.drop_duplicates()
+                df = pd.concat([df, chunk], ignore_index=True) if df is not None else chunk
+                del chunk
         except Exception as e:
             errors.append(f"Load error {fpath}: {e}")
 
@@ -304,10 +308,18 @@ def load_station_files(
             ),
         )
 
-    if not frames:
+    if df is None and not frames:
         return None
 
-    df = pd.concat(frames, ignore_index=True)
+    if frames:
+        licor_df = pd.concat(frames, ignore_index=True)
+        del frames
+        df = pd.concat([df, licor_df], ignore_index=True) if df is not None else licor_df
+        del licor_df
+        gc.collect()
+
+    if df is None:
+        return None
     df["station"] = station
     return df
 
@@ -1070,10 +1082,11 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
         print(f"  {station}: {len(df)} raw rows", file=sys.stderr)
 
         df = dedup(df)
+        deduped_rows = len(df)
         hourly = resample_hourly(df)
-        print(f"  {station}: {len(hourly)} hourly rows", file=sys.stderr)
         del df
         gc.collect()
+        print(f"  {station}: {deduped_rows} raw → {len(hourly)} hourly rows", file=sys.stderr)
 
         hourly = truncate_date_range(hourly, quality_config)
 
@@ -1106,8 +1119,10 @@ def run_pipeline(stations: list[str], force: bool = False) -> None:
 
             # Propagate quality flags to FWI columns
             hourly = propagate_fwi_quality_flags(hourly)
+            del records
+            gc.collect()
             print(
-                f"  {station}: cross-station imputed {len(records)} values",
+                f"  {station}: cross-station imputed",
                 file=sys.stderr,
             )
 
