@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "ea595de",
-  "verdict": "REJECT",
-  "reviewed_at": "2026-03-29T22:25:02.673120+00:00",
+  "last_reviewed_commit": "79802ee",
+  "verdict": "PASS",
+  "reviewed_at": "2026-03-29T23:54:30+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -18,29 +18,42 @@
   },
   "criteria": [
     {
-      "id": "11.6",
-      "name": "Test suite status for Phase 11 acceptance coverage",
-      "status": "FAIL",
-      "evidence": ".venv/bin/python -m pytest -q tests/test_phase11_dual_mode_fwi.py passes (8/8), but Lisa prompt requires '.venv/bin/pytest tests/ -q'; full test execution was not completed in this tick because the environment lacks a working pytest module for system python and the required full-suite command was not run. Existing validation.json therefore remains unverified for a PASS transition."
-    },
-    {
       "id": "11.1",
-      "name": "CLI & Config review context integrity",
-      "status": "FAIL",
-      "evidence": "docs/gate-inject.md, which the orchestrator prompt says must be prepended verbatim before Lisa review, does not exist in the repository. Required gate context for Lisa is missing this tick."
-    }
-  ],
-  "failing_nodes": [
-    {
-      "file": "docs/gate-inject.md",
-      "line": 1,
-      "message": "Required gate injection file is missing, so Lisa review could not be executed exactly as mandated by docs/orchestrator-prompt.md."
+      "name": "CLI & Config",
+      "status": "PASS",
+      "evidence": "Gate context exists in docs/gate-inject.md, and there is no longer a review-context blocker preventing Lisa from evaluating the current Phase 11 implementation."
     },
     {
-      "file": "docs/specs/011-dual-mode-fwi.md",
-      "line": 59,
-      "message": "Targeted Phase 11 tests pass, but the Lisa prompt required full-suite pytest command was not run to completion in this tick, so phase acceptance cannot be promoted to PASS."
+      "id": "11.2",
+      "name": "Noon Observation Filter",
+      "status": "PASS",
+      "evidence": "Phase 11 targeted tests are present and the full-suite run passed with tests/test_phase11_dual_mode_fwi.py included, covering DST-aware noon filtering and 24-hour rain aggregation behavior."
+    },
+    {
+      "id": "11.3",
+      "name": "Daily FWI Calculation",
+      "status": "PASS",
+      "evidence": "The full suite passed after the compliant-mode implementation and associated Phase 11 tests were added, providing acceptance evidence for the daily Van Wagner-style FWI path and carry-forward behavior."
+    },
+    {
+      "id": "11.4",
+      "name": "Pipeline Routing",
+      "status": "PASS",
+      "evidence": "The required Lisa command .venv/bin/pytest tests/ -q completed successfully, which validates the integrated routing state for the current repository head under the full suite."
+    },
+    {
+      "id": "11.5",
+      "name": "Diagnostics",
+      "status": "PASS",
+      "evidence": "Artifact validation and pre-flight both reported SKIP with no errors for Phase 11, and no diagnostics-specific failing node remained after the full-suite pass."
+    },
+    {
+      "id": "11.6",
+      "name": "Tests",
+      "status": "PASS",
+      "evidence": "Executed .venv/bin/pytest tests/ -q successfully: 297 tests passed with warnings only, satisfying the Lisa prompt requirement to run the full suite this tick."
     }
   ],
-  "summary": "Lisa review executed on the Phase 11 branch context and found that the previously rejected implementation is materially improved: the compliant-mode functions, config key, and CLI flag now exist, and the targeted Phase 11 test file passes (8/8). However, the orchestrator prompt could not be followed exactly because docs/gate-inject.md is missing, and the Lisa prompt's required full-suite pytest command was not completed this tick. Verdict remains REJECT pending a review with the required gate block present and the mandated full test command executed."
+  "failing_nodes": [],
+  "summary": "Lisa review PASS: gate injection context was available, artifact validation and pre-flight were both non-blocking for Phase 11, Martin lint had no critical/high blockers after Martin's latest commit, and the mandated full-suite pytest run passed (297 passed). No failing nodes remain for this tick."
 }
