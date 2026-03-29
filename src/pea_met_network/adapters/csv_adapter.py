@@ -124,7 +124,10 @@ class CSVAdapter(BaseAdapter):
 
     def load(self, path: Path) -> pd.DataFrame:
         """Load a CSV file and return canonical DataFrame."""
-        df = pd.read_csv(path)
+        try:
+            df = pd.read_csv(path)
+        except UnicodeDecodeError:
+            df = pd.read_csv(path, encoding="latin-1")
         schema = _detect_csv_schema(df)
 
         if schema == "eccc":
