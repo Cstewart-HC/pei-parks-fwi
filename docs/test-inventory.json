@@ -1,14 +1,14 @@
 {
-  "generated": "2026-03-26T22:05:00-03:00",
+  "generated": "2026-03-30T06:08:04-03:00",
   "project": "pea-met-network",
   "schema_version": "1.0",
   "conftest_fixtures": [],
   "summary": {
-    "total_files": 21,
-    "total_tests": 192,
-    "total_classes": 43,
+    "total_files": 22,
+    "total_tests": 209,
+    "total_classes": 47,
     "by_type": {
-      "unit": 74,
+      "unit": 91,
       "integration": 30,
       "smoke": 28,
       "e2e": 60
@@ -3444,6 +3444,291 @@
             "slow"
           ],
           "lines_of_code": 20
+        }
+      ]
+    },
+    {
+      "path": "tests/test_phase12_wagner_hourly.py",
+      "line_count": 493,
+      "imports": [
+        "numpy",
+        "pandas",
+        "pytest",
+        "pea_met_network.cleaning"
+      ],
+      "shared_fixtures_used": [],
+      "tests": [
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_steady_drying_24h",
+          "type": "unit",
+          "description": "Hourly FFMC matches cffdrs 24h steady drying reference vector",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 18
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_per_hour_values_drying",
+          "type": "unit",
+          "description": "Every hour of steady drying sequence matches cffdrs reference",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 16
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_rain_event_drops_ffmc",
+          "type": "unit",
+          "description": "5mm rain event causes canonical FFMC drop and matches reference sequence",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 23
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_wetting_conditions_low_ffmc",
+          "type": "unit",
+          "description": "High-RH wetting sequence matches cffdrs reference output",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 16
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_sub_threshold_rain_applied",
+          "type": "unit",
+          "description": "0.2mm rain is applied in hourly FFMC with no 0.5mm threshold",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 24
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_no_upper_cap_on_ffmc",
+          "type": "unit",
+          "description": "Hourly FFMC is not capped at 101 under extreme drying",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 14
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_gap_recovery_after_24h",
+          "type": "unit",
+          "description": "FFMC chain restarts after a 24-hour missing-data gap",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 18
+        },
+        {
+          "class": "TestHFFMCAgainstCFFDRS",
+          "name": "test_gap_no_recovery_under_threshold",
+          "type": "unit",
+          "description": "FFMC chain stays broken when gap is shorter than threshold",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 17
+        },
+        {
+          "class": "TestDailyDMCDC",
+          "name": "test_single_day_14lstm",
+          "type": "unit",
+          "description": "Daily DMC/DC derives from the 14:00 local observation and daily rain sum",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 18
+        },
+        {
+          "class": "TestDailyDMCDC",
+          "name": "test_rain_accumulates_over_full_day",
+          "type": "unit",
+          "description": "Hourly rain accumulates across the local day for DMC calculation",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 19
+        },
+        {
+          "class": "TestDailyDMCDC",
+          "name": "test_dmc_dc_change_between_days",
+          "type": "unit",
+          "description": "DMC and DC step between local dates rather than hourly",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 15
+        },
+        {
+          "class": "TestDailyDMCDC",
+          "name": "test_dmc_dc_constant_within_day",
+          "type": "unit",
+          "description": "DMC and DC stay constant within each local date",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 17
+        },
+        {
+          "class": "TestCalculateFWIHourly",
+          "name": "test_outputs_all_six_fwi_columns",
+          "type": "integration",
+          "description": "calculate_fwi_hourly returns ffmc/dmc/dc/isi/bui/fwi columns",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 9
+        },
+        {
+          "class": "TestCalculateFWIHourly",
+          "name": "test_dmc_dc_source_date_column",
+          "type": "integration",
+          "description": "calculate_fwi_hourly emits dmc_dc_source_date audit column",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 9
+        },
+        {
+          "class": "TestCalculateFWIHourly",
+          "name": "test_ffmc_changes_every_hour",
+          "type": "integration",
+          "description": "Hourly FFMC changes within a day even with constant meteorology",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 12
+        },
+        {
+          "class": "TestCalculateFWIHourly",
+          "name": "test_legacy_produces_different_ffmc",
+          "type": "integration",
+          "description": "Legacy hourly FWI path diverges materially from canonical hourly FFMC",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 16
+        },
+        {
+          "class": "TestCompliantModeUnchanged",
+          "name": "test_compliant_output_matches_phase11_baseline",
+          "type": "integration",
+          "description": "Phase 11 compliant mode still returns valid FWI outputs",
+          "imports_modules": [
+            "pea_met_network.cleaning"
+          ],
+          "uses_fixtures": [],
+          "uses_subprocess": false,
+          "uses_file_io": false,
+          "uses_network": false,
+          "mocks": [],
+          "risk_flags": [],
+          "lines_of_code": 11
         }
       ]
     }

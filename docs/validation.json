@@ -1,7 +1,7 @@
 {
   "last_reviewed_commit": "aa8dc73",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-30T03:37:01.043649+00:00",
+  "verdict": "PENDING",
+  "reviewed_at": "2026-03-30T09:07:50.318307+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -16,62 +16,7 @@
     "canonical_schema_compliant": true,
     "issues": []
   },
-  "criteria": [
-    {
-      "id": "12.1",
-      "name": "New Function: _hffmc_calc",
-      "status": "PASS",
-      "evidence": "The current reviewed HEAD retains the Phase 12 hourly FFMC implementation in src/pea_met_network/cleaning.py, matching the spec requirement for `_hffmc_calc`."
-    },
-    {
-      "id": "12.2",
-      "name": "New Function: _daily_dmc_dc_calc",
-      "status": "PASS",
-      "evidence": "The current reviewed HEAD retains the Phase 12 daily DMC/DC helper in src/pea_met_network/cleaning.py, satisfying the one-value-per-day requirement."
-    },
-    {
-      "id": "12.3",
-      "name": "New Function: calculate_fwi_hourly",
-      "status": "PASS",
-      "evidence": "The current reviewed HEAD retains the hourly entry point in src/pea_met_network/cleaning.py for Phase 12 hourly FWI calculation."
-    },
-    {
-      "id": "12.4",
-      "name": "Rename Current Function",
-      "status": "PASS",
-      "evidence": "The legacy calculation path remains preserved as the deprecated comparison implementation, consistent with the Phase 12 spec."
-    },
-    {
-      "id": "12.5",
-      "name": "Pipeline Routing Update",
-      "status": "PASS",
-      "evidence": "Pipeline routing for `hourly` and `extended` as aliases was previously implemented and remains intact on the reviewed HEAD."
-    },
-    {
-      "id": "12.6",
-      "name": "CLI & Config",
-      "status": "PASS",
-      "evidence": "tests/test_phase11_dual_mode_fwi.py now expects `docs/cleaning-config.json` to declare `fwi.fwi_mode == \"hourly\"`, aligning the Phase 11 regression test with the Phase 12 default."
-    },
-    {
-      "id": "12.7",
-      "name": "Diagnostics",
-      "status": "PASS",
-      "evidence": "Phase 12 diagnostic support remains present; gate artifacts for this phase are SKIP and do not report missing required diagnostics."
-    },
-    {
-      "id": "12.8",
-      "name": "Tests",
-      "status": "PASS",
-      "evidence": "`.venv/bin/pytest tests/ -q` passed on the reviewed HEAD after commit 68ac83a updated tests/test_phase11_dual_mode_fwi.py to expect the Phase 12 default `hourly` instead of the obsolete `extended`."
-    },
-    {
-      "id": "12.9",
-      "name": "Output Files",
-      "status": "PASS",
-      "evidence": "Phase 12 has no artifact-validation expectations (`docs/artifact-validation.json` verdict SKIP), and the reviewed implementation continues to satisfy the specified hourly-output contract."
-    }
-  ],
+  "criteria": [],
   "failing_nodes": [],
-  "summary": "Lisa review PASS for Phase 12 on current HEAD 68ac83a. The only prior blocking issue was a stale regression expectation in tests/test_phase11_dual_mode_fwi.py asserting the old `extended` default; that test was updated to the Phase 12-required `hourly` default, and the required full-suite run `.venv/bin/pytest tests/ -q` is now green. Artifact validation and pre-flight are SKIP for this phase, and Martin lint reports only medium/low issues, none of which force rejection under the review rules."
+  "summary": "Phase 12 activated; stale PASS reset. Awaiting Lisa review."
 }
