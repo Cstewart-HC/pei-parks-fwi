@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "89dbb8f",
-  "verdict": "REJECT",
-  "reviewed_at": "2026-03-30T10:54:01.918353+00:00",
+  "last_reviewed_commit": "183d25e",
+  "verdict": "PASS",
+  "reviewed_at": "2026-03-30T11:22:06.247808+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -20,39 +20,28 @@
     {
       "id": "12.1",
       "name": "New Function: _hffmc_calc",
-      "status": "FAIL",
-      "evidence": "The required Lisa review run `.venv/bin/pytest tests/ -q` fails two Phase 12 hourly FFMC acceptance tests: `tests/test_phase12_wagner_hourly.py::TestHFFMCAgainstCFFDRS::test_no_upper_cap_on_ffmc` and `::test_no_explicit_ffmc_cap`. Both failures show `_hffmc_calc` in `src/pea_met_network/cleaning.py` still produces FFMC values that do not approach the canonical hourly ceiling closely enough under the spec's extreme drying vectors (99.57 after 48h and 98.0161 after 96h, where the tests require >100.0 and >100.5 respectively). This means the implementation does not yet satisfy the canonical Van Wagner 1977 hourly FFMC behavior required by Phase 12."
+      "status": "PASS",
+      "evidence": "The required Lisa review run `.venv/bin/pytest tests/ -q` passed, including the Phase 12 hourly FFMC acceptance coverage in `tests/test_phase12_wagner_hourly.py`, so `_hffmc_calc` now satisfies the canonical Van Wagner 1977 hourly FFMC requirements exercised by the committed test suite."
     },
     {
       "id": "12.2",
       "name": "New Function: _daily_dmc_dc_calc",
       "status": "PASS",
-      "evidence": "The full review run produced no failures targeting `_daily_dmc_dc_calc`, and the dedicated DMC/DC Phase 12 tests in `tests/test_phase12_wagner_hourly.py` are passing in the suite."
+      "evidence": "The required review run passed the dedicated DMC/DC Phase 12 tests in `tests/test_phase12_wagner_hourly.py`, confirming daily-only DMC/DC behavior and the expected day-level expansion/audit behavior."
     },
     {
       "id": "12.3",
       "name": "New Function: calculate_fwi_hourly",
       "status": "PASS",
-      "evidence": "The Phase 12 integration tests for `calculate_fwi_hourly` remain green in the required review run: output columns, `dmc_dc_source_date`, hourly FFMC variability, and legacy comparison all pass. The remaining defects are isolated to the hourly FFMC edge behavior checked under criterion 12.1."
+      "evidence": "The mandatory Lisa run `.venv/bin/pytest tests/ -q` passed Phase 12 integration coverage for `calculate_fwi_hourly`, including hourly output behavior, DMC/DC day alignment, and legacy comparison checks defined in the committed tests."
     },
     {
       "id": "12.4",
       "name": "Rename Current Function",
       "status": "PASS",
-      "evidence": "The codebase retains the legacy implementation as `_calculate_fwi_legacy` and routes the active wrapper `calculate_fwi()` to `calculate_fwi_hourly()` in `src/pea_met_network/cleaning.py`, satisfying the rename/routing requirement for this phase."
+      "evidence": "The passing review suite includes the Phase 12 routing/rename checks, confirming the legacy implementation remains preserved for comparison while the active hourly path satisfies the phase requirements."
     }
   ],
-  "failing_nodes": [
-    {
-      "file": "src/pea_met_network/cleaning.py",
-      "line": 568,
-      "message": "`_hffmc_calc` still fails the Phase 12 canonical hourly FFMC acceptance cases for the no-upper-cap/asymptotic-ceiling behavior. The required review run shows `test_no_upper_cap_on_ffmc` ending at 99.57 and `test_no_explicit_ffmc_cap` ending at 98.0161, so the implementation is still not meeting the spec's extreme-drying hourly FFMC behavior."
-    },
-    {
-      "file": "tests/test_repo_shape.py",
-      "line": 49,
-      "message": "The mandatory Lisa review run `.venv/bin/pytest tests/ -q` also fails `test_repo_root_shape_is_whitelisted` because an unexpected repo-root file `ralph-state.json` is present. This is outside Phase 12 functionality but still makes the required full-suite review fail."
-    }
-  ],
-  "summary": "Lisa review REJECT for Phase 12. Gate injection for this tick reports artifact validation SKIP and pre-flight SKIP, and Martin lint has only medium/low findings, so none of those are reject drivers here. The required deterministic review run `.venv/bin/pytest tests/ -q` still fails three tests: two Phase 12 hourly FFMC ceiling/asymptote tests and one repo-shape hygiene test caused by an unexpected root-level `ralph-state.json`. Phase 12 DMC/DC behavior, hourly integration behavior, and the legacy/hourly routing changes appear to be in place, but the phase cannot pass until `_hffmc_calc` satisfies the canonical extreme-drying behavior and the full review suite is clean again."
+  "failing_nodes": [],
+  "summary": "Lisa review PASS for Phase 12. Gate inputs for this tick remain non-blocking (`artifact_validation`: SKIP, `pre_flight`: SKIP), Martin lint reports only medium/low findings, and the required deterministic review run `.venv/bin/pytest tests/ -q` completed successfully. Based on the committed Phase 12 acceptance suite and the current spec, the hourly Van Wagner FFMC work, daily-only DMC/DC handling, hourly integration behavior, and legacy/hourly routing now satisfy the active phase requirements."
 }
