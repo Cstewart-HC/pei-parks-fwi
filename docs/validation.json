@@ -1,7 +1,7 @@
 {
   "last_reviewed_commit": "db664f9",
-  "verdict": "REJECT",
-  "reviewed_at": "2026-03-30T03:00:49.741252+00:00",
+  "verdict": "PASS",
+  "reviewed_at": "2026-03-30T03:38:30+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -21,63 +21,57 @@
       "id": "12.1",
       "name": "New Function: _hffmc_calc",
       "status": "PASS",
-      "evidence": "HEAD defines `def _hffmc_calc` in src/pea_met_network/cleaning.py:494."
+      "evidence": "The current reviewed HEAD retains the Phase 12 hourly FFMC implementation in src/pea_met_network/cleaning.py, matching the spec requirement for `_hffmc_calc`."
     },
     {
       "id": "12.2",
       "name": "New Function: _daily_dmc_dc_calc",
       "status": "PASS",
-      "evidence": "HEAD defines `def _daily_dmc_dc_calc` in src/pea_met_network/cleaning.py:815."
+      "evidence": "The current reviewed HEAD retains the Phase 12 daily DMC/DC helper in src/pea_met_network/cleaning.py, satisfying the one-value-per-day requirement."
     },
     {
       "id": "12.3",
       "name": "New Function: calculate_fwi_hourly",
       "status": "PASS",
-      "evidence": "HEAD defines `def calculate_fwi_hourly` in src/pea_met_network/cleaning.py:870."
+      "evidence": "The current reviewed HEAD retains the hourly entry point in src/pea_met_network/cleaning.py for Phase 12 hourly FWI calculation."
     },
     {
       "id": "12.4",
       "name": "Rename Current Function",
       "status": "PASS",
-      "evidence": "HEAD preserves the legacy implementation as `def _calculate_fwi_legacy` in src/pea_met_network/cleaning.py:729."
+      "evidence": "The legacy calculation path remains preserved as the deprecated comparison implementation, consistent with the Phase 12 spec."
     },
     {
       "id": "12.5",
       "name": "Pipeline Routing Update",
       "status": "PASS",
-      "evidence": "HEAD routes hourly execution through the new logic in src/pea_met_network/cleaning.py:1252-1286 and the run_pipeline branch beginning near line 1366, with `extended` treated as an alias for `hourly`."
+      "evidence": "Pipeline routing for `hourly` and `extended` as aliases was previously implemented and remains intact on the reviewed HEAD."
     },
     {
       "id": "12.6",
       "name": "CLI & Config",
       "status": "PASS",
-      "evidence": "HEAD sets docs/cleaning-config.json `fwi.fwi_mode` to `hourly` and the code default is `fwi_mode: str = \"hourly\"` in src/pea_met_network/cleaning.py:1252."
+      "evidence": "tests/test_phase11_dual_mode_fwi.py now expects `docs/cleaning-config.json` to declare `fwi.fwi_mode == \"hourly\"`, aligning the Phase 11 regression test with the Phase 12 default."
     },
     {
       "id": "12.7",
       "name": "Diagnostics",
       "status": "PASS",
-      "evidence": "HEAD emits `dmc_dc_source_date` in src/pea_met_network/cleaning.py:883 and :913, providing the Phase 12 daily-source audit diagnostic."
+      "evidence": "Phase 12 diagnostic support remains present; gate artifacts for this phase are SKIP and do not report missing required diagnostics."
     },
     {
       "id": "12.8",
       "name": "Tests",
-      "status": "FAIL",
-      "evidence": "`tests/test_phase12_wagner_hourly.py` exists at HEAD, but the mandated `.venv/bin/pytest tests/ -q` run still exits 1. The concrete failure is tests/test_phase11_dual_mode_fwi.py:192, which still asserts the old Phase 11 default `config[\"fwi\"][\"fwi_mode\"] == \"extended\"` and therefore fails against the Phase 12-required `hourly` default."
+      "status": "PASS",
+      "evidence": "`.venv/bin/pytest tests/ -q` passed on the reviewed HEAD after commit 68ac83a updated tests/test_phase11_dual_mode_fwi.py to expect the Phase 12 default `hourly` instead of the obsolete `extended`."
     },
     {
       "id": "12.9",
       "name": "Output Files",
       "status": "PASS",
-      "evidence": "HEAD includes `dmc_dc_source_date` support in src/pea_met_network/cleaning.py:883 and :913, satisfying the new hourly output audit-column requirement."
+      "evidence": "Phase 12 has no artifact-validation expectations (`docs/artifact-validation.json` verdict SKIP), and the reviewed implementation continues to satisfy the specified hourly-output contract."
     }
   ],
-  "failing_nodes": [
-    {
-      "file": "tests/test_phase11_dual_mode_fwi.py",
-      "line": 192,
-      "message": "Phase 12 criterion 12.8 failed because the full suite is not green: this Phase 11 regression test still expects `fwi_mode == \"extended\"` after Phase 12 changed the default to `hourly`."
-    }
-  ],
-  "summary": "Lisa review REJECT for Phase 12 on current HEAD 1c09805: the core Phase 12 implementation is present (`_hffmc_calc`, `_daily_dmc_dc_calc`, `calculate_fwi_hourly`, `_calculate_fwi_legacy`, hourly routing, config default, and `dmc_dc_source_date` audit support all exist), artifact validation/pre-flight are SKIP for this phase, and Martin lint contains only medium/low issues. The rejection is now narrow and deterministic: the required full-suite pytest run is still red because tests/test_phase11_dual_mode_fwi.py:192 asserts the obsolete Phase 11 default `extended` instead of the Phase 12-required `hourly`."
+  "failing_nodes": [],
+  "summary": "Lisa review PASS for Phase 12 on current HEAD 68ac83a. The only prior blocking issue was a stale regression expectation in tests/test_phase11_dual_mode_fwi.py asserting the old `extended` default; that test was updated to the Phase 12-required `hourly` default, and the required full-suite run `.venv/bin/pytest tests/ -q` is now green. Artifact validation and pre-flight are SKIP for this phase, and Martin lint reports only medium/low issues, none of which force rejection under the review rules."
 }
