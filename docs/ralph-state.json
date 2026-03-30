@@ -85,23 +85,21 @@
       "status": "done",
       "iteration": 0,
       "started_at": null,
-      "completed_at": "2026-03-27T12:28:28.815867+00:00",
+      "completed_at": null,
       "exit_gate": "pytest tests/ -m 'not e2e' -v",
-      "notes": "Quality enforcement before imputation, cleaning-config.json, flatline/rate-of-change checks. TDD: Martin starts.",
-      "exit": "pytest tests/ -m 'not e2e' -v",
-      "tdd_start": "martin"
+      "notes": "Post-FWI quality bounds, flagging, diagnostics",
+      "exit": "pytest tests/ -m 'not e2e' -v"
     },
     {
       "id": 9,
-      "name": "FWI Missingness Diagnostics & Chain Recovery",
+      "name": "FWI Missingness & Chain Recovery",
       "status": "done",
       "iteration": 0,
       "started_at": null,
-      "completed_at": "2026-03-28T01:15:00.000000+00:00",
+      "completed_at": null,
       "exit_gate": "pytest tests/ -m 'not e2e' -v",
-      "notes": "Chain break diagnostics, gap-crossing restart logic, FWI missingness report.",
-      "exit": "pytest tests/ -m 'not e2e' -v",
-      "tdd_start": "martin"
+      "notes": "Chain break detection, recovery, diagnostics",
+      "exit": "pytest tests/ -m 'not e2e' -v"
     },
     {
       "id": 10,
@@ -110,9 +108,9 @@
       "iteration": 0,
       "started_at": "2026-03-28T02:42:00.000000+00:00",
       "completed_at": "2026-03-28T05:04:02.000000+00:00",
-      "exit_gate": "pytest tests/ -m \"not e2e\" -v",
+      "exit_gate": "pytest tests/ -m 'not e2e' -v",
       "notes": "MSC GeoMet API donor data, vapor pressure continuity, dew-point fallback, wind height correction, spatial temp proxy, quality flag audit trail.",
-      "exit": "pytest tests/ -m \"not e2e\" -v",
+      "exit": "pytest tests/ -m 'not e2e' -v",
       "tdd_start": "martin"
     },
     {
@@ -126,90 +124,36 @@
       "notes": "Van Wagner compliant noon-only FWI mode alongside existing hourly extended mode. zoneinfo for DST. Default lat 46.4N.",
       "exit": "pytest tests/ -m 'not e2e' -v",
       "tdd_start": "martin"
+    },
+    {
+      "id": 12,
+      "name": "Wagner Hourly: Fix Extended Mode (Van Wagner 1977)",
+      "status": "active",
+      "iteration": 0,
+      "started_at": "2026-03-30T01:25:06.559761+00:00",
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_phase12_wagner_hourly.py -v",
+      "notes": "Replace broken hourly FFMC (daily eqs \u00d724) with canonical Van Wagner 1977 hourly FFMC from cffdrs. DMC/DC go daily-only. Spec: docs/specs/012-wagner-hourly.md",
+      "exit": "pytest tests/test_phase12_wagner_hourly.py -v",
+      "tdd_start": "martin"
     }
   ],
-  "current_phase": 11,
+  "current_phase": 12,
+  "phase": 12,
+  "iteration": 0,
+  "max_per_day": 20,
+  "status": "running",
+  "blocker": null,
+  "decisions": [],
   "circuit_breaker": {
     "tripped": false,
     "consecutive_stalls": 0,
-    "last_tripped": null,
-    "last_commit": "0131bec",
-    "last_verdict": "PASS",
+    "consecutive_errors": 0,
+    "last_commit": null,
+    "last_verdict": null,
     "last_fail_criteria_hash": null,
     "trip_reason": null,
-    "trip_at": null,
-    "consecutive_errors": 0
+    "trip_at": null
   },
-  "decisions": [
-    {
-      "id": "v2-d1",
-      "decision": "Archive v1 specs and reset state machine",
-      "rationale": "Original project complete. Pipeline rebuild needs clean slate.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d2",
-      "decision": "Adapter architecture with single entry point",
-      "rationale": "All raw files route through format adapters to canonical schema. No files skipped.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d3",
-      "decision": "All adapters built in Phase 2",
-      "rationale": "Single entry point means csv/xlsx/xle/json adapters built together, not scattered across phases.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d4",
-      "decision": "Pipeline integration consolidates concat/dedup/resample/impute/FWI",
-      "rationale": "Imputation is part of the pipeline flow, not a standalone phase.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d5",
-      "decision": "Stanhope is processed like any other station",
-      "rationale": "Stanhope uses csv_adapter with ECCC schema. Phase 4 is comparison/analysis only.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d6",
-      "decision": "7 phases (reduced from 8)",
-      "rationale": "Licor integration merged into Phase 2. Imputation merged into Phase 3.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d7",
-      "decision": "Tests define the contract",
-      "rationale": "Each phase has failing tests that pass when implementation is complete. Red \u2192 green.",
-      "date": "2026-03-25"
-    },
-    {
-      "id": "v2-d8",
-      "decision": "Phase 8 uses TDD \u2014 Martin writes tests first",
-      "rationale": "Data quality enforcement is new functionality. Tests define the contract before Ralph implements.",
-      "date": "2026-03-27"
-    },
-    {
-      "id": "v2-d9",
-      "decision": "Phase 9 uses TDD \u2014 Martin writes tests first",
-      "rationale": "FWI chain recovery is new logic modifying existing calc functions. Tests must define recovery behavior.",
-      "date": "2026-03-27"
-    },
-    {
-      "id": "v2-d10",
-      "decision": "Phase 11 uses TDD \u2014 Martin writes tests first",
-      "rationale": "Dual-mode FWI is new pipeline routing. Tests must define compliant mode behavior before Ralph implements.",
-      "date": "2026-03-29"
-    }
-  ],
-  "last_reviewed_commit": "f9932c7",
-  "blockers": [],
-  "phase": "11",
-  "iteration": 7,
-  "status": "running",
-  "updated_at": "2026-03-29T23:56:16.371239+00:00",
-  "blocker": null,
-  "last_commit": "f9932c7",
-  "last_verdict": "NONE",
-  "last_updated": "2026-03-29T21:50:00.000000+00:00"
+  "updated_at": "2026-03-30T01:25:06.559794+00:00"
 }
