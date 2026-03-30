@@ -1,12 +1,12 @@
 {
-  "linted_at": "2026-03-30T08:51:50.307453+00:00",
+  "linted_at": "2026-03-30T10:51:17.690194+00:00",
   "rules_version": "2026.03",
   "verdict": "FAIL",
   "files_scanned": 24,
-  "total_violations": 84,
+  "total_violations": 85,
   "by_severity": {
     "medium": 47,
-    "low": 37
+    "low": 38
   },
   "by_rule": {
     "AP027": 5,
@@ -18,10 +18,10 @@
     "AP021": 16,
     "AP024": 19,
     "AP012": 1,
-    "AP015": 1
+    "AP015": 2
   },
   "by_category": {
-    "structure": 25,
+    "structure": 26,
     "isolation": 14,
     "assertions": 26,
     "reliability": 19
@@ -589,7 +589,7 @@
       "rule_id": "AP021",
       "severity": "low",
       "file": "tests/test_phase12_wagner_hourly.py",
-      "line": 1,
+      "line": 13,
       "test": null,
       "message": "[unused_import_in_test] Possibly unused import: from __future__ import annotations",
       "auto_fix": null
@@ -598,9 +598,18 @@
       "rule_id": "AP021",
       "severity": "low",
       "file": "tests/test_phase12_wagner_hourly.py",
-      "line": 7,
+      "line": 20,
       "test": null,
       "message": "[unused_import_in_test] Possibly unused import: import pytest",
+      "auto_fix": null
+    },
+    {
+      "rule_id": "AP015",
+      "severity": "low",
+      "file": "tests/test_phase12_wagner_hourly.py",
+      "line": 294,
+      "test": "test_hourly_uses_correct_ffmc_coefficient",
+      "message": "[test_too_long] 'test_hourly_uses_correct_ffmc_coefficient' is 69 lines (max 50)",
       "auto_fix": null
     },
     {
@@ -784,5 +793,5 @@
       "auto_fix": null
     }
   ],
-  "summary": "84 violation(s) across 24 file(s): 47 medium, 37 low"
+  "summary": "85 violation(s) across 24 file(s): 47 medium, 38 low"
 }

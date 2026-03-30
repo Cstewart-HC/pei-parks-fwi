@@ -82,6 +82,7 @@ ALL_STATIONS = [
 FWI_COLUMNS = ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]
 HALIFAX_TZ = ZoneInfo("America/Halifax")
 DEFAULT_FWI_LATITUDE = 46.4
+HOURLY_FFMC_COEFF = 250.0 * 59.5 / 101.0
 
 FWI_REQUIRED = [
     "air_temperature_c",
@@ -503,7 +504,7 @@ def _hffmc_calc(
     n = len(temp)
     ffmc = np.full(n, np.nan)
 
-    startup_mo = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
+    startup_mo = HOURLY_FFMC_COEFF * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
     mo_prev = startup_mo
     consecutive_nulls = 0
     chain_broken = False
@@ -544,12 +545,12 @@ def _hffmc_calc(
         ed = (
             0.942 * h**0.679
             + 11.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - np.exp(-0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
         ew = (
             0.618 * h**0.753
             + 10.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - np.exp(-0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
 
         if mo_prev < ed:
@@ -564,7 +565,7 @@ def _hffmc_calc(
             mo = mo_prev
 
         mo = max(0.0, mo)
-        ffmc[i] = max(0.0, 59.5 * (250.0 - mo) / (147.2 + mo))
+        ffmc[i] = max(0.0, 59.5 * (250.0 - mo) / (HOURLY_FFMC_COEFF + mo))
         mo_prev = mo
 
     return ffmc
