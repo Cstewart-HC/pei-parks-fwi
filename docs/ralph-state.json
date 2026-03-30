@@ -140,7 +140,7 @@
   ],
   "current_phase": 12,
   "phase": "12",
-  "iteration": 1,
+  "iteration": 6,
   "max_per_day": 20,
   "status": "running",
   "blocker": null,
@@ -149,11 +149,11 @@
     "tripped": false,
     "consecutive_stalls": 0,
     "consecutive_errors": 0,
-    "last_commit": "4ae108f",
+    "last_commit": "db664f9",
     "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "d9ec799af9bac7f3",
+    "last_fail_criteria_hash": "1d377636299fcb9c",
     "trip_reason": null,
     "trip_at": null
   },
-  "updated_at": "2026-03-30T01:32:24.516876+00:00"
+  "updated_at": "2026-03-30T03:01:02.379705+00:00"
 }
