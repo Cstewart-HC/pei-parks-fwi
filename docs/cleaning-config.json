@@ -87,13 +87,14 @@
     }
   },
   "fwi": {
-    "fwi_mode": "extended",
+    "fwi_mode": "hourly",
     "gap_threshold_hours": 24,
     "startup_defaults": {
       "ffmc": 85.0,
       "dmc": 6.0,
       "dc": 15.0
-    }
+    },
+    "station_latitudes": {}
   },
   "cross_station_impute": {
     "enabled": true,

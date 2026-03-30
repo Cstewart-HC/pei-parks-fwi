@@ -82,6 +82,7 @@ ALL_STATIONS = [
 FWI_COLUMNS = ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]
 HALIFAX_TZ = ZoneInfo("America/Halifax")
 DEFAULT_FWI_LATITUDE = 46.4
+HOURLY_FFMC_COEFF = 250.0 * 59.5 / 101.0
 
 FWI_REQUIRED = [
     "air_temperature_c",
@@ -491,6 +492,85 @@ def impute(
 # ---------------------------------------------------------------------------
 
 
+def _hffmc_calc(
+    temp: np.ndarray,
+    rh: np.ndarray,
+    wind: np.ndarray,
+    rain: np.ndarray,
+    ffmc_prev: float = 85.0,
+    gap_threshold_hours: int = 24,
+) -> np.ndarray:
+    """Calculate canonical Van Wagner (1977) hourly FFMC iteratively."""
+    n = len(temp)
+    ffmc = np.full(n, np.nan)
+
+    startup_mo = HOURLY_FFMC_COEFF * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
+    mo_prev = startup_mo
+    consecutive_nulls = 0
+    chain_broken = False
+
+    for i in range(n):
+        t = temp[i]
+        h = rh[i]
+        w = wind[i]
+        r = rain[i]
+
+        if np.isnan(t) or np.isnan(h) or np.isnan(w):
+            ffmc[i] = np.nan
+            mo_prev = np.nan
+            chain_broken = True
+            consecutive_nulls += 1
+            continue
+
+        if chain_broken:
+            if consecutive_nulls >= gap_threshold_hours:
+                mo_prev = startup_mo
+                chain_broken = False
+                consecutive_nulls = 0
+            else:
+                ffmc[i] = np.nan
+                continue
+
+        consecutive_nulls = 0
+        rf = 0.0 if np.isnan(r) else float(r)
+
+        if rf > 0.0:
+            mr = mo_prev + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_prev)) * (1.0 - np.exp(-6.93 / rf))
+            if mo_prev <= 150.0:
+                mo_prev = min(mr, 150.0)
+            else:
+                mr += 0.0015 * (mo_prev - 150.0) ** 2 * np.sqrt(rf)
+                mo_prev = min(mr, 250.0)
+
+        ed = (
+            0.942 * h**0.679
+            + 11.0 * np.exp((h - 100.0) / 10.0)
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
+        )
+        ew = (
+            0.618 * h**0.753
+            + 10.0 * np.exp((h - 100.0) / 10.0)
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
+        )
+
+        if mo_prev < ed:
+            k0w = 0.424 * (1.0 - ((100.0 - h) / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - ((100.0 - h) / 100.0) ** 8)
+            kw = k0w * 0.0579 * np.exp(0.0365 * t)
+            mo = ew - (ew - mo_prev) / (10.0**kw)
+        elif mo_prev > ed:
+            k0d = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - (h / 100.0) ** 8)
+            kd = k0d * 0.0579 * np.exp(0.0365 * t)
+            mo = ed + (mo_prev - ed) / (10.0**kd)
+        else:
+            mo = mo_prev
+
+        mo = max(0.0, mo)
+        ffmc[i] = max(0.0, 59.5 * (250.0 - mo) / (HOURLY_FFMC_COEFF + mo))
+        mo_prev = mo
+
+    return ffmc
+
+
 def _ffmc_calc(
     temp: np.ndarray,
     rh: np.ndarray,
@@ -499,12 +579,7 @@ def _ffmc_calc(
     ffmc_prev: float = 85.0,
     gap_threshold_hours: int = 24,
 ) -> np.ndarray:
-    """Calculate Fine Fuel Moisture Code iteratively.
-
-    When inputs are NaN for >= gap_threshold_hours consecutive hours and
-    then become valid again, the chain restarts from startup defaults.
-    Short gaps (< threshold) keep the chain broken (NaN propagation).
-    """
+    """Legacy hourly FFMC implementation retained for comparison tests."""
     n = len(temp)
     ffmc = np.full(n, np.nan)
 
@@ -523,7 +598,6 @@ def _ffmc_calc(
             consecutive_nulls += 1
             continue
 
-        # Inputs are valid — check if chain should restart
         if np.isnan(mo_prev) and consecutive_nulls >= gap_threshold_hours:
             mo_prev = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
             consecutive_nulls = 0
@@ -535,42 +609,32 @@ def _ffmc_calc(
         consecutive_nulls = 0
         rf = 0.0 if np.isnan(r) else float(r)
 
-        # Rain adjustment
         if rf > 0.5:
-            mo_safe = (
-                mo_prev if not np.isnan(mo_prev) else 85.0
-            )
+            mo_safe = mo_prev if not np.isnan(mo_prev) else 85.0
             if rf < 1.5:
                 mo_prev = mo_safe
             else:
-                mr = mo_safe + 42.5 * rf * np.exp(
-                    -100.0 / (251.0 - mo_safe)
-                ) * (1.0 - np.exp(-6.93 / rf))
+                mr = mo_safe + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_safe)) * (1.0 - np.exp(-6.93 / rf))
                 mo_prev = min(mr, 150.0)
 
         if np.isnan(mo_prev):
             mo_prev = 85.0
 
-        # Equilibrium moisture content
         ed = (
             0.942 * h**0.679
             + 11.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t)
-            * (1.0 - 1.0 / np.exp(0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
         ew = (
             0.618 * h**0.753
             + 10.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t)
-            * (1.0 - 1.0 / np.exp(0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
 
         if mo_prev < ed:
             mo_new = ew + (mo_prev - ew) * 0.5
         else:
-            kl = 0.424 * (1.0 - (h / 100.0) ** 1.7) + (
-                0.0694 * np.sqrt(max(0, w))
-            ) * (1.0 - (h / 100.0) ** 8)
+            kl = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(0, w)) * (1.0 - (h / 100.0) ** 8)
             kl = max(0.0, kl)
             mo_new = ed + (mo_prev - ed) * (10.0 ** (-kl))
 
@@ -726,7 +790,7 @@ def _dc_calc(
     return dc
 
 
-def calculate_fwi(
+def _calculate_fwi_legacy(
     df: pd.DataFrame,
     gap_threshold_hours: int = 24,
 ) -> pd.DataFrame:
@@ -810,6 +874,127 @@ def calculate_fwi(
 
     return df
 
+
+
+def _daily_dmc_dc_calc(
+    hourly_df: pd.DataFrame,
+    dmc_prev: float = 6.0,
+    dc_prev: float = 15.0,
+    lat: float = DEFAULT_FWI_LATITUDE,
+    halifax_tz: ZoneInfo = HALIFAX_TZ,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Calculate daily DMC/DC and align one daily value back onto hourly rows."""
+    if len(hourly_df) == 0:
+        empty = np.array([], dtype=float)
+        return empty, empty, np.array([], dtype=object)
+
+    hourly = hourly_df.copy()
+    hourly["timestamp_utc"] = pd.to_datetime(hourly["timestamp_utc"], utc=True)
+    hourly["__row_order"] = np.arange(len(hourly))
+    hourly = hourly.sort_values("timestamp_utc").reset_index(drop=True)
+
+    local_ts = hourly["timestamp_utc"].dt.tz_convert(halifax_tz)
+    hourly["source_local_date"] = local_ts.dt.floor("D").dt.date
+    hourly["selection_local_date"] = (local_ts + pd.Timedelta(hours=10)).dt.floor("D").dt.date
+    hourly["local_hour"] = local_ts.dt.hour
+
+    dmc_sorted = np.full(len(hourly), np.nan)
+    dc_sorted = np.full(len(hourly), np.nan)
+    source_dates_sorted = np.empty(len(hourly), dtype=object)
+
+    dmc_prev_val = dmc_prev
+    dc_prev_val = dc_prev
+
+    daily_values: dict[object, tuple[float, float]] = {}
+    for selection_date, group in hourly.groupby("selection_local_date", sort=True):
+        valid_obs = group.loc[group["air_temperature_c"].notna() & group["relative_humidity_pct"].notna()].copy()
+        if len(valid_obs) == 0:
+            dmc_day = np.nan
+            dc_day = np.nan
+        else:
+            valid_obs["hour_distance"] = (valid_obs["local_hour"] - 14).abs()
+            nearest = valid_obs.sort_values(["hour_distance", "timestamp_utc"]).iloc[0]
+            temp = float(nearest["air_temperature_c"])
+            rh = float(nearest["relative_humidity_pct"])
+            rain = float(pd.to_numeric(group["rain_mm"] if "rain_mm" in group.columns else 0.0, errors="coerce").fillna(0.0).sum())
+            month = pd.Timestamp(selection_date).month
+            dmc_day = reference_duff_moisture_code(temp, rh, rain, dmc_prev_val, month, lat)
+            dc_day = reference_drought_code(temp, rain, dc_prev_val, month, lat)
+            dmc_prev_val = dmc_day
+            dc_prev_val = dc_day
+        daily_values[selection_date] = (dmc_day, dc_day)
+
+    for source_date, group in hourly.groupby("source_local_date", sort=True):
+        idx = group.index.to_numpy()
+        dmc_day, dc_day = daily_values.get(source_date, (np.nan, np.nan))
+        dmc_sorted[idx] = dmc_day
+        dc_sorted[idx] = dc_day
+        source_dates_sorted[idx] = str(source_date)
+
+    order = hourly["__row_order"].to_numpy(dtype=int)
+    dmc_values = np.empty_like(dmc_sorted)
+    dc_values = np.empty_like(dc_sorted)
+    source_dates = np.empty_like(source_dates_sorted)
+    dmc_values[order] = dmc_sorted
+    dc_values[order] = dc_sorted
+    source_dates[order] = source_dates_sorted
+    return dmc_values, dc_values, source_dates
+
+
+def calculate_fwi_hourly(
+    df: pd.DataFrame,
+    lat: float = DEFAULT_FWI_LATITUDE,
+    gap_threshold_hours: int = 24,
+) -> pd.DataFrame:
+    """Calculate hourly FWI using canonical hourly FFMC + daily DMC/DC."""
+    result = df.copy()
+
+    missing = [c for c in FWI_REQUIRED if c not in result.columns]
+    if missing:
+        print(f"  FWI: skipping — missing: {missing}", file=sys.stderr)
+        for col in FWI_COLUMNS:
+            result[col] = np.nan
+        result["dmc_dc_source_date"] = pd.Series(dtype=object)
+        return result
+
+    result["timestamp_utc"] = pd.to_datetime(result["timestamp_utc"], utc=True)
+    temp = result["air_temperature_c"].to_numpy(dtype=float)
+    rh = result["relative_humidity_pct"].to_numpy(dtype=float)
+    wind = result["wind_speed_kmh"].to_numpy(dtype=float)
+    rain = result["rain_mm"].to_numpy(dtype=float)
+
+    ffmc = _hffmc_calc(temp, rh, wind, rain, gap_threshold_hours=gap_threshold_hours)
+    dmc, dc, source_dates = _daily_dmc_dc_calc(result, lat=lat)
+
+    isi = np.full(len(result), np.nan)
+    bui = np.full(len(result), np.nan)
+    fwi = np.full(len(result), np.nan)
+
+    for i in range(len(result)):
+        if np.isnan(ffmc[i]) or np.isnan(dmc[i]) or np.isnan(dc[i]):
+            continue
+        wind_i = 0.0 if np.isnan(wind[i]) else float(wind[i])
+        isi[i] = reference_initial_spread_index(float(ffmc[i]), wind_i)
+        bui[i] = reference_buildup_index(float(dmc[i]), float(dc[i]))
+        fwi[i] = reference_fire_weather_index(float(isi[i]), float(bui[i]))
+
+    result["ffmc"] = ffmc
+    result["dmc"] = dmc
+    result["dc"] = dc
+    result["isi"] = isi
+    result["bui"] = bui
+    result["fwi"] = fwi
+    result["dmc_dc_source_date"] = source_dates
+    return result
+
+
+def calculate_fwi(
+    df: pd.DataFrame,
+    lat: float = DEFAULT_FWI_LATITUDE,
+    gap_threshold_hours: int = 24,
+) -> pd.DataFrame:
+    """Backward-compatible wrapper for Phase 12 hourly FWI implementation."""
+    return calculate_fwi_hourly(df, lat=lat, gap_threshold_hours=gap_threshold_hours)
 
 def filter_noon_observations(df: pd.DataFrame) -> pd.DataFrame:
     """Return one local-noon row per local date with preceding-24h rain total."""
@@ -1138,7 +1323,7 @@ def _register_manifest_artifact(
 def run_pipeline(
     stations: list[str],
     force: bool = False,
-    fwi_mode: str = "extended",
+    fwi_mode: str = "hourly",
 ) -> None:
     """Execute the full pipeline for given stations.
 
@@ -1170,9 +1355,9 @@ def run_pipeline(
         else {}
     )
     fwi_config = quality_config.get("fwi", {})
-    configured_fwi_mode = fwi_config.get("fwi_mode", "extended")
+    configured_fwi_mode = fwi_config.get("fwi_mode", "hourly")
     if fwi_mode == "extended":
-        fwi_mode = configured_fwi_mode
+        fwi_mode = "hourly" if configured_fwi_mode == "extended" else configured_fwi_mode
     gap_threshold = fwi_config.get("gap_threshold_hours", 24)
     latitude_overrides = fwi_config.get("station_latitudes", {})
 
@@ -1262,7 +1447,8 @@ def run_pipeline(
                 file=sys.stderr,
             )
         else:
-            hourly = calculate_fwi(hourly, gap_threshold_hours=gap_threshold)
+            station_lat = latitude_overrides.get(station, DEFAULT_FWI_LATITUDE)
+            hourly = calculate_fwi_hourly(hourly, lat=station_lat, gap_threshold_hours=gap_threshold)
 
             # --- FWI output enforcement ---
             hourly, fwi_actions = enforce_fwi_outputs(hourly, quality_config)

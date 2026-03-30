@@ -1,29 +1,59 @@
-# Gate Results Block
+# Gate Injection — Phase 12 Pre-Flight
 
-_Generated: 2026-03-29T22:43:40.878201+00:00_
+**Generated:** 2026-03-30T01:25:15.074310+00:00
 
-## Artifact Validation
-- Verdict: SKIP
-- Summary: Phase 11 has no data artifact expectations
-- Errors: none
+## Lint (ruff)
 
-## Pre-Flight
-- Verdict: SKIP
-- Summary: Phase 11 has no structural requirements
-- Missing: none
+**Exit code:** 1
 
-## Martin Lint
-- Verdict: FAIL
-- Summary: 83 violation(s) across 23 file(s): 1 high, 47 medium, 35 low
-- Violations: 83 total
-  - high AP002 tests/test_phase11_dual_mode_fwi.py:187 — [unmarked_subprocess] result = subprocess.run(
-  - medium AP027 tests/test_analysis_notebook.py:72 — [complex_test_logic] 'test_notebook_executes_without_errors' has 4 branches (max 3)
-  - medium AP006 tests/test_analysis_notebook.py:85 — [shared_state_write] """AC-ANA-1: Notebook references data/processed/ files."""
-  - medium AP007 tests/test_cross_station_impute.py:151 — [duplicate_test_name] 'test_capped_at_100' also defined at line 110
-  - medium AP014 tests/test_cross_station_impute.py:190 — [float_assertion_without_approx] assert st.anemometer_height_m == 10.0
-  - medium AP005 tests/test_cross_station_impute.py:252 — [tautological_assertion] assert ts.tz is not None
-  - medium AP005 tests/test_cross_station_impute.py:373 — [tautological_assertion] assert hc.empirically_derived is True
-  - medium AP005 tests/test_cross_station_impute.py:752 — [tautological_assertion] assert result is not None
-  - medium AP005 tests/test_cross_station_impute.py:753 — [tautological_assertion] assert result.empirically_derived is True
-  - medium AP005 tests/test_cross_station_impute.py:773 — [tautological_assertion] assert result is None
-  - ... 73 more violation(s) in docs/martin-lint.json
+```
+90	E501	[ ] line-too-long
+ 5	W293	[-] blank-line-with-whitespace
+ 4	I001	[*] unsorted-imports
+ 3	C901	[ ] complex-structure
+ 3	F601	[ ] multi-value-repeated-key-literal
+ 2	F401	[-] unused-import
+ 2	F541	[*] f-string-missing-placeholders
+ 1	W292	[*] missing-newline-at-end-of-file
+Found 110 errors.
+[*] 11 fixable with the `--fix` option (5 hidden fixes can be enabled with the `--unsafe-fixes` option).
+```
+
+## Test Inventory
+
+**Total test files:** 23
+
+- `tests/test_analysis_notebook.py`
+- `tests/test_cross_station_impute.py`
+- `tests/test_data_refresh.py`
+- `tests/test_deliverables.py`
+- `tests/test_explore_smoke.py`
+- `tests/test_fwi_vectors.py`
+- `tests/test_imputation.py`
+- `tests/test_manifest.py`
+- `tests/test_materialize_resampled.py`
+- `tests/test_normalized_loader.py`
+- `tests/test_phase11_dual_mode_fwi.py`
+- `tests/test_pipeline_execution.py`
+- `tests/test_qa_qc.py`
+- `tests/test_quality_enforcement.py`
+- `tests/test_real_resampling_pipeline.py`
+- `tests/test_redundancy.py`
+- `tests/test_repo_shape.py`
+- `tests/test_resampling_policy.py`
+- `tests/test_smoke.py`
+- `tests/test_stanhope_cache.py`
+- `tests/test_uncertainty.py`
+- `tests/test_v2_pipeline.py`
+- `tests/test_validation.py`
+
+**Total collected tests:** tests/test_validation.py: 8
+
+## Validation State
+
+**Verdict:** PASS
+**Last reviewed:** 0131bec
+
+## Working Tree
+
+**Status:** DIRTY

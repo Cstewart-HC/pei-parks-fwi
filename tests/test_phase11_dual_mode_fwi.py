@@ -183,13 +183,13 @@ class TestAC11DailyFWI:
 class TestAC11CliAndConfig:
     """Phase 11.1 + 11.4 — routing surface."""
 
-    def test_cleaning_config_declares_fwi_mode_default_extended(self):
-        """AC-11-07: cleaning config exposes fwi.fwi_mode = extended."""
+    def test_cleaning_config_declares_fwi_mode_default_hourly(self):
+        """AC-11-07: cleaning config exposes fwi.fwi_mode = hourly in Phase 12."""
         config_path = PROJECT_ROOT / "docs" / "cleaning-config.json"
         config = json.loads(config_path.read_text())
 
         assert "fwi" in config
-        assert config["fwi"]["fwi_mode"] == "extended"
+        assert config["fwi"]["fwi_mode"] == "hourly"
 
     @pytest.mark.e2e
     def test_cli_accepts_fwi_mode_compliant(self):

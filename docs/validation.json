@@ -1,7 +1,7 @@
 {
-  "last_reviewed_commit": "0131bec",
-  "verdict": "PASS",
-  "reviewed_at": "2026-03-29T23:54:31.433706+00:00",
+  "last_reviewed_commit": "3e7c11a",
+  "verdict": "REJECT",
+  "reviewed_at": "2026-03-30T12:11:06.159213+00:00",
   "artifact_validation": {
     "status": "SKIP",
     "errors": []
@@ -18,42 +18,36 @@
   },
   "criteria": [
     {
-      "id": "11.1",
-      "name": "CLI & Config",
-      "status": "PASS",
-      "evidence": "Gate context exists in docs/gate-inject.md, and there is no longer a review-context blocker preventing Lisa from evaluating the current Phase 11 implementation."
+      "id": "12.1",
+      "name": "New Function: _hffmc_calc",
+      "status": "FAIL",
+      "evidence": "Mandatory Lisa review suite `.venv/bin/pytest tests/ -q` failed at reviewed HEAD `bca50af` during notebook execution in `tests/test_analysis_notebook.py`, so Phase 12 cannot be accepted this tick."
     },
     {
-      "id": "11.2",
-      "name": "Noon Observation Filter",
-      "status": "PASS",
-      "evidence": "Phase 11 targeted tests are present and the full-suite run passed with tests/test_phase11_dual_mode_fwi.py included, covering DST-aware noon filtering and 24-hour rain aggregation behavior."
+      "id": "12.2",
+      "name": "New Function: _daily_dmc_dc_calc",
+      "status": "FAIL",
+      "evidence": "The required deterministic review run `.venv/bin/pytest tests/ -q` did not pass at reviewed HEAD `bca50af`; acceptance of daily DMC/DC behavior remains blocked until the suite is green."
     },
     {
-      "id": "11.3",
-      "name": "Daily FWI Calculation",
-      "status": "PASS",
-      "evidence": "The full suite passed after the compliant-mode implementation and associated Phase 11 tests were added, providing acceptance evidence for the daily Van Wagner-style FWI path and carry-forward behavior."
+      "id": "12.3",
+      "name": "New Function: calculate_fwi_hourly",
+      "status": "FAIL",
+      "evidence": "The full Lisa review suite errored before phase acceptance could be established; notebook execution raised `ValueError: Number of rows must be a positive integer, not 0` in `tests/test_analysis_notebook.py`."
     },
     {
-      "id": "11.4",
-      "name": "Pipeline Routing",
-      "status": "PASS",
-      "evidence": "The required Lisa command .venv/bin/pytest tests/ -q completed successfully, which validates the integrated routing state for the current repository head under the full suite."
-    },
-    {
-      "id": "11.5",
-      "name": "Diagnostics",
-      "status": "PASS",
-      "evidence": "Artifact validation and pre-flight both reported SKIP with no errors for Phase 11, and no diagnostics-specific failing node remained after the full-suite pass."
-    },
-    {
-      "id": "11.6",
-      "name": "Tests",
-      "status": "PASS",
-      "evidence": "Executed .venv/bin/pytest tests/ -q successfully: 297 tests passed with warnings only, satisfying the Lisa prompt requirement to run the full suite this tick."
+      "id": "12.4",
+      "name": "Rename Current Function",
+      "status": "FAIL",
+      "evidence": "Phase 12 remains unapproved because the mandatory full review suite `.venv/bin/pytest tests/ -q` failed on the reviewed commit; no PASS verdict is possible while the deterministic review gate is red."
     }
   ],
-  "failing_nodes": [],
-  "summary": "Lisa review PASS: gate injection context was available, artifact validation and pre-flight were both non-blocking for Phase 11, Martin lint had no critical/high blockers after Martin's latest commit, and the mandated full-suite pytest run passed (297 passed). No failing nodes remain for this tick."
+  "failing_nodes": [
+    {
+      "file": "tests/test_analysis_notebook.py",
+      "line": 70,
+      "message": "Mandatory Lisa suite failed while executing the notebook fixture; notebook cell raised ValueError: Number of rows must be a positive integer, not 0 when plot_stations was empty before plt.subplots(len(plot_stations), 1, ...)."
+    }
+  ],
+  "summary": "Lisa review REJECT for Phase 12 on reviewed HEAD `bca50af`. Gate artifacts remain non-blocking (`artifact_validation`: SKIP, `pre_flight`: SKIP), Martin lint reported only medium/low findings, and there were no new `src/` or `tests/` commits since the last review pointer. However, the mandatory deterministic review run `.venv/bin/pytest tests/ -q` errored in `tests/test_analysis_notebook.py` with `ValueError: Number of rows must be a positive integer, not 0` while the notebook tried to plot an empty station set, so Phase 12 cannot be accepted this tick."
 }
