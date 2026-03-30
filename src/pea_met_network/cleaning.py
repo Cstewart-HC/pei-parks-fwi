@@ -891,9 +891,8 @@ def calculate_fwi_daily(
             month = row["timestamp_utc"].month
             rain_value = 0.0 if pd.isna(rain) else float(rain)
             ffmc = reference_fine_fuel_moisture_code(float(temp), float(rh), float(wind), rain_value, ffmc_prev)
-            latitude_scale = 1.0 + ((float(lat) - DEFAULT_FWI_LATITUDE) * 0.001)
-            dmc = reference_duff_moisture_code(float(temp), float(rh), rain_value, dmc_prev, month, lat) * latitude_scale
-            dc = reference_drought_code(float(temp), rain_value, dc_prev, month, lat) * latitude_scale
+            dmc = reference_duff_moisture_code(float(temp), float(rh), rain_value, dmc_prev, month, lat)
+            dc = reference_drought_code(float(temp), rain_value, dc_prev, month, lat)
             isi = reference_initial_spread_index(ffmc, float(wind))
             bui = reference_buildup_index(dmc, dc)
             fwi = reference_fire_weather_index(isi, bui)
