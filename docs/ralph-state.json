@@ -128,13 +128,25 @@
     {
       "id": 12,
       "name": "Wagner Hourly: Fix Extended Mode (Van Wagner 1977)",
-      "status": "active",
+      "status": "done",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
       "exit_gate": "pytest tests/test_phase12_wagner_hourly.py -v",
       "notes": "Replace broken hourly FFMC (daily eqs \u00d724) with canonical Van Wagner 1977 hourly FFMC from cffdrs. DMC/DC go daily-only. Spec: docs/specs/012-wagner-hourly.md",
       "exit": "pytest tests/test_phase12_wagner_hourly.py -v",
+      "tdd_start": "martin"
+    },
+    {
+      "id": 13,
+      "name": "QA/QC Report Expansion \u2014 Dual-Mode Diagnostics",
+      "status": "active",
+      "iteration": 0,
+      "started_at": null,
+      "completed_at": null,
+      "exit_gate": "pytest tests/test_phase13_qa_qc_expansion.py -v",
+      "notes": "Pre/post imputation missingness, FWI mode in reports, compliant mode diagnostics, FWI value stats, mode-specific filenames, per-stage row counts",
+      "exit": "pytest tests/test_phase13_qa_qc_expansion.py -v",
       "tdd_start": "martin"
     }
   ],
