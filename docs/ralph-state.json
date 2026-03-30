@@ -128,7 +128,7 @@
     {
       "id": 12,
       "name": "Wagner Hourly: Fix Extended Mode (Van Wagner 1977)",
-      "status": "running",
+      "status": "done",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -140,7 +140,7 @@
   ],
   "current_phase": 12,
   "phase": "12",
-  "iteration": 8,
+  "iteration": 11,
   "max_per_day": 20,
   "status": "running",
   "blocker": null,
@@ -149,11 +149,11 @@
     "tripped": false,
     "consecutive_stalls": 0,
     "consecutive_errors": 0,
-    "last_commit": "89dbb8f",
-    "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "63a033c42ae350df",
+    "last_commit": "39b2f07",
+    "last_verdict": "PASS",
+    "last_fail_criteria_hash": null,
     "trip_reason": null,
     "trip_at": null
   },
-  "updated_at": "2026-03-30T10:54:12.866079+00:00"
+  "updated_at": "2026-03-30T11:22:17.687320+00:00"
 }
