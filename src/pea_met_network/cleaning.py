@@ -499,12 +499,86 @@ def _hffmc_calc(
     ffmc_prev: float = 85.0,
     gap_threshold_hours: int = 24,
 ) -> np.ndarray:
-    """Calculate Fine Fuel Moisture Code iteratively.
+    """Calculate canonical Van Wagner (1977) hourly FFMC iteratively."""
+    n = len(temp)
+    ffmc = np.full(n, np.nan)
 
-    When inputs are NaN for >= gap_threshold_hours consecutive hours and
-    then become valid again, the chain restarts from startup defaults.
-    Short gaps (< threshold) keep the chain broken (NaN propagation).
-    """
+    startup_mo = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
+    mo_prev = startup_mo
+    consecutive_nulls = 0
+    chain_broken = False
+
+    for i in range(n):
+        t = temp[i]
+        h = rh[i]
+        w = wind[i]
+        r = rain[i]
+
+        if np.isnan(t) or np.isnan(h) or np.isnan(w):
+            ffmc[i] = np.nan
+            mo_prev = np.nan
+            chain_broken = True
+            consecutive_nulls += 1
+            continue
+
+        if chain_broken:
+            if consecutive_nulls >= gap_threshold_hours:
+                mo_prev = startup_mo
+                chain_broken = False
+                consecutive_nulls = 0
+            else:
+                ffmc[i] = np.nan
+                continue
+
+        consecutive_nulls = 0
+        rf = 0.0 if np.isnan(r) else float(r)
+
+        if rf > 0.0:
+            mr = mo_prev + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_prev)) * (1.0 - np.exp(-6.93 / rf))
+            if mo_prev <= 150.0:
+                mo_prev = min(mr, 150.0)
+            else:
+                mr += 0.0015 * (mo_prev - 150.0) ** 2 * np.sqrt(rf)
+                mo_prev = min(mr, 250.0)
+
+        ed = (
+            0.942 * h**0.679
+            + 11.0 * np.exp((h - 100.0) / 10.0)
+            + 0.18 * (21.1 - t) * (1.0 - np.exp(-0.115 * h))
+        )
+        ew = (
+            0.618 * h**0.753
+            + 10.0 * np.exp((h - 100.0) / 10.0)
+            + 0.18 * (21.1 - t) * (1.0 - np.exp(-0.115 * h))
+        )
+
+        if mo_prev < ed:
+            k0w = 0.424 * (1.0 - ((100.0 - h) / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - ((100.0 - h) / 100.0) ** 8)
+            kw = k0w * 0.0579 * np.exp(0.0365 * t)
+            mo = ew - (ew - mo_prev) / (10.0**kw)
+        elif mo_prev > ed:
+            k0d = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - (h / 100.0) ** 8)
+            kd = k0d * 0.0579 * np.exp(0.0365 * t)
+            mo = ed + (mo_prev - ed) / (10.0**kd)
+        else:
+            mo = mo_prev
+
+        mo = max(0.0, mo)
+        ffmc[i] = max(0.0, 59.5 * (250.0 - mo) / (147.2 + mo))
+        mo_prev = mo
+
+    return ffmc
+
+
+def _ffmc_calc(
+    temp: np.ndarray,
+    rh: np.ndarray,
+    wind: np.ndarray,
+    rain: np.ndarray,
+    ffmc_prev: float = 85.0,
+    gap_threshold_hours: int = 24,
+) -> np.ndarray:
+    """Legacy hourly FFMC implementation retained for comparison tests."""
     n = len(temp)
     ffmc = np.full(n, np.nan)
 
@@ -523,7 +597,6 @@ def _hffmc_calc(
             consecutive_nulls += 1
             continue
 
-        # Inputs are valid — check if chain should restart
         if np.isnan(mo_prev) and consecutive_nulls >= gap_threshold_hours:
             mo_prev = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
             consecutive_nulls = 0
@@ -535,42 +608,32 @@ def _hffmc_calc(
         consecutive_nulls = 0
         rf = 0.0 if np.isnan(r) else float(r)
 
-        # Rain adjustment
         if rf > 0.5:
-            mo_safe = (
-                mo_prev if not np.isnan(mo_prev) else 85.0
-            )
+            mo_safe = mo_prev if not np.isnan(mo_prev) else 85.0
             if rf < 1.5:
                 mo_prev = mo_safe
             else:
-                mr = mo_safe + 42.5 * rf * np.exp(
-                    -100.0 / (251.0 - mo_safe)
-                ) * (1.0 - np.exp(-6.93 / rf))
+                mr = mo_safe + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_safe)) * (1.0 - np.exp(-6.93 / rf))
                 mo_prev = min(mr, 150.0)
 
         if np.isnan(mo_prev):
             mo_prev = 85.0
 
-        # Equilibrium moisture content
         ed = (
             0.942 * h**0.679
             + 11.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t)
-            * (1.0 - 1.0 / np.exp(0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
         ew = (
             0.618 * h**0.753
             + 10.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t)
-            * (1.0 - 1.0 / np.exp(0.115 * h))
+            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
         )
 
         if mo_prev < ed:
             mo_new = ew + (mo_prev - ew) * 0.5
         else:
-            kl = 0.424 * (1.0 - (h / 100.0) ** 1.7) + (
-                0.0694 * np.sqrt(max(0, w))
-            ) * (1.0 - (h / 100.0) ** 8)
+            kl = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(0, w)) * (1.0 - (h / 100.0) ** 8)
             kl = max(0.0, kl)
             mo_new = ed + (mo_prev - ed) * (10.0 ** (-kl))
 
@@ -760,7 +823,7 @@ def _calculate_fwi_legacy(
     )
     month = df["timestamp_utc"].dt.month.to_numpy(dtype=float)
 
-    ffmc = _hffmc_calc(
+    ffmc = _ffmc_calc(
         temp, rh, wind, rain, gap_threshold_hours=gap_threshold_hours,
     )
     dmc = _dmc_calc(
@@ -819,51 +882,61 @@ def _daily_dmc_dc_calc(
     lat: float = DEFAULT_FWI_LATITUDE,
     halifax_tz: ZoneInfo = HALIFAX_TZ,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Calculate daily DMC/DC from hourly observations and expand to hourly rows."""
+    """Calculate daily DMC/DC and align one daily value back onto hourly rows."""
     if len(hourly_df) == 0:
         empty = np.array([], dtype=float)
         return empty, empty, np.array([], dtype=object)
 
     hourly = hourly_df.copy()
     hourly["timestamp_utc"] = pd.to_datetime(hourly["timestamp_utc"], utc=True)
+    hourly["__row_order"] = np.arange(len(hourly))
     hourly = hourly.sort_values("timestamp_utc").reset_index(drop=True)
 
     local_ts = hourly["timestamp_utc"].dt.tz_convert(halifax_tz)
-    hourly["local_date"] = local_ts.dt.date
+    hourly["source_local_date"] = local_ts.dt.floor("D").dt.date
+    hourly["selection_local_date"] = (local_ts + pd.Timedelta(hours=10)).dt.floor("D").dt.date
     hourly["local_hour"] = local_ts.dt.hour
 
-    dmc_values = np.full(len(hourly), np.nan)
-    dc_values = np.full(len(hourly), np.nan)
-    source_dates = np.empty(len(hourly), dtype=object)
+    dmc_sorted = np.full(len(hourly), np.nan)
+    dc_sorted = np.full(len(hourly), np.nan)
+    source_dates_sorted = np.empty(len(hourly), dtype=object)
 
     dmc_prev_val = dmc_prev
     dc_prev_val = dc_prev
 
-    for local_date, group in hourly.groupby("local_date", sort=True):
-        idx = group.index
-        valid_temp = group["air_temperature_c"].notna()
-        valid_rh = group["relative_humidity_pct"].notna()
-        valid_obs = group.loc[valid_temp & valid_rh]
-
+    daily_values: dict[object, tuple[float, float]] = {}
+    for selection_date, group in hourly.groupby("selection_local_date", sort=True):
+        valid_obs = group.loc[group["air_temperature_c"].notna() & group["relative_humidity_pct"].notna()].copy()
         if len(valid_obs) == 0:
             dmc_day = np.nan
             dc_day = np.nan
         else:
-            hour_distance = (valid_obs["local_hour"] - 14).abs()
-            nearest = valid_obs.loc[hour_distance.idxmin()]
+            valid_obs["hour_distance"] = (valid_obs["local_hour"] - 14).abs()
+            nearest = valid_obs.sort_values(["hour_distance", "timestamp_utc"]).iloc[0]
             temp = float(nearest["air_temperature_c"])
             rh = float(nearest["relative_humidity_pct"])
-            rain = float(pd.to_numeric(group.get("rain_mm", 0.0), errors="coerce").fillna(0.0).sum())
-            month = pd.Timestamp(local_date).month
+            rain = float(pd.to_numeric(group["rain_mm"] if "rain_mm" in group.columns else 0.0, errors="coerce").fillna(0.0).sum())
+            month = pd.Timestamp(selection_date).month
             dmc_day = reference_duff_moisture_code(temp, rh, rain, dmc_prev_val, month, lat)
             dc_day = reference_drought_code(temp, rain, dc_prev_val, month, lat)
             dmc_prev_val = dmc_day
             dc_prev_val = dc_day
+        daily_values[selection_date] = (dmc_day, dc_day)
 
-        dmc_values[idx] = dmc_day
-        dc_values[idx] = dc_day
-        source_dates[idx] = str(local_date)
+    for source_date, group in hourly.groupby("source_local_date", sort=True):
+        idx = group.index.to_numpy()
+        dmc_day, dc_day = daily_values.get(source_date, (np.nan, np.nan))
+        dmc_sorted[idx] = dmc_day
+        dc_sorted[idx] = dc_day
+        source_dates_sorted[idx] = str(source_date)
 
+    order = hourly["__row_order"].to_numpy(dtype=int)
+    dmc_values = np.empty_like(dmc_sorted)
+    dc_values = np.empty_like(dc_sorted)
+    source_dates = np.empty_like(source_dates_sorted)
+    dmc_values[order] = dmc_sorted
+    dc_values[order] = dc_sorted
+    source_dates[order] = source_dates_sorted
     return dmc_values, dc_values, source_dates
 
 
