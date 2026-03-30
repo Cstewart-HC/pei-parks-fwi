@@ -1,59 +1,33 @@
-# Gate Injection — Phase 12 Pre-Flight
+# Gate Injection — Phase 13 QA/QC Expansion
 
-**Generated:** 2026-03-30T01:25:15.074310+00:00
-
-## Lint (ruff)
-
-**Exit code:** 1
-
+## Lint Status
 ```
-90	E501	[ ] line-too-long
- 5	W293	[-] blank-line-with-whitespace
- 4	I001	[*] unsorted-imports
- 3	C901	[ ] complex-structure
- 3	F601	[ ] multi-value-repeated-key-literal
- 2	F401	[-] unused-import
- 2	F541	[*] f-string-missing-placeholders
- 1	W292	[*] missing-newline-at-end-of-file
-Found 110 errors.
-[*] 11 fixable with the `--fix` option (5 hidden fixes can be enabled with the `--unsafe-fixes` option).
+/usr/bin/python3: No module named ruff
+```
+Violations: 1
+
+## Test Results (Post-Ralph)
+```
+25 passed, 0 failed, 0 skipped
 ```
 
-## Test Inventory
+## Phase 13 Status
+- **State:** DONE ✅
+- **Iteration:** 1
+- **TDD start:** martin
+- **Martin commit:** `ffd2d64` (Lisa: PASS)
+- **Ralph commit:** `13bd565` (Lisa: PASS — all 25 tests green)
+- **Exit gate:** `pytest tests/test_phase13_qa_qc_expansion.py -v`
 
-**Total test files:** 23
+## Ralph's Implementation Summary
+1. ✅ Imported `pre_imputation_missingness` from `qa_qc`
+2. ✅ Captured pre-imputation snapshot after `enforce_quality()` before `impute()`
+3. ✅ Stored snapshots in `pre_imputation_snapshots` dict per station
+4. ✅ Passed `pre_imputation_missingness=pre_imputation_snapshots` to `generate_qa_qc_report()`
+5. ✅ Added `manifest["fwi_mode"] = fwi_mode`
+6. ✅ Fixed `_register_manifest_artifact` key mismatch: `"type"` → `"artifact_type"`
+7. ✅ Mode-specific report filenames: `qa_qc_report_{mode}.csv`, `fwi_missingness_report_{mode}.csv`
+8. ✅ Per-stage row counts tracked and written to manifest
 
-- `tests/test_analysis_notebook.py`
-- `tests/test_cross_station_impute.py`
-- `tests/test_data_refresh.py`
-- `tests/test_deliverables.py`
-- `tests/test_explore_smoke.py`
-- `tests/test_fwi_vectors.py`
-- `tests/test_imputation.py`
-- `tests/test_manifest.py`
-- `tests/test_materialize_resampled.py`
-- `tests/test_normalized_loader.py`
-- `tests/test_phase11_dual_mode_fwi.py`
-- `tests/test_pipeline_execution.py`
-- `tests/test_qa_qc.py`
-- `tests/test_quality_enforcement.py`
-- `tests/test_real_resampling_pipeline.py`
-- `tests/test_redundancy.py`
-- `tests/test_repo_shape.py`
-- `tests/test_resampling_policy.py`
-- `tests/test_smoke.py`
-- `tests/test_stanhope_cache.py`
-- `tests/test_uncertainty.py`
-- `tests/test_v2_pipeline.py`
-- `tests/test_validation.py`
-
-**Total collected tests:** tests/test_validation.py: 8
-
-## Validation State
-
-**Verdict:** PASS
-**Last reviewed:** 0131bec
-
-## Working Tree
-
-**Status:** DIRTY
+## Spec
+See `docs/specs/013-qa-qc-expansion.md`

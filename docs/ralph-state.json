@@ -128,7 +128,7 @@
     {
       "id": 12,
       "name": "Wagner Hourly: Fix Extended Mode (Van Wagner 1977)",
-      "status": "active",
+      "status": "done",
       "iteration": 0,
       "started_at": null,
       "completed_at": null,
@@ -136,24 +136,36 @@
       "notes": "Replace broken hourly FFMC (daily eqs \u00d724) with canonical Van Wagner 1977 hourly FFMC from cffdrs. DMC/DC go daily-only. Spec: docs/specs/012-wagner-hourly.md",
       "exit": "pytest tests/test_phase12_wagner_hourly.py -v",
       "tdd_start": "martin"
+    },
+    {
+      "id": 13,
+      "name": "QA/QC Report Expansion \u2014 Dual-Mode Diagnostics",
+      "status": "done",
+      "iteration": 1,
+      "started_at": null,
+      "completed_at": "2026-03-30T14:45:37.287426+00:00",
+      "exit_gate": "pytest tests/test_phase13_qa_qc_expansion.py -v",
+      "notes": "Pre/post imputation missingness, FWI mode in reports, compliant mode diagnostics, FWI value stats, mode-specific filenames, per-stage row counts",
+      "exit": "pytest tests/test_phase13_qa_qc_expansion.py -v",
+      "tdd_start": "martin"
     }
   ],
-  "current_phase": 12,
-  "phase": "12",
-  "iteration": 16,
+  "current_phase": 13,
+  "phase": "13",
+  "iteration": 1,
   "max_per_day": 20,
-  "status": "running",
+  "status": "idle",
   "blocker": null,
   "decisions": [],
   "circuit_breaker": {
     "tripped": false,
     "consecutive_stalls": 0,
     "consecutive_errors": 0,
-    "last_commit": "3e7c11a",
-    "last_verdict": "REJECT",
-    "last_fail_criteria_hash": "6ddfd9110eb4b275",
+    "last_commit": null,
+    "last_verdict": null,
+    "last_fail_criteria_hash": null,
     "trip_reason": null,
     "trip_at": null
   },
-  "updated_at": "2026-03-30T12:11:15.371552+00:00"
+  "updated_at": "2026-03-30T14:45:37.287444+00:00"
 }

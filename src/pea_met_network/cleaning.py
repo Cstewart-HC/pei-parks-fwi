@@ -48,7 +48,10 @@ from pea_met_network.fwi_diagnostics import (  # noqa: E402
     chain_breaks_to_dataframe,
     diagnose_chain_breaks,
 )
-from pea_met_network.qa_qc import generate_qa_qc_report  # noqa: E402
+from pea_met_network.qa_qc import (  # noqa: E402
+    generate_qa_qc_report,
+    pre_imputation_missingness,
+)  # noqa: E402
 from pea_met_network.quality import (  # noqa: E402
     enforce_fwi_outputs,
     enforce_quality,
@@ -1272,6 +1275,9 @@ def _collect_qa_qc_data(
             continue
         h_path = PROCESSED_DIR / station / "station_hourly.csv"
         d_path = PROCESSED_DIR / station / "station_daily.csv"
+        d_path_compliant = PROCESSED_DIR / station / f"{station}_daily_compliant.csv"
+        if not d_path.exists() and d_path_compliant.exists():
+            d_path = d_path_compliant
         if h_path.exists() and d_path.exists():
             try:
                 oh = pd.read_csv(h_path)
@@ -1308,10 +1314,10 @@ def _register_manifest_artifact(
     manifest = json.loads(manifest_path.read_text())
     manifest["artifacts"] = [
         a for a in manifest["artifacts"]
-        if a.get("type") != artifact_type
+        if a.get("artifact_type") != artifact_type
     ]
     manifest["artifacts"].append({
-        "type": artifact_type,
+        "artifact_type": artifact_type,
         "path": str(path.relative_to(PROJECT_ROOT)),
         "rows": rows,
         "timestamp": pd.Timestamp.now(tz="UTC").isoformat(),
@@ -1346,6 +1352,8 @@ def run_pipeline(
     all_chain_breaks: list = []
     all_cross_records: list[ImputedValue] = []
     processed_stations: list[str] = []
+    stage_row_counts: dict[str, dict[str, int]] = {}
+    pre_imputation_snapshots: dict[str, dict[str, float]] = {}
 
     # Load cleaning config once
     config_path = PROJECT_ROOT / "docs" / "cleaning-config.json"
@@ -1357,7 +1365,12 @@ def run_pipeline(
     fwi_config = quality_config.get("fwi", {})
     configured_fwi_mode = fwi_config.get("fwi_mode", "hourly")
     if fwi_mode == "extended":
-        fwi_mode = "hourly" if configured_fwi_mode == "extended" else configured_fwi_mode
+        warnings.warn(
+            "--fwi-mode 'extended' is deprecated; use 'hourly' instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        fwi_mode = "hourly"
     gap_threshold = fwi_config.get("gap_threshold_hours", 24)
     latitude_overrides = fwi_config.get("station_latitudes", {})
 
@@ -1390,20 +1403,27 @@ def run_pipeline(
             print(f"  WARNING: no data for {station}", file=sys.stderr)
             continue
         print(f"  {station}: {len(df)} raw rows", file=sys.stderr)
+        raw_rows = len(df)
 
         df = dedup(df)
         deduped_rows = len(df)
         hourly = resample_hourly(df)
+        hourly_rows = len(hourly)
         del df
         gc.collect()
         print(f"  {station}: {deduped_rows} raw → {len(hourly)} hourly rows", file=sys.stderr)
 
         hourly = truncate_date_range(hourly, quality_config)
+        truncated_rows = len(hourly)
 
         hourly, quality_actions = enforce_quality(hourly, quality_config)
+        post_quality_rows = len(hourly)
         all_quality_actions.extend(quality_actions)
 
+        pre_imp_snapshot = pre_imputation_missingness(hourly)
+        pre_imputation_snapshots[station] = pre_imp_snapshot
         hourly, report = impute(hourly, station)
+        post_imputation_rows = len(hourly)
         all_reports.extend(report)
 
         # --- Save donor staging parquet for downstream stations ---
@@ -1436,6 +1456,18 @@ def run_pipeline(
                 file=sys.stderr,
             )
 
+        post_cross_station_rows = len(hourly)
+
+        # --- Record per-stage row counts for manifest ---
+        stage_row_counts[station] = {
+            "raw": raw_rows,
+            "deduped": deduped_rows,
+            "hourly": hourly_rows,
+            "truncated": truncated_rows,
+            "post_quality": post_quality_rows,
+            "post_imputation": post_imputation_rows,
+            "post_cross_station": post_cross_station_rows,
+        }
         # --- FWI calculation ---
         if fwi_mode == "compliant":
             noon = filter_noon_observations(hourly)
@@ -1532,7 +1564,7 @@ def run_pipeline(
                 except Exception:
                     row_count = -1
                 manifest["artifacts"].append({
-                    "type": "processed_csv",
+                    "artifact_type": "processed_csv",
                     "path": str(fpath.relative_to(PROJECT_ROOT)),
                     "station": station,
                     "rows": row_count,
@@ -1563,6 +1595,8 @@ def run_pipeline(
         and not st_name.startswith("_")
     )
     manifest["unprocessed_count"] = unprocessed
+    manifest["stage_row_counts"] = stage_row_counts
+    manifest["fwi_mode"] = fwi_mode
 
     manifest_path.write_text(json.dumps(manifest, indent=2))
     print(f"  Manifest: {len(manifest['checksums'])} checksums")
@@ -1599,8 +1633,10 @@ def run_pipeline(
         qa_qc_df = generate_qa_qc_report(
             combined_hourly, combined_daily, all_quality_actions,
             chain_breaks=all_chain_breaks,
+            fwi_mode=fwi_mode,
+            pre_imputation_missingness=pre_imputation_snapshots,
         )
-        qa_qc_path = PROCESSED_DIR / "qa_qc_report.csv"
+        qa_qc_path = PROCESSED_DIR / f"qa_qc_report_{fwi_mode}.csv"
         qa_qc_df.to_csv(qa_qc_path, index=False)
         print(f"  QA/QC report: {len(qa_qc_df)} stations")
 
@@ -1614,7 +1650,7 @@ def run_pipeline(
     # FWI chain break missingness report
     if all_chain_breaks:
         breaks_df = chain_breaks_to_dataframe(all_chain_breaks)
-        missingness_path = PROCESSED_DIR / "fwi_missingness_report.csv"
+        missingness_path = PROCESSED_DIR / f"fwi_missingness_report_{fwi_mode}.csv"
         breaks_df.to_csv(missingness_path, index=False)
         print(
             f"  FWI missingness report: {len(breaks_df)} chain breaks"
@@ -1670,9 +1706,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--fwi-mode",
-        choices=["extended", "compliant"],
-        default="extended",
-        help="FWI calculation mode",
+        choices=["hourly", "compliant", "extended"],
+        default="hourly",
+        help="FWI calculation mode (default: hourly, use 'compliant' for noon-only Van Wagner daily)",
     )
     args = parser.parse_args()
 
