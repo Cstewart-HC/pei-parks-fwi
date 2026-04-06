@@ -1,9 +1,13 @@
-"""FWI Forecast Pipeline — OLS nowcast + OWM + GDPS, compute FWI.
+"""FWI Forecast Pipeline — Licor live obs + OWM + GDPS, compute FWI.
 
 Three data sources merged per station:
-  1. OLS nowcast (0–3h): Stanhope ECCC obs translated to park stations
+  1. Licor Cloud (0–3h): live park station observations
   2. OWM One Call 3.0 (3–48h): hourly model forecast per station
   3. GDPS (48–240h): EC 3-hourly model forecast
+
+Park stations without RH sensors (Tracadie, Stanley Bridge) get RH
+via cross-station vapor pressure continuity from donors with RH (Cavendish,
+North Rustico) — same method as the static ETL.
 
 Startup indices (FFMC, DMC, DC) persist between runs via JSON so the daily
 DMC/DC chain carries forward.  Falls back to defaults on first run or if
@@ -395,9 +399,12 @@ def run_forecast(
     """Run the full FWI forecast pipeline.
 
     Three data sources merged per station:
-      1. OLS nowcast (0–3h): Stanhope ECCC obs → park station weather
+      1. Licor Cloud (0–3h): live park station observations
       2. OWM (3–48h): hourly model forecast
       3. GDPS (48–240h): 3-hourly EC model forecast
+
+    Park stations without RH sensors (Tracadie, Stanley Bridge) get RH
+    via cross-station VP continuity from Cavendish/N. Rustico donors.
 
     Computes FWI per station. Persists startup indices for next run.
 
@@ -417,35 +424,58 @@ def run_forecast(
     if startup_state:
         logger.info("Loaded startup state for %d stations", len(startup_state))
 
-    # 1. OLS nowcast for park stations (0–3h from Stanhope ECCC obs)
-    nowcast_data: dict[str, pd.DataFrame] = {}
+    # 1. Fetch live observations from Licor Cloud for park stations
+    obs_data: dict[str, pd.DataFrame] = {}
     try:
-        from pea_met_network.ols_nowcast import fetch_stanhope_recent, apply_ols_nowcast
-        stanhope_obs = fetch_stanhope_recent(hours=6)
-        if not stanhope_obs.empty:
-            nowcast_data = apply_ols_nowcast(stanhope_obs, hours=3)
-            if nowcast_data:
-                # Also use Stanhope obs directly for the Stanhope station nowcast
-                nowcast_data["stanhope"] = stanhope_obs.tail(3)
-                logger.info("OLS nowcast: %d stations with recent ECCC obs", len(nowcast_data))
+        from pea_met_network.licor_adapter import LicorAdapter
+        adapter = LicorAdapter()
+        obs_data = adapter.fetch_recent(hours=6)
+        if obs_data:
+            # Cross-station RH imputation for stations with no RH sensor
+            from pea_met_network.cross_station_impute import (
+                DonorAssignment,
+                impute_cross_station,
+            )
+            rh_donors = [
+                DonorAssignment("tracadie", "relative_humidity_pct", 1, "cavendish", "internal"),
+                DonorAssignment("tracadie", "relative_humidity_pct", 2, "north_rustico", "internal"),
+                DonorAssignment("stanley_bridge", "relative_humidity_pct", 1, "cavendish", "internal"),
+                DonorAssignment("stanley_bridge", "relative_humidity_pct", 2, "north_rustico", "internal"),
+            ]
+            for stn_name in list(obs_data.keys()):
+                if obs_data[stn_name]["relative_humidity_pct"].notna().any():
+                    continue
+                imputed_df, records = impute_cross_station(
+                    obs_data[stn_name],
+                    station=stn_name,
+                    donor_assignments=rh_donors,
+                    internal_hourly=obs_data,
+                )
+                obs_data[stn_name] = imputed_df
+                if records:
+                    logger.info(
+                        "  %s: cross-station imputed %d RH values",
+                        stn_name, len(records),
+                    )
+            logger.info("Licor live obs: %d stations", len(obs_data))
     except Exception as e:
-        logger.warning("OLS nowcast failed, using OWM for all hours: %s", e)
+        logger.warning("Licor fetch failed, using OWM for all hours: %s", e)
 
     # 2. Fetch OWM for all stations (0–48h, hourly)
     weather_data = fetch_all_stations(stations)
 
-    # 3. Merge OLS nowcast into OWM (nowcast preferred in overlap zone)
-    if nowcast_data:
-        for stn_name, nowcast_df in nowcast_data.items():
+    # 3. Merge Licor live obs into OWM (obs preferred in overlap zone)
+    if obs_data:
+        for stn_name, obs_df in obs_data.items():
             if stn_name not in weather_data:
                 continue
             owm_df = weather_data[stn_name]
-            # Nowcast covers recent hours; replace overlapping OWM entries
-            # with ECCC-derived values (real obs > model forecast).
-            # combine_first: nowcast values win where both exist, OWM fills the rest.
-            weather_data[stn_name] = nowcast_df.combine_first(owm_df).sort_index()
-            nowcast_hours = len(nowcast_df.index.intersection(owm_df.index))
-            logger.info("  %s: %d OWM hours replaced with OLS nowcast", stn_name, nowcast_hours)
+            # Live obs cover recent hours; replace overlapping OWM entries
+            # with real observations (observed > model forecast).
+            # combine_first: obs values win where both exist, OWM fills the rest.
+            weather_data[stn_name] = obs_df.combine_first(owm_df).sort_index()
+            obs_hours = len(obs_df.index.intersection(owm_df.index))
+            logger.info("  %s: %d OWM hours replaced with Licor obs", stn_name, obs_hours)
 
     # 4. Optionally extend with GDPS (0–240h, 3-hourly)
     gdps_data: dict[str, pd.DataFrame] | None = None
@@ -510,7 +540,7 @@ def format_summary(
     cwfis: dict[str, list[dict]] | None = None,
 ) -> str:
     """Format a human-readable summary of forecast results."""
-    lines = ["FWI Forecast Summary (OLS nowcast + OWM + GDPS)", "=" * 50]
+    lines = ["FWI Forecast Summary (Licor obs + OWM + GDPS)", "=" * 50]
 
     for station, df in results.items():
         max_fwi = df["FWI"].max()
@@ -551,7 +581,7 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    print("Running FWI forecast pipeline (direct OWM, 6 stations)...")
+    print("Running FWI forecast pipeline (Licor + OWM + GDPS, 6 stations)...")
 
     # Fetch CWFIS comparison data
     cwfis = fetch_cwfis_forecast()
