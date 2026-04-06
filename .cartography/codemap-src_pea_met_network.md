@@ -11,17 +11,17 @@
 |---|---|---|---|
 | `__init__.py` | Package marker | — | — |
 | `__main__.py` | CLI entry point with vmem tuning | `main()` | Facade / Bootstrap |
-| `cleaning.py` | Full ETL pipeline orchestrator | `run_pipeline()`, `load_station_files()`, `dedup()`, `resample_hourly()`, `impute()`, `calculate_fwi()`, `aggregate_daily()` | Pipeline, Topological Sort |
+| `cleaning.py` | Full ETL pipeline orchestrator (hourly + compliant modes) | `run_pipeline()`, `load_station_files()`, `dedup()`, `resample_hourly()`, `impute()`, `calculate_fwi_hourly()`, `calculate_fwi_daily()`, `filter_noon_observations()`, `aggregate_daily()` | Pipeline, Topological Sort |
 | `cross_station_impute.py` | Spatial donor-based gap filling | `DonorAssignment`, `ImputedValue`, `HeightCorrection`, `impute_cross_station()`, `propagate_fwi_quality_flags()` | Strategy, Chain of Responsibility |
 | `eccc_api.py` | ECCC MSC GeoMet API client | `EcccStation`, `fetch_eccc_hourly()`, `normalize_eccc_response()` | Client / Cache-aside |
 | `fetch_eccc_donors.py` | Standalone ECCC cache pre-populator | `main()` | Script / Batch |
 | `fwi.py` | Daily-step FWI moisture codes (Van Wagner) | `fine_fuel_moisture_code()`, `duff_moisture_code()`, `drought_code()`, `initial_spread_index()`, `buildup_index()`, `fire_weather_index()` | Pure Functions |
-| `fwi_diagnostics.py` | FWI chain-break detection & reporting | `ChainBreak`, `diagnose_chain_breaks()`, `chain_breaks_to_dataframe()` | Diagnostic / Observer |
+| `fwi_diagnostics.py` | FWI chain-break detection, root cause attribution & reporting | `ChainBreak`, `CODE_INPUTS`, `STARTUP_DEFAULTS`, `diagnose_chain_breaks()`, `chain_breaks_to_dataframe()`, `_find_cascade_cause()`, `_is_startup()` | Diagnostic / Observer |
 | `imputation.py` | Generic configurable gap imputation | `ImputationConfig`, `AuditRecord`, `impute_column()`, `impute_frame()` | Strategy (per-gap-length) |
 | `manifest.py` | Raw file discovery & schema recognition | `RawFileRecord`, `SchemaSignature`, `SchemaMatch`, `build_raw_manifest()`, `recognize_schema()` | Registry (pattern matching) |
 | `materialize_resampled.py` | Write hourly/daily CSVs from normalized data | `materialize_resampled_outputs()` | Facade / Pipeline terminus |
 | `normalized_loader.py` | Load and normalize raw station CSVs | `load_normalized_station_csv()`, `_normalized_name()`, `_parse_timestamp_*()` | Adapter (Schema → Canonical) |
-| `qa_qc.py` | QA/QC summary metrics and reports | `missingness_summary()`, `duplicate_timestamps()`, `out_of_range_values()`, `coverage_summary()`, `generate_qa_qc_report()` | Reporting / Aggregation |
+| `qa_qc.py` | QA/QC summary metrics, reports, and FWI statistics | `missingness_summary()`, `duplicate_timestamps()`, `out_of_range_values()`, `coverage_summary()`, `calculate_completeness()`, `pre_imputation_missingness()`, `fwi_descriptive_stats()`, `generate_qa_qc_report()` | Reporting / Aggregation |
 | `quality.py` | Enforce data quality rules | `enforce_quality()`, `enforce_fwi_outputs()`, `truncate_date_range()`, `_check_*()` | Strategy (config-driven rules) |
 | `redundancy.py` | Station redundancy analysis | `build_station_matrix()`, `pca_station_loadings()`, `cluster_station_order()`, `benchmark_to_stanhope()` | Analysis Pipeline |
 | `resampling.py` | Resample to hourly/daily frequencies | `AggregationPolicy`, `resample_hourly()`, `resample_daily()` | Policy / Strategy |
@@ -119,7 +119,14 @@ manifest.py                   adapters  dedup  resample quality impute    aggreg
 - `dedup(df)` — Removes exact + timestamp duplicates.
 - `resample_hourly(df)` — Resamples to hourly frequency.
 - `impute(df, station, max_gap_hours)` — Linear interpolation for short gaps.
-- `calculate_fwi(df, gap_threshold_hours)` — Full FWI system with hourly iterative chain and gap-aware restart.
+- `calculate_fwi_hourly(df, lat, gap_threshold_hours)` — Canonical hourly FWI: Van Wagner (1977) iterative FFMC + daily DMC/DC at nearest 14:00 LST observation, gap-aware chain restart.
+- `calculate_fwi_daily(df, lat)` — Compliant mode: noon-only observations with carry-forward on missing days, tracks `carry_forward_used` column.
+- `filter_noon_observations(df)` — Selects one local-noon row per day with preceding 24h rain total.
+- `calculate_fwi(df, lat, gap_threshold_hours)` — Backward-compatible wrapper (delegates to `calculate_fwi_hourly`).
+- `_hffmc_calc()` — Canonical Van Wagner (1977) hourly FFMC (cffdrs full-precision coefficient 250×59.5/101, drying rate 0.0579, no rain threshold).
+- `_ffmc_calc()` — Legacy hourly FFMC retained for comparison tests.
+- `_daily_dmc_dc_calc()` — Daily DMC/DC using reference `fwi.py` functions, aligned to hourly rows via selection_local_date grouping.
+- `_calculate_fwi_legacy()` — Legacy vectorized FWI (deprecated).
 - `aggregate_daily(hourly_df)` — Aggregates hourly to daily.
 - `should_process(station, force)` — Checks if output is stale relative to inputs.
 - `_save_donor_parquet()` / `_load_donor_from_disk()` — Disk-based donor staging via Parquet.
@@ -214,16 +221,22 @@ manifest.py                   adapters  dedup  resample quality impute    aggreg
 
 ### `fwi_diagnostics.py`
 
-**Purpose:** Detects and reports FWI state-chain breaks where iterative moisture codes lose continuity.
+**Purpose:** Detects, classifies, and attributes root causes of FWI state-chain breaks where iterative moisture codes lose continuity.
 
 **Key Classes/Functions:**
-- `ChainBreak` (dataclass) — Single chain-break event with station, code, timestamps, cause.
-- `diagnose_chain_breaks(hourly_df, station, quality_actions)` — Scans FWI columns for NaN regions, correlates with quality enforcement.
+- `ChainBreak` (dataclass) — Single chain-break event with station, code, timestamps, cause, missing input, rows affected, and optional cascade origin.
+- `CODE_INPUTS` — Maps each FWI code (ffmc, dmc, dc) to its required input columns.
+- `STARTUP_DEFAULTS` — Default moisture code values for chain restart (ffmc=85, dmc=6, dc=15).
+- `diagnose_chain_breaks(hourly_df, station, quality_actions)` — Scans FWI columns for NaN regions, classifies cause (startup/input_missing/quality_enforcement), and traces cascade origins.
 - `chain_breaks_to_dataframe(breaks)` — Converts to tabular DataFrame.
+- `_find_null_regions(mask)` — Finds contiguous True regions in a boolean mask.
+- `_determine_cause(break_time, quality_actions, missing_inputs)` — Correlates break time with quality enforcement events (±2h window).
+- `_is_startup(start_idx, end_idx, code, hourly_df, input_cols)` — Detects DMC/DC startup breaks at dataset start (before first 14:00 LST).
+- `_find_cascade_cause(start_idx, code, hourly_df, timestamps, input_cols)` — Traces NaN propagation upstream from DMC/DC to FFMC inputs (RH, wind, temp). Scans backwards up to 48 rows to find the original missing input.
 
-**Design Patterns:** Diagnostic / Observer.
+**Design Patterns:** Diagnostic / Observer, Root Cause Analysis (cascade tracing).
 
-**Data Flow:** Hourly DF + quality actions → `ChainBreak` list / DataFrame.
+**Data Flow:** Hourly DF + quality actions → `ChainBreak` list / DataFrame with cause attribution and cascade origin.
 
 **Integration Points:** Called by `cleaning.py`.
 
@@ -289,17 +302,23 @@ manifest.py                   adapters  dedup  resample quality impute    aggreg
 
 ### `qa_qc.py`
 
-**Purpose:** Compute per-station QA/QC metrics and assemble comprehensive reports.
+**Purpose:** Compute per-station QA/QC metrics, pre/post imputation snapshots, FWI descriptive statistics, and assemble comprehensive reports.
 
 **Key Classes/Functions:**
+- `CORE_MET_VARIABLES` — Tuple of 4 core met variables for imputation tracking.
+- `FWI_CODES` — Tuple of 6 FWI component names.
 - `missingness_summary(df)` — Per-variable missing count & percentage.
 - `duplicate_timestamps(df)` — Duplicate timestamp detection.
 - `out_of_range_values(df, ranges)` — Physical bounds checking.
-- `generate_qa_qc_report(hourly, daily, quality_actions, chain_breaks)` — Full per-station report.
+- `coverage_summary(df)` — Per-station record counts.
+- `calculate_completeness(df)` — Overall data completeness fraction.
+- `pre_imputation_missingness(df)` — Pre-imputation missing % for the 4 core met variables.
+- `fwi_descriptive_stats(daily, station)` — Min/max/mean/std for all 6 FWI codes per station.
+- `generate_qa_qc_report(hourly, daily, quality_actions, chain_breaks, fwi_mode, pre_imputation_missingness)` — Full per-station report with Phase 13 additions: fwi_mode tag, carry-forward days/pct (compliant mode), pre/post imputation columns, FWI value statistics, and chain break counts.
 
-**Design Patterns:** Reporter / Aggregator.
+**Design Patterns:** Reporter / Aggregator, Snapshot (pre/post imputation comparison).
 
-**Data Flow:** Hourly + daily DataFrames → summary DataFrame (~20 columns per station).
+**Data Flow:** Hourly + daily DataFrames → summary DataFrame (~40+ columns per station).
 
 ---
 

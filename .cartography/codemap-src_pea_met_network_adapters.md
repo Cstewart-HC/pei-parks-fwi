@@ -13,7 +13,7 @@
 | `__init__.py` | Package facade — re-exports public API symbols | `ADAPTER_REGISTRY`, `CANONICAL_SCHEMA`, `route_by_extension`, `BaseAdapter` | Facade |
 | `base.py` | Abstract base class that all adapters must implement | `BaseAdapter` (ABC) | Template Method / Strategy |
 | `column_maps.py` | Shared column-name mappings and normalization helpers | `COLUMN_MAPS`, `SKIP_COLUMNS`, `SKIP_PREFIXES`, `extract_prefix()`, `rename_columns()`, `coalesce_duplicate_columns()`, `derive_wind_speed_kmh()` | Data Mapper / Utility |
-| `csv_adapter.py` | Loads PEINP archive CSVs and ECCC Stanhope CSVs | `CSVAdapter`, `_detect_csv_schema()`, `_load_peinp_csv()`, `_load_eccc_csv()` | Strategy |
+| `csv_adapter.py` | Loads PEINP archive CSVs, ECCC Stanhope CSVs, and Licor metadata-prefixed CSVs | `CSVAdapter`, `_skip_licor_metadata()`, `_detect_csv_schema()`, `_load_peinp_csv()`, `_load_eccc_csv()` | Strategy, Guard Clause |
 | `json_adapter.py` | Loads Licor Cloud API JSON responses | `JSONAdapter`, `LICOR_MEASUREMENT_MAP`, `UNIT_CONVERSIONS`, `_load_devices_json()`, `_serial_to_station()` | Strategy |
 | `registry.py` | Maps file extensions to adapter classes; factory function | `ADAPTER_REGISTRY`, `KNOWN_EXTENSIONS`, `route_by_extension()` | Registry / Factory |
 | `schema.py` | Defines the canonical column schema for all adapters | `CANONICAL_SCHEMA` | Schema / Contract |
@@ -121,12 +121,13 @@
 
 ### `csv_adapter.py`
 
-**Purpose:** Loads CSV files in either PEINP archive format or ECCC Stanhope format, auto-detecting the schema and normalizing to canonical columns.
+**Purpose:** Loads CSV files in PEINP archive format, ECCC Stanhope format, or Licor metadata-prefixed format, auto-detecting the schema and normalizing to canonical columns.
 
 **Key Classes/Functions:**
-- `CSVAdapter(BaseAdapter)` — concrete adapter; `load()` dispatches to the correct sub-loader.
+- `CSVAdapter(BaseAdapter)` — concrete adapter; `load()` detects Licor preamble, then dispatches to the correct sub-loader.
+- `_skip_licor_metadata(path: Path) -> int | None` — detects Licor-style CSV with `Serial_number:` preamble block; returns 0-based row index of the actual header line.
 - `_detect_csv_schema(df: pd.DataFrame) -> str` — heuristically determines `"eccc"` vs `"peinp"` from column names.
-- `_load_peinp_csv(path: Path) -> pd.DataFrame` — parses PEINP CSVs: applies column maps, parses `Date`+`Time` columns, converts all measurement columns to numeric.
+- `_load_peinp_csv(path: Path, skiprows)` — parses PEINP CSVs: applies column maps, parses `Date`+`Time` columns (with ISO fallback for Licor), converts all measurement columns to numeric.
 - `_load_eccc_csv(path: Path) -> pd.DataFrame` — parses ECCC CSVs: applies column maps, finds `Date/Time (LST)` column, parses as UTC, drops metadata/flag columns, hard-codes station to `"stanhope"`.
 
 **Design Patterns:** Strategy (concrete implementation of `BaseAdapter`); Double Dispatch (internal routing between PEINP and ECCC sub-parsers).
@@ -226,11 +227,13 @@
 
 ### `xlsx_adapter.py`
 
-**Purpose:** Loads HOBOware and Parks Canada XLSX Excel files, auto-detecting the header row and normalizing to canonical columns.
+**Purpose:** Loads HOBOware and Parks Canada XLSX Excel files, auto-detecting the header row, filtering non-data rows, and normalizing to canonical columns.
 
 **Key Classes/Functions:**
-- `XLSXAdapter(BaseAdapter)` — concrete adapter; handles header-row detection, unit-row filtering, and column normalization.
-- `_is_date_value(val) -> bool` — static method; distinguishes actual date values from format strings.
+- `XLSXAdapter(BaseAdapter)` — concrete adapter; handles header-row detection, unit-row filtering, multi-station file rejection, Date/Time merge, and column normalization.
+- `_is_date_value(val) -> bool` — static method; distinguishes actual date values from format strings ("mm/dd/yy", "hh:mm:ss").
+- `_MAX_SINGLE_STATION_COLS` — column threshold (20) to reject multi-station summary exports early.
+- `_merge_date_time(df) -> pd.DataFrame` — static method; merges separate Date/Time columns handling mixed datetime objects + strings from PEINP exports.
 - `_infer_station(path: Path) -> str | None` — static method; maps path keywords to station identifiers.
 
 **Design Patterns:** Strategy (concrete `BaseAdapter`); Guard Clause (skips non-data rows).

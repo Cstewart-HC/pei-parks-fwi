@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "last_run": "2026-03-29T15:07:43.883158Z",
+    "last_run": "2026-03-30T20:15:02.197388Z",
     "root": "/mnt/fast_data/workspaces/pea-met-network",
     "include_patterns": [
       "src/**/*.py",
@@ -25,27 +25,27 @@
     "Makefile": "c403bfe743846aa1c9bbd33bea3002e7",
     "pyproject.toml": "b7b0f78dc36983f7846ee9b273a840fa",
     "src/pea_met_network/__init__.py": "510093db8b8829ad1639e6d91f848d97",
-    "src/pea_met_network/__main__.py": "7e92ad76049abcf0e4749af19cff06e4",
+    "src/pea_met_network/__main__.py": "333ec391174245e4f81afbbae8b33ff6",
     "src/pea_met_network/adapters/__init__.py": "fa0878e1e6adb88ff989367b2c85097b",
     "src/pea_met_network/adapters/base.py": "443766d1d163365699720fa52168e260",
     "src/pea_met_network/adapters/column_maps.py": "9bfe7cb3f90265d00b3c88eb29af2b57",
-    "src/pea_met_network/adapters/csv_adapter.py": "30f405b60724431442810f2e13f8d159",
+    "src/pea_met_network/adapters/csv_adapter.py": "ba0e55654bb6948b200e398d65f945ad",
     "src/pea_met_network/adapters/json_adapter.py": "582db350759b252bbd5a5e362fa62f1d",
     "src/pea_met_network/adapters/registry.py": "d813bd1d429250c7f9dbce74f167bc3b",
     "src/pea_met_network/adapters/schema.py": "a6afabec13599f8329c0ca87ad160eb8",
     "src/pea_met_network/adapters/xle_adapter.py": "635d38b95213e6e1f9c50b22d6f33287",
-    "src/pea_met_network/adapters/xlsx_adapter.py": "8cf731f3ed6df35a0bdae26312d42de3",
-    "src/pea_met_network/cleaning.py": "6bc1b2ad5f6948ea08b04d13250d1700",
+    "src/pea_met_network/adapters/xlsx_adapter.py": "9b3df776d2460860ea48bc95cd417be0",
+    "src/pea_met_network/cleaning.py": "faf9a91e32ffdfb9e510d2ce8b6f8b84",
     "src/pea_met_network/cross_station_impute.py": "6eb6474d0f2ccf5c6fa08f7c4ef1a186",
     "src/pea_met_network/eccc_api.py": "937272379e4c53dffd0919733d640b3b",
     "src/pea_met_network/fetch_eccc_donors.py": "f19bb0b9658c0d010fad800d6c4780ba",
     "src/pea_met_network/fwi.py": "d371d9c33702175e0027104e76ad8490",
-    "src/pea_met_network/fwi_diagnostics.py": "9d65b8e9cbe8b19ba389d631f849e2cf",
+    "src/pea_met_network/fwi_diagnostics.py": "455f8ff8389fdf18c2bf6102334e4e57",
     "src/pea_met_network/imputation.py": "c51ebba1585cd8daea7eceace2a71645",
     "src/pea_met_network/manifest.py": "80f62576c92e0ad1e8a8441611840c13",
     "src/pea_met_network/materialize_resampled.py": "9faa11b5a06dd57a8400d89e32b14ac3",
     "src/pea_met_network/normalized_loader.py": "a3599f25515a98d7cd82aacaf383a49f",
-    "src/pea_met_network/qa_qc.py": "0d7e154f818e0ffcb647f745e08b7a88",
+    "src/pea_met_network/qa_qc.py": "cfdac2eb65b7a552514bee85a9d9cc96",
     "src/pea_met_network/quality.py": "2ecd78f9fa7ccdb33f695dfb039c87a2",
     "src/pea_met_network/redundancy.py": "4fd5c2a032b2b096db926479dd5b7b45",
     "src/pea_met_network/resampling.py": "fa5a19b0a412a5312c779c295b13629e",
@@ -55,9 +55,9 @@
     "src/pea_met_network/vapor_pressure.py": "32a89a37bf25e160ff1daf336de6be8c"
   },
   "folder_hashes": {
-    "src/pea_met_network": "e52f62fdda03f4e184c95558090226ae",
-    "src/pea_met_network/adapters": "d033010b1e2cf26f513bd4e216ab3091",
-    "src": "e52f62fdda03f4e184c95558090226ae",
-    ".": "54153219c75e50745ed7a770464094be"
+    "src/pea_met_network/adapters": "5b8ab24aafc5df31cb9539ac54202999",
+    ".": "54153219c75e50745ed7a770464094be",
+    "src/pea_met_network": "8d7586464dcea7323f1167a73aa5daa4",
+    "src": "8d7586464dcea7323f1167a73aa5daa4"
   }
 }

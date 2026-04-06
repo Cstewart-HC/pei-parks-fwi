@@ -2,7 +2,7 @@
 
 > **PEI National Park Fire Weather Index Pipeline**
 > DATA-3210 PEI meteorological network optimization project
-> Python 3.11+ | 29 source files | ~5,500 lines | 289 tests
+> Python 3.11+ | 29 source files | ~6,300 lines | 394 tests
 
 ---
 
@@ -38,7 +38,7 @@ A multi-stage ETL pipeline that ingests raw meteorological data from 6 PEI Natio
 |-----------|-------------|---------|
 | `src/pea_met_network/` | Core pipeline, FWI computation, quality, imputation, analysis | [codemap](codemap-src_pea_met_network.md) |
 | `src/pea_met_network/adapters/` | File-format adapters (CSV, XLSX, XLE, JSON) | [codemap](codemap-src_pea_met_network_adapters.md) |
-| `tests/` | 289 tests (unit + integration) | — |
+| `tests/` | 394 tests (unit + integration) | — |
 | `docs/` | Configuration (`cleaning-config.json`), reports, figures | — |
 | `data/` | Raw and processed station data | — |
 
@@ -99,4 +99,5 @@ Raw Files (CSV/XLSX/XLE/JSON)
 3. **Two-Pass Pipeline** — First pass processes all stations and stages donor data to Parquet; second pass performs cross-station imputation using the staged data.
 4. **Audit Trail** — Every imputation (both generic and cross-station) produces structured audit records with quality flags, source station, and method.
 5. **Quality Enforcement as Pipeline Stage** — Quality checks are pluggable rules (`_check_*` functions) with configurable actions (set NaN, flag only), producing structured action records consumed by diagnostics.
-6. **FWI Chain-Break Diagnostics** — Post-hoc detection of FWI continuity breaks correlated with quality enforcement events, providing traceability from bad data → NaN propagation → FWI restart.
+6. **FWI Chain-Break Diagnostics** — Post-hoc detection of FWI continuity breaks with root cause attribution: startup detection (DMC/DC before first 14:00 LST), cascade analysis (FFMC→DMC→DC NaN propagation), and quality enforcement correlation.
+7. **Analysis Notebook** — Phase 15 delivered `analysis.ipynb` with automated pipeline validation and visualization.

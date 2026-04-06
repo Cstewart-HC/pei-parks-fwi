@@ -388,14 +388,21 @@ def compute_fwi_series(
 def run_forecast(
     stations: list[Station] | None = None,
     startup_state: dict[str, dict[str, float]] | None = None,
+    include_gdps: bool = True,
 ) -> dict[str, pd.DataFrame]:
     """Run the full FWI forecast pipeline.
 
-    Fetches OWM directly for each station → computes FWI per station.
+    Fetches OWM directly for each station (0–48h) and optionally extends
+    with GDPS data (0–240h). Computes FWI per station.
     Persists startup indices for next run.
 
+    Args:
+        stations: Stations to forecast for.
+        startup_state: Pre-loaded startup indices (loaded from disk if None).
+        include_gdps: If True, also fetch GDPS 10-day data and merge.
+
     Returns:
-        Dict mapping station name → DataFrame with FWI components per hour.
+        Dict mapping station name → DataFrame with FWI components per timestep.
     """
     if stations is None:
         stations = ALL_STATIONS
@@ -405,10 +412,46 @@ def run_forecast(
     if startup_state:
         logger.info("Loaded startup state for %d stations", len(startup_state))
 
-    # 1. Fetch all stations
+    # 1. Fetch OWM for all stations (0–48h, hourly)
     weather_data = fetch_all_stations(stations)
 
-    # 2. Compute FWI per station
+    # 2. Optionally extend with GDPS (0–240h, 3-hourly)
+    gdps_data: dict[str, pd.DataFrame] | None = None
+    if include_gdps:
+        try:
+            from pea_met_network.gdps_fetcher import GDPSFetcher, Station as GDPSStation
+            gdps_stations = [GDPSStation(s.name, s.lat, s.lon) for s in stations]
+            fetcher = GDPSFetcher()
+            gdps_raw = fetcher.fetch(gdps_stations, max_hours=240)
+            if gdps_raw:
+                gdps_data = gdps_raw
+                gdps_hours = max(len(df) for df in gdps_raw.values()) * 3
+                logger.info("GDPS extended forecast: %dh available", gdps_hours)
+        except Exception as e:
+            logger.warning("GDPS fetch failed, using OWM only: %s", e)
+
+    # 3. Merge OWM and GDPS per station
+    if gdps_data:
+        for stn in stations:
+            if stn.name not in gdps_data:
+                continue
+            owm_df = weather_data[stn.name]
+            gdps_df = gdps_data[stn.name]
+
+            # OWM covers 0–48h hourly; GDPS covers 0–240h at 3h.
+            # For hours where OWM has data, prefer it (higher resolution).
+            # GDPS fills hours beyond OWM's range.
+            gdps_beyond = gdps_df.index.difference(owm_df.index)
+            if len(gdps_beyond) > 0:
+                extra = gdps_df.loc[gdps_beyond]
+                weather_data[stn.name] = pd.concat([owm_df, extra]).sort_index()
+                logger.info(
+                    "%s: merged %d OWM + %d GDPS timesteps (%dh total)",
+                    stn.name, len(owm_df), len(extra),
+                    len(weather_data[stn.name]),
+                )
+
+    # 4. Compute FWI per station
     results = {}
     for stn in stations:
         ffmc0, dmc0, dc0 = get_startup_indices(stn.name, startup_state)
@@ -417,13 +460,14 @@ def run_forecast(
         fwi_df = compute_fwi_series(weather_data[stn.name], stn, ffmc0=ffmc0, dmc0=dmc0, dc0=dc0)
         results[stn.name] = fwi_df
         logger.info(
-            "%s: FWI [%.1f, %.1f], max ISI %.1f, max FFMC %.1f",
+            "%s: FWI [%.1f, %.1f], max ISI %.1f, max FFMC %.1f, %d hours",
             stn.name,
             fwi_df["FWI"].min(), fwi_df["FWI"].max(),
             fwi_df["ISI"].max(), fwi_df["FFMC"].max(),
+            len(fwi_df),
         )
 
-    # 3. Persist final indices for next run
+    # 5. Persist final indices for next run
     save_startup_state(results)
 
     return results
@@ -434,13 +478,15 @@ def format_summary(
     cwfis: dict[str, list[dict]] | None = None,
 ) -> str:
     """Format a human-readable summary of forecast results."""
-    lines = ["FWI Forecast Summary (direct OWM)", "=" * 50]
+    lines = ["FWI Forecast Summary (OWM + GDPS)", "=" * 50]
 
     for station, df in results.items():
         max_fwi = df["FWI"].max()
         max_isi = df["ISI"].max()
         max_ffmc = df["FFMC"].max()
-        lines.append(f"\n{station}:")
+        hours = len(df)
+        span_h = (df.index[-1] - df.index[0]).total_seconds() / 3600
+        lines.append(f"\n{station}: ({span_h:.0f}h, {hours} timesteps)")
         lines.append(f"  Max FWI:  {max_fwi:.1f}")
         lines.append(f"  Max ISI:  {max_isi:.1f}")
         lines.append(f"  Max FFMC: {max_ffmc:.1f}")

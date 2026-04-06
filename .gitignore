@@ -38,6 +38,9 @@ Thumbs.db
 -e 
 # Pipeline output (generated, do not track)
 data/processed/
+data/forecasts/
+data/gdps_cache/
+memory/
 -e 
 # Notebook output
 notebooks/figures/

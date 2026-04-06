@@ -1,0 +1,13 @@
+{
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "exclude": [
+    ".venv",
+    "venv",
+    "typestubs",
+    "data",
+    "dist",
+    "build",
+    "*.egg-info"
+  ]
+}

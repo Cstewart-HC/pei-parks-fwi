@@ -216,7 +216,7 @@ def generate_qa_qc_report(
     quality_actions: list[dict] | None = None,
     chain_breaks: list | None = None,
     fwi_mode: str = "hourly",
-    pre_imputation_missingness: dict[str, float] | None = None,
+    pre_imputation_missingness: dict[str, dict[str, float]] | dict[str, float] | None = None,
 ) -> pd.DataFrame:
     """Generate QA/QC report for all stations.
 
@@ -252,11 +252,16 @@ def generate_qa_qc_report(
             miss_dict[key] = row["missing_pct"]
 
         # Pre-imputation missingness
+        # Accepts either dict[str, dict[str, float]] (station → snapshot)
+        # or legacy dict[str, float] (flat snapshot for a single station).
         pre_imp_dict: dict[str, float] = {}
         if pre_imputation_missingness is not None:
+            station_snapshot = pre_imputation_missingness.get(
+                station, pre_imputation_missingness
+            )
             for var in CORE_MET_VARIABLES:
                 key = f"pre_imp_missing_pct_{var}"
-                pre_imp_dict[key] = pre_imputation_missingness.get(
+                pre_imp_dict[key] = station_snapshot.get(
                     f"missing_pct_{var}", 0.0
                 )
 

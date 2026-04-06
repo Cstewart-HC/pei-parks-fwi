@@ -510,6 +510,7 @@ def impute(
 
 # ---------------------------------------------------------------------------
 # FWI — Van Wagner (1987) Canadian Fire Weather Index System
+# All single-step calculations delegate to vendored cffdrs_py reference.
 # ---------------------------------------------------------------------------
 
 
@@ -521,14 +522,15 @@ def _hffmc_calc(
     ffmc_prev: float = 85.0,
     gap_threshold_hours: int = 24,
 ) -> np.ndarray:
-    """Calculate canonical Van Wagner (1977) hourly FFMC iteratively."""
+    """Calculate canonical hourly FFMC iteratively using cffdrs reference."""
+    from pea_met_network.fwi import hourly_fine_fuel_moisture_code
+
     n = len(temp)
     ffmc = np.full(n, np.nan)
 
-    startup_mo = HOURLY_FFMC_COEFF * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
-    mo_prev = startup_mo
     consecutive_nulls = 0
     chain_broken = False
+    ffmc_running = ffmc_prev
 
     for i in range(n):
         t = temp[i]
@@ -538,131 +540,31 @@ def _hffmc_calc(
 
         if np.isnan(t) or np.isnan(h) or np.isnan(w):
             ffmc[i] = np.nan
-            mo_prev = np.nan
             chain_broken = True
             consecutive_nulls += 1
             continue
 
         if chain_broken:
             if consecutive_nulls >= gap_threshold_hours:
-                mo_prev = startup_mo
+                ffmc_running = ffmc_prev
                 chain_broken = False
                 consecutive_nulls = 0
             else:
                 ffmc[i] = np.nan
+                consecutive_nulls += 1
                 continue
 
         consecutive_nulls = 0
         rf = 0.0 if np.isnan(r) else float(r)
 
-        if rf > 0.0:
-            mr = mo_prev + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_prev)) * (1.0 - np.exp(-6.93 / rf))
-            if mo_prev <= 150.0:
-                mo_prev = min(mr, 150.0)
-            else:
-                mr += 0.0015 * (mo_prev - 150.0) ** 2 * np.sqrt(rf)
-                mo_prev = min(mr, 250.0)
-
-        ed = (
-            0.942 * h**0.679
-            + 11.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
-        )
-        ew = (
-            0.618 * h**0.753
-            + 10.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
-        )
-
-        if mo_prev < ed:
-            k0w = 0.424 * (1.0 - ((100.0 - h) / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - ((100.0 - h) / 100.0) ** 8)
-            kw = k0w * 0.0579 * np.exp(0.0365 * t)
-            mo = ew - (ew - mo_prev) / (10.0**kw)
-        elif mo_prev > ed:
-            k0d = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(w, 0.0)) * (1.0 - (h / 100.0) ** 8)
-            kd = k0d * 0.0579 * np.exp(0.0365 * t)
-            mo = ed + (mo_prev - ed) / (10.0**kd)
-        else:
-            mo = mo_prev
-
-        mo = max(0.0, mo)
-        ffmc[i] = max(0.0, 59.5 * (250.0 - mo) / (HOURLY_FFMC_COEFF + mo))
-        mo_prev = mo
-
-    return ffmc
-
-
-def _ffmc_calc(
-    temp: np.ndarray,
-    rh: np.ndarray,
-    wind: np.ndarray,
-    rain: np.ndarray,
-    ffmc_prev: float = 85.0,
-    gap_threshold_hours: int = 24,
-) -> np.ndarray:
-    """Legacy hourly FFMC implementation retained for comparison tests."""
-    n = len(temp)
-    ffmc = np.full(n, np.nan)
-
-    mo_prev = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
-    consecutive_nulls = 0
-
-    for i in range(n):
-        t = temp[i]
-        h = rh[i]
-        w = wind[i]
-        r = rain[i]
-
-        if np.isnan(t) or np.isnan(h) or np.isnan(w):
+        try:
+            ffmc_running = hourly_fine_fuel_moisture_code(
+                float(t), float(h), float(w), rf, ffmc_running,
+            )
+            ffmc[i] = ffmc_running
+        except (ValueError, ZeroDivisionError):
             ffmc[i] = np.nan
-            mo_prev = np.nan
-            consecutive_nulls += 1
-            continue
-
-        if np.isnan(mo_prev) and consecutive_nulls >= gap_threshold_hours:
-            mo_prev = 147.2 * (101.0 - ffmc_prev) / (59.5 + ffmc_prev)
-            consecutive_nulls = 0
-        elif np.isnan(mo_prev):
-            consecutive_nulls += 1
-            ffmc[i] = np.nan
-            continue
-
-        consecutive_nulls = 0
-        rf = 0.0 if np.isnan(r) else float(r)
-
-        if rf > 0.5:
-            mo_safe = mo_prev if not np.isnan(mo_prev) else 85.0
-            if rf < 1.5:
-                mo_prev = mo_safe
-            else:
-                mr = mo_safe + 42.5 * rf * np.exp(-100.0 / (251.0 - mo_safe)) * (1.0 - np.exp(-6.93 / rf))
-                mo_prev = min(mr, 150.0)
-
-        if np.isnan(mo_prev):
-            mo_prev = 85.0
-
-        ed = (
-            0.942 * h**0.679
-            + 11.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
-        )
-        ew = (
-            0.618 * h**0.753
-            + 10.0 * np.exp((h - 100.0) / 10.0)
-            + 0.18 * (21.1 - t) * (1.0 - 1.0 / np.exp(0.115 * h))
-        )
-
-        if mo_prev < ed:
-            mo_new = ew + (mo_prev - ew) * 0.5
-        else:
-            kl = 0.424 * (1.0 - (h / 100.0) ** 1.7) + 0.0694 * np.sqrt(max(0, w)) * (1.0 - (h / 100.0) ** 8)
-            kl = max(0.0, kl)
-            mo_new = ed + (mo_prev - ed) * (10.0 ** (-kl))
-
-        mo_new = max(0.0, mo_new)
-        ffmc[i] = 59.5 * (250.0 - mo_new) / (147.2 + mo_new)
-        ffmc[i] = max(0.0, min(101.0, ffmc[i]))
-        mo_prev = mo_new
+            chain_broken = True
 
     return ffmc
 
@@ -675,21 +577,18 @@ def _dmc_calc(
     dmc_prev: float = 6.0,
     gap_threshold_hours: int = 24,
 ) -> np.ndarray:
-    """Calculate Duff Moisture Code iteratively.
+    """Calculate Duff Moisture Code iteratively using cffdrs reference.
 
     When inputs are NaN for >= gap_threshold_hours consecutive hours and
     then become valid again, the chain restarts from startup defaults.
     """
+    from pea_met_network.fwi import duff_moisture_code
+
     n = len(temp)
     dmc = np.full(n, np.nan)
-
-    dl = {
-        1: 6.5, 2: 7.5, 3: 9.0, 4: 12.8, 5: 13.9, 6: 13.9,
-        7: 12.4, 8: 10.9, 9: 9.4, 10: 8.0, 11: 6.8, 12: 6.0,
-    }
-
     dmc_prev_val = dmc_prev
     consecutive_nulls = 0
+
     for i in range(n):
         t = temp[i]
         h = rh[i]
@@ -702,7 +601,6 @@ def _dmc_calc(
             consecutive_nulls += 1
             continue
 
-        # Inputs valid — check if chain should restart
         if np.isnan(dmc_prev_val) and consecutive_nulls >= gap_threshold_hours:
             dmc_prev_val = dmc_prev
             consecutive_nulls = 0
@@ -712,41 +610,14 @@ def _dmc_calc(
             continue
 
         consecutive_nulls = 0
-
         rf = 0.0 if np.isnan(r) else float(r)
 
-        if rf > 1.5:
-            re = 0.92 * rf - 1.27
-            dp = max(dmc_prev_val, 0.0)
-            mo = 20.0 + np.exp(5.6348 - dp / 43.43)  # noqa: F841
-            if dp <= 33.0:
-                b = 100.0 / (0.5 + 0.3 * dp)
-            elif dp <= 65.0:
-                b = 14.0 - 1.3 * np.log(dp)
-            else:
-                b = 6.2 * np.log(dp) - 17.5
-            mr = dp + 1000.0 * re / (48.77 + b * re)
-            dmc_prev_val = max(0.0, mr)
-        # else: dmc_prev_val unchanged
-
-        k = (
-            1.894
-            * (t + 1.1)
-            * (100.0 - h)
-            * dl.get(m, 10.0)
-            * 0.0001
-        )
-        k = max(0.0, k)
-
-        log_arg = 39.83 - dmc_prev_val
-        if log_arg <= 0:
-            dmc_val = dmc_prev_val
-        else:
-            dmc_val = 244.72 - 43.43 * np.log(log_arg)
-
-        dmc_val = max(0.0, dmc_val) + k
-        dmc[i] = max(0.0, dmc_val)
-        dmc_prev_val = dmc[i]
+        try:
+            dmc_val = duff_moisture_code(float(t), float(h), rf, dmc_prev_val, m, DEFAULT_FWI_LATITUDE)
+            dmc[i] = dmc_val
+            dmc_prev_val = dmc_val
+        except (ValueError, ZeroDivisionError):
+            dmc[i] = np.nan
 
     return dmc
 
@@ -758,21 +629,18 @@ def _dc_calc(
     dc_prev: float = 15.0,
     gap_threshold_hours: int = 24,
 ) -> np.ndarray:
-    """Calculate Drought Code iteratively.
+    """Calculate Drought Code iteratively using cffdrs reference.
 
     When inputs are NaN for >= gap_threshold_hours consecutive hours and
     then become valid again, the chain restarts from startup defaults.
     """
+    from pea_met_network.fwi import drought_code
+
     n = len(temp)
     dc = np.full(n, np.nan)
-
-    fl = {
-        1: -1.6, 2: -1.6, 3: -1.6, 4: 0.9, 5: 3.8, 6: 5.8,
-        7: 6.4, 8: 5.0, 9: 2.4, 10: 0.4, 11: -1.6, 12: -1.6,
-    }
-
     dc_prev_val = dc_prev
     consecutive_nulls = 0
+
     for i in range(n):
         t = temp[i]
         r = rain[i]
@@ -784,7 +652,6 @@ def _dc_calc(
             consecutive_nulls += 1
             continue
 
-        # Inputs valid — check if chain should restart
         if np.isnan(dc_prev_val) and consecutive_nulls >= gap_threshold_hours:
             dc_prev_val = dc_prev
             consecutive_nulls = 0
@@ -794,107 +661,43 @@ def _dc_calc(
             continue
 
         consecutive_nulls = 0
-
         rf = 0.0 if np.isnan(r) else float(r)
 
-        if rf > 2.8:
-            ra = 0.83 * rf - 1.27
-            Q0 = 800.0 * np.exp(-dc_prev_val / 400.0)
-            Qr = max(0.0, Q0 + 3.937 * ra)
-            dc_prev_val = max(0.0, 400.0 * np.log(800.0 / Qr))
-
-        fl_val = fl.get(m, 0.0)
-        dc_val = dc_prev_val + 0.36 * (t + fl_val)
-        dc[i] = max(0.0, dc_val)
-        dc_prev_val = dc[i]
+        try:
+            dc_val = drought_code(float(t), rf, dc_prev_val, m, DEFAULT_FWI_LATITUDE)
+            dc[i] = dc_val
+            dc_prev_val = dc_val
+        except (ValueError, ZeroDivisionError):
+            dc[i] = np.nan
 
     return dc
 
 
-def _calculate_fwi_legacy(
-    df: pd.DataFrame,
-    gap_threshold_hours: int = 24,
-) -> pd.DataFrame:
-    """Calculate all FWI indices for hourly station data.
+def _calculate_fwi_from_components(
+    ffmc: np.ndarray,
+    dmc: np.ndarray,
+    dc: np.ndarray,
+    wind: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute ISI, BUI, FWI from component codes using cffdrs reference."""
+    from pea_met_network.fwi import initial_spread_index, buildup_index, fire_weather_index
 
-    Args:
-        df: Hourly station dataframe with required weather columns.
-        gap_threshold_hours: When the FWI chain has been broken for
-            this many consecutive hours and valid inputs resume,
-            restart the chain from startup defaults.
-    """
-    df = df.copy()
+    isi = np.full(len(ffmc), np.nan)
+    bui = np.full(len(ffmc), np.nan)
+    fwi = np.full(len(ffmc), np.nan)
 
-    missing = [c for c in FWI_REQUIRED if c not in df.columns]
-    if missing:
-        print(
-            f"  FWI: skipping — missing: {missing}",
-            file=sys.stderr,
-        )
-        for col in FWI_COLUMNS:
-            df[col] = np.nan
-        return df
+    for i in range(len(ffmc)):
+        if np.isnan(ffmc[i]) or np.isnan(dmc[i]) or np.isnan(dc[i]):
+            continue
+        wind_i = 0.0 if np.isnan(wind[i]) else float(wind[i])
+        try:
+            isi[i] = initial_spread_index(float(ffmc[i]), wind_i)
+            bui[i] = buildup_index(float(dmc[i]), float(dc[i]))
+            fwi[i] = fire_weather_index(float(isi[i]), float(bui[i]))
+        except (ValueError, ZeroDivisionError):
+            continue
 
-    temp = df["air_temperature_c"].to_numpy(dtype=float)
-    rh = df["relative_humidity_pct"].to_numpy(dtype=float)
-    wind = df["wind_speed_kmh"].to_numpy(dtype=float)
-    rain = df["rain_mm"].to_numpy(dtype=float)
-
-    df["timestamp_utc"] = pd.to_datetime(
-        df["timestamp_utc"], utc=True
-    )
-    month = df["timestamp_utc"].dt.month.to_numpy(dtype=float)
-
-    ffmc = _ffmc_calc(
-        temp, rh, wind, rain, gap_threshold_hours=gap_threshold_hours,
-    )
-    dmc = _dmc_calc(
-        temp, rh, rain, month, gap_threshold_hours=gap_threshold_hours,
-    )
-    dc = _dc_calc(
-        temp, rain, month, gap_threshold_hours=gap_threshold_hours,
-    )
-
-    # ISI
-    mo = 147.2 * (101.0 - ffmc) / (59.5 + ffmc)
-    ff = 19.115 * np.exp(0.14388 * mo)
-    w_safe = np.where(np.isnan(wind), 0.0, wind)
-    isi = 0.208 * ff * np.exp(0.05039 * w_safe)
-    isi = np.where(np.isnan(ffmc), np.nan, isi)
-
-    # BUI
-    bui = np.where(
-        dmc <= 0.4 * dc,
-        dmc + 0.5 * dc,
-        0.8 * dc + 0.2 * dmc,
-    )
-    bui = np.where(np.isnan(dmc) | np.isnan(dc), np.nan, bui)
-    bui = np.maximum(0, bui)
-
-    # FWI
-    fD = np.where(
-        bui <= 80.0,
-        0.626 * bui**0.809 + 2.0,
-        1000.0 / (25.0 + 108.64 * np.exp(-0.023 * bui)),
-    )
-    bB = 0.1 * isi * fD
-    fwi = np.where(
-        bB <= 1.0,
-        bB,
-        np.exp(2.72 * (0.434 * np.log(np.maximum(bB, 1e-10)))**0.647),
-    )
-    fwi = np.where(np.isnan(isi) | np.isnan(bui), np.nan, fwi)
-    fwi = np.maximum(0, fwi)
-
-    df["ffmc"] = ffmc
-    df["dmc"] = dmc
-    df["dc"] = dc
-    df["isi"] = isi
-    df["bui"] = bui
-    df["fwi"] = fwi
-
-    return df
-
+    return isi, bui, fwi
 
 
 def _daily_dmc_dc_calc(
@@ -905,6 +708,8 @@ def _daily_dmc_dc_calc(
     halifax_tz: ZoneInfo = HALIFAX_TZ,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Calculate daily DMC/DC and align one daily value back onto hourly rows."""
+    from pea_met_network.fwi import duff_moisture_code, drought_code
+
     if len(hourly_df) == 0:
         empty = np.array([], dtype=float)
         return empty, empty, np.array([], dtype=object)
@@ -939,10 +744,15 @@ def _daily_dmc_dc_calc(
             rh = float(nearest["relative_humidity_pct"])
             rain = float(pd.to_numeric(group["rain_mm"] if "rain_mm" in group.columns else 0.0, errors="coerce").fillna(0.0).sum())
             month = pd.Timestamp(selection_date).month
-            dmc_day = reference_duff_moisture_code(temp, rh, rain, dmc_prev_val, month, lat)
-            dc_day = reference_drought_code(temp, rain, dc_prev_val, month, lat)
-            dmc_prev_val = dmc_day
-            dc_prev_val = dc_day
+            try:
+                dmc_day = duff_moisture_code(temp, rh, rain, dmc_prev_val, month, lat)
+                dc_day = drought_code(temp, rain, dc_prev_val, month, lat)
+            except (ValueError, ZeroDivisionError):
+                dmc_day = np.nan
+                dc_day = np.nan
+            else:
+                dmc_prev_val = dmc_day
+                dc_prev_val = dc_day
         daily_values[selection_date] = (dmc_day, dc_day)
 
     for source_date, group in hourly.groupby("source_local_date", sort=True):
@@ -987,17 +797,7 @@ def calculate_fwi_hourly(
     ffmc = _hffmc_calc(temp, rh, wind, rain, gap_threshold_hours=gap_threshold_hours)
     dmc, dc, source_dates = _daily_dmc_dc_calc(result, lat=lat)
 
-    isi = np.full(len(result), np.nan)
-    bui = np.full(len(result), np.nan)
-    fwi = np.full(len(result), np.nan)
-
-    for i in range(len(result)):
-        if np.isnan(ffmc[i]) or np.isnan(dmc[i]) or np.isnan(dc[i]):
-            continue
-        wind_i = 0.0 if np.isnan(wind[i]) else float(wind[i])
-        isi[i] = reference_initial_spread_index(float(ffmc[i]), wind_i)
-        bui[i] = reference_buildup_index(float(dmc[i]), float(dc[i]))
-        fwi[i] = reference_fire_weather_index(float(isi[i]), float(bui[i]))
+    isi, bui, fwi = _calculate_fwi_from_components(ffmc, dmc, dc, wind)
 
     result["ffmc"] = ffmc
     result["dmc"] = dmc
@@ -1014,114 +814,8 @@ def calculate_fwi(
     lat: float = DEFAULT_FWI_LATITUDE,
     gap_threshold_hours: int = 24,
 ) -> pd.DataFrame:
-    """Backward-compatible wrapper for Phase 12 hourly FWI implementation."""
+    """Backward-compatible wrapper for hourly FWI implementation."""
     return calculate_fwi_hourly(df, lat=lat, gap_threshold_hours=gap_threshold_hours)
-
-def filter_noon_observations(df: pd.DataFrame) -> pd.DataFrame:
-    """Return one local-noon row per local date with preceding-24h rain total."""
-    if len(df) == 0:
-        return df.copy()
-
-    result = df.copy()
-    result["timestamp_utc"] = pd.to_datetime(result["timestamp_utc"], utc=True)
-    result = result.sort_values("timestamp_utc").reset_index(drop=True)
-
-    local_ts = result["timestamp_utc"].dt.tz_convert(HALIFAX_TZ)
-    result["local_date"] = local_ts.dt.date
-    result["local_hour"] = local_ts.dt.hour
-
-    noon_rows = result.loc[local_ts.dt.hour == 12].copy()
-    if len(noon_rows) == 0:
-        return noon_rows.drop(columns=["local_date", "local_hour"], errors="ignore")
-
-    if "rain_mm" in result.columns:
-        rain_series = pd.to_numeric(result["rain_mm"], errors="coerce").fillna(0.0)
-        noon_rain: list[float] = []
-        timestamps = result["timestamp_utc"]
-        for noon_ts in noon_rows["timestamp_utc"]:
-            window = timestamps <= noon_ts
-            trailing = rain_series.loc[window].tail(24)
-            rain_total = float(trailing.sum())
-            if 0 < len(trailing) < 24:
-                rain_total *= 24.0 / len(trailing)
-            noon_rain.append(rain_total)
-        noon_rows["rain_mm"] = noon_rain
-
-    noon_rows = noon_rows.drop(columns=["local_date", "local_hour"], errors="ignore")
-    return noon_rows.reset_index(drop=True)
-
-
-def calculate_fwi_daily(
-    df: pd.DataFrame,
-    lat: float = DEFAULT_FWI_LATITUDE,
-) -> pd.DataFrame:
-    """Calculate daily compliant FWI using the reference Van Wagner helpers."""
-    result = df.copy()
-    if len(result) == 0:
-        for col in FWI_COLUMNS:
-            if col not in result.columns:
-                result[col] = pd.Series(dtype=float)
-        result["carry_forward_used"] = pd.Series(dtype=bool)
-        return result
-
-    result["timestamp_utc"] = pd.to_datetime(result["timestamp_utc"], utc=True)
-    result = result.sort_values("timestamp_utc").reset_index(drop=True)
-
-    ffmc_prev = 85.0
-    dmc_prev = 6.0
-    dc_prev = 15.0
-
-    ffmc_values: list[float] = []
-    dmc_values: list[float] = []
-    dc_values: list[float] = []
-    isi_values: list[float] = []
-    bui_values: list[float] = []
-    fwi_values: list[float] = []
-    carry_forward_used: list[bool] = []
-
-    for _, row in result.iterrows():
-        temp = pd.to_numeric(row.get("air_temperature_c"), errors="coerce")
-        rh = pd.to_numeric(row.get("relative_humidity_pct"), errors="coerce")
-        wind = pd.to_numeric(row.get("wind_speed_kmh"), errors="coerce")
-        rain = pd.to_numeric(row.get("rain_mm"), errors="coerce")
-
-        if pd.isna(temp) or pd.isna(rh) or pd.isna(wind):
-            ffmc = ffmc_prev
-            dmc = dmc_prev
-            dc = dc_prev
-            isi = isi_values[-1] if isi_values else reference_initial_spread_index(ffmc, 0.0)
-            bui = bui_values[-1] if bui_values else reference_buildup_index(dmc, dc)
-            fwi = fwi_values[-1] if fwi_values else reference_fire_weather_index(isi, bui)
-            carry_forward = True
-        else:
-            month = row["timestamp_utc"].month
-            rain_value = 0.0 if pd.isna(rain) else float(rain)
-            ffmc = reference_fine_fuel_moisture_code(float(temp), float(rh), float(wind), rain_value, ffmc_prev)
-            dmc = reference_duff_moisture_code(float(temp), float(rh), rain_value, dmc_prev, month, lat)
-            dc = reference_drought_code(float(temp), rain_value, dc_prev, month, lat)
-            isi = reference_initial_spread_index(ffmc, float(wind))
-            bui = reference_buildup_index(dmc, dc)
-            fwi = reference_fire_weather_index(isi, bui)
-            ffmc_prev, dmc_prev, dc_prev = ffmc, dmc, dc
-            carry_forward = False
-
-        ffmc_values.append(ffmc)
-        dmc_values.append(dmc)
-        dc_values.append(dc)
-        isi_values.append(isi)
-        bui_values.append(bui)
-        fwi_values.append(fwi)
-        carry_forward_used.append(carry_forward)
-
-    result["ffmc"] = ffmc_values
-    result["dmc"] = dmc_values
-    result["dc"] = dc_values
-    result["isi"] = isi_values
-    result["bui"] = bui_values
-    result["fwi"] = fwi_values
-    result["carry_forward_used"] = carry_forward_used
-    return result
-
 
 def aggregate_daily(hourly_df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate hourly data to daily."""
