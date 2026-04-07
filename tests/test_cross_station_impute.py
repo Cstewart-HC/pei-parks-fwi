@@ -376,8 +376,8 @@ class TestHeightCorrection:
 class TestRhFromDonor:
     """AC-10-06, AC-10-07: RH derivation from donor data."""
 
-    def test_internal_donor_uses_vp_continuity(self) -> None:
-        """Internal donor: T=20, RH=50% -> VP continuity at T=25."""
+    def test_internal_donor_uses_direct_rh(self) -> None:
+        """Internal donor: returns donor RH directly (no VP transfer)."""
         donor_row = pd.Series({
             "air_temperature_c": 20.0,
             "relative_humidity_pct": 50.0,
@@ -386,8 +386,8 @@ class TestRhFromDonor:
         rh, method = _rh_from_donor(
             donor_row, target_temp=25.0, is_eccc=False,
         )
-        assert method == "VP_CONTINUITY"
-        assert rh == pytest.approx(36.9, abs=1.0)
+        assert method == "DIRECT_RH"
+        assert rh == 50.0
 
     def test_eccc_donor_prefers_dew_point(self) -> None:
         """ECCC donor with both Td and RH -> uses Td path."""

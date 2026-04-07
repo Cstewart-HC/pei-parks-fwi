@@ -388,6 +388,120 @@ def compute_fwi_series(
     return pd.DataFrame(results).set_index("timestamp_utc")
 
 # ---------------------------------------------------------------------------
+# OWM RH bias correction
+# ---------------------------------------------------------------------------
+
+# Stations that lack RH sensors — candidates for OWM bias-corrected fallback
+_NO_RH_STATIONS = {"tracadie", "stanley_bridge"}
+
+# Donor stations with RH sensors, used for bias estimation
+_RH_DONORS = {"cavendish", "north_rustico", "greenwich"}
+
+
+def owm_bias_correct_rh(
+    obs_data: dict[str, pd.DataFrame],
+    owm_data: dict[str, pd.DataFrame],
+    weather_data: dict[str, pd.DataFrame],
+    targets: set[str] | None = None,
+    donors: set[str] | None = None,
+) -> dict[str, int]:
+    """Fill remaining RH gaps using OWM spatial bias correction.
+
+    For each target station still missing RH after cross-station imputation:
+      1. At donor stations, compute per-hour bias where both Licor obs
+         and raw OWM RH exist:
+             bias_h = OWM_RH_donor(h) - Licor_RH_donor(h)
+      2. Take median bias across all (donor, hour) pairs for robustness.
+      3. Apply: corrected_RH_target(h) = OWM_RH_target(h) - median_bias
+
+    Only fills hours where raw OWM has RH data for the target.
+    Returns dict mapping station name → number of hours filled.
+    """
+    if targets is None:
+        targets = _NO_RH_STATIONS
+    if donors is None:
+        donors = _RH_DONORS
+
+    filled: dict[str, int] = {}
+
+    for target in targets:
+        if target not in weather_data:
+            continue
+        target_df = weather_data[target]
+        if "relative_humidity_pct" not in target_df.columns:
+            continue
+
+        # Find hours still missing RH after cross-station imputation
+        missing_mask = target_df["relative_humidity_pct"].isna()
+        if not missing_mask.any():
+            continue
+
+        missing_hours = target_df.index[missing_mask]
+        if len(missing_hours) == 0:
+            continue
+
+        # Need raw OWM RH for the target at those hours
+        if target not in owm_data:
+            continue
+        owm_target = owm_data[target]
+        if "relative_humidity_pct" not in owm_target.columns:
+            continue
+
+        # Collect biases from donor stations where we have both obs and OWM
+        biases: list[float] = []
+        for donor in donors:
+            if donor not in obs_data or donor not in owm_data:
+                continue
+            obs_donor = obs_data[donor]
+            owm_donor = owm_data[donor]
+            if "relative_humidity_pct" not in obs_donor.columns:
+                continue
+            if "relative_humidity_pct" not in owm_donor.columns:
+                continue
+
+            # Hours where both Licor obs and raw OWM exist at donor
+            overlap = obs_donor.index.intersection(owm_donor.index)
+            overlap = overlap[obs_donor.loc[overlap, "relative_humidity_pct"].notna()]
+            overlap = overlap[owm_donor.loc[overlap, "relative_humidity_pct"].notna()]
+
+            for ts in overlap:
+                obs_val = float(obs_donor.at[ts, "relative_humidity_pct"])
+                owm_val = float(owm_donor.at[ts, "relative_humidity_pct"])
+                biases.append(owm_val - obs_val)
+
+        if len(biases) < 2:
+            logger.warning(
+                "OWM bias: %s has %d bias samples, too few, skipping",
+                target, len(biases),
+            )
+            continue
+
+        median_bias = float(pd.Series(biases).median())
+        logger.info(
+            "OWM bias: %s median bias = %.1f%% RH (from %d donor-hours)",
+            target, median_bias, len(biases),
+        )
+
+        # Apply bias correction to missing hours
+        n_filled = 0
+        for ts in missing_hours:
+            if ts not in owm_target.index:
+                continue
+            owm_rh = owm_target.at[ts, "relative_humidity_pct"]
+            if pd.isna(owm_rh):
+                continue
+            corrected = owm_rh - median_bias
+            target_df.at[ts, "relative_humidity_pct"] = min(max(corrected, 0.0), 100.0)
+            n_filled += 1
+
+        if n_filled > 0:
+            logger.info("  %s: OWM bias-corrected %d RH values", target, n_filled)
+        filled[target] = n_filled
+
+    return filled
+
+
+# ---------------------------------------------------------------------------
 # End-to-end pipeline
 # ---------------------------------------------------------------------------
 
@@ -404,7 +518,7 @@ def run_forecast(
       3. GDPS (48–240h): 3-hourly EC model forecast
 
     Park stations without RH sensors (Tracadie, Stanley Bridge) get RH
-    via cross-station VP continuity from Cavendish/N. Rustico donors.
+    via cross-station direct RH donation from Cavendish/N. Rustico donors.
 
     Computes FWI per station. Persists startup indices for next run.
 
@@ -462,7 +576,8 @@ def run_forecast(
         logger.warning("Licor fetch failed, using OWM for all hours: %s", e)
 
     # 2. Fetch OWM for all stations (0–48h, hourly)
-    weather_data = fetch_all_stations(stations)
+    owm_raw = fetch_all_stations(stations)
+    weather_data = owm_raw  # start with OWM; obs will be merged in next step
 
     # 3. Merge Licor live obs into OWM (obs preferred in overlap zone)
     if obs_data:
@@ -476,6 +591,14 @@ def run_forecast(
             weather_data[stn_name] = obs_df.combine_first(owm_df).sort_index()
             obs_hours = len(obs_df.index.intersection(owm_df.index))
             logger.info("  %s: %d OWM hours replaced with Licor obs", stn_name, obs_hours)
+
+    # 3b. OWM bias-corrected RH fallback for stations still missing RH
+    #     (Tracadie, Stanley Bridge if cross-station imputation couldn't fill all hours)
+    if obs_data:
+        bias_filled = owm_bias_correct_rh(obs_data, owm_raw, weather_data)
+        for stn, n in bias_filled.items():
+            if n > 0:
+                logger.info("  %s: %d additional hours via OWM bias correction", stn, n)
 
     # 4. Optionally extend with GDPS (0–240h, 3-hourly)
     gdps_data: dict[str, pd.DataFrame] | None = None
