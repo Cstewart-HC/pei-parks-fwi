@@ -381,3 +381,181 @@ class LicorAdapter:
         """Fetch recent observations for a single station."""
         results = self.fetch_recent(hours=hours, stations=[station_key])
         return results.get(station_key, pd.DataFrame())
+
+    # ------------------------------------------------------------------
+    # Incremental cache refresh
+    # ------------------------------------------------------------------
+
+    def fetch_and_cache(self, device_serial: str, output_dir: Path | None = None) -> int:
+        """Incremental fetch: pull data since last cached file for this device.
+
+        Writes JSON files in the same format as licor_cache.py output.
+        Only fetches data after the latest end-date found in existing cache.
+
+        Args:
+            device_serial: Device serial number (e.g., '21114839').
+            output_dir: Directory for cached JSON files
+                        (default: data/raw/licor/<device>/).
+
+        Returns:
+            Number of new JSON files written (chunks + combined).
+        """
+        import re
+
+        if output_dir is None:
+            output_dir = PROJECT_ROOT / "data" / "raw" / "licor" / device_serial
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # --- Find latest end-date from existing cache files ---
+        latest_end: datetime | None = None
+        date_pattern = re.compile(
+            r"(\d{4}-\d{2}-\d{2})[_ ](?:to )?(\d{4}-\d{2}-\d{2})"
+        )
+        for fpath in output_dir.glob("*.json"):
+            m = date_pattern.search(fpath.name)
+            if m:
+                candidate = datetime.strptime(m.group(2), "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc
+                )
+                if latest_end is None or candidate > latest_end:
+                    latest_end = candidate
+
+        # Default start if no cache exists
+        if latest_end is None:
+            latest_end = datetime(2025, 11, 1, tzinfo=timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        start_date = latest_end + timedelta(days=1)
+
+        # Nothing to fetch
+        if start_date.date() >= now.date():
+            logger.info("Licor cache: %s up to date (through %s)",
+                        device_serial, latest_end.strftime("%Y-%m-%d"))
+            return 0
+
+        start_ms = int(start_date.timestamp() * 1000)
+        end_ms = int(now.timestamp() * 1000)
+        chunk_days = 7
+        chunk_ms = chunk_days * 86400000
+
+        logger.info(
+            "Licor cache: fetching %s from %s to %s",
+            device_serial,
+            start_date.strftime("%Y-%m-%d"),
+            now.strftime("%Y-%m-%d"),
+        )
+
+        # --- Fetch in weekly chunks ---
+        all_chunks: list[dict] = []
+        current_ms = start_ms
+        files_written = 0
+        request_count = 0
+
+        while current_ms < end_ms:
+            chunk_end_ms = min(current_ms + chunk_ms, end_ms)
+
+            chunk_start_dt = datetime.fromtimestamp(
+                current_ms / 1000, tz=timezone.utc
+            )
+            chunk_end_dt = datetime.fromtimestamp(
+                chunk_end_ms / 1000, tz=timezone.utc
+            )
+            date_label = (
+                f"{chunk_start_dt.strftime('%Y-%m-%d')}"
+                f"_{chunk_end_dt.strftime('%Y-%m-%d')}"
+            )
+
+            url = (
+                f"{API_BASE}?deviceSerialNumber={device_serial}"
+                f"&startTime={current_ms}&endTime={chunk_end_ms}"
+            )
+
+            if self._delay and request_count > 0:
+                time.sleep(self._delay)
+
+            try:
+                response = _api_get(url, self._token)
+                request_count += 1
+            except RuntimeError as e:
+                logger.warning(
+                    "Licor cache: chunk %s failed: %s", date_label, e
+                )
+                break  # stop fetching, keep what we have
+
+            total_records = sum(
+                s.get("totalRecords", 0) for s in response.get("sensors", [])
+            )
+            logger.info(
+                "Licor cache: %s → %d records", date_label, total_records
+            )
+
+            # Save chunk file (raw API format: sensors as list)
+            chunk_path = output_dir / f"{date_label}.json"
+            with open(chunk_path, "w") as f:
+                json.dump(response, f, indent=2)
+            files_written += 1
+            all_chunks.append(response)
+
+            current_ms = chunk_end_ms
+
+        if not all_chunks:
+            return 0
+
+        # --- Build combined file (sensors keyed by serial) ---
+        merged_sensors: dict[str, dict] = {}
+        for chunk in all_chunks:
+            for sensor in chunk.get("sensors", []):
+                sid = sensor["sensorSerialNumber"]
+                data_entries = sensor.get("data", [])
+                if not data_entries:
+                    continue
+                mtype = data_entries[0].get("measurementType", "unknown")
+                units = data_entries[0].get("units", "unknown")
+                records: list = []
+                for entry in data_entries:
+                    records.extend(entry.get("records", []))
+
+                if sid not in merged_sensors:
+                    merged_sensors[sid] = {
+                        "sensorSerialNumber": sid,
+                        "measurementType": mtype,
+                        "units": units,
+                        "totalRecords": 0,
+                        "records": [],
+                    }
+                merged_sensors[sid]["records"].extend(records)
+
+        # Deduplicate by timestamp and sort
+        for sid in merged_sensors:
+            seen: set[int] = set()
+            deduped: list = []
+            for rec in merged_sensors[sid]["records"]:
+                ts = rec[0]
+                if ts not in seen:
+                    seen.add(ts)
+                    deduped.append(rec)
+            merged_sensors[sid]["records"] = sorted(deduped, key=lambda x: x[0])
+            merged_sensors[sid]["totalRecords"] = len(merged_sensors[sid]["records"])
+
+        start_label = start_date.strftime("%Y-%m-%d")
+        end_label = now.strftime("%Y-%m-%d")
+        combined = {
+            "source": "licor_adapter.fetch_and_cache",
+            "device": device_serial,
+            "start": start_label,
+            "end": end_label,
+            "chunks": len(all_chunks),
+            "errors": 0,
+            "fetchTime": now.isoformat(),
+            "sensors": merged_sensors,
+        }
+        combined_path = output_dir / f"{start_label}_{end_label}_combined.json"
+        with open(combined_path, "w") as f:
+            json.dump(combined, f, indent=2)
+        files_written += 1
+
+        logger.info(
+            "Licor cache: %s → %d chunk(s) + combined saved",
+            device_serial, len(all_chunks),
+        )
+        return files_written

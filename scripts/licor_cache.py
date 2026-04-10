@@ -8,6 +8,7 @@ with 2-second delays between requests.
 Usage:
     python scripts/licor_cache.py --device 21114831 --start 2026-01-01 --end 2026-03-24
     python scripts/licor_cache.py --device 21114831 --start 2026-01-01 --end 2026-03-24 --sensors-only
+    python scripts/licor_cache.py --all                          # incremental fetch all devices
 """
 import argparse
 import json
@@ -20,8 +21,13 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 API_BASE = "https://api.licor.cloud/v2/data"
+DEVICES_API = "https://api.licor.cloud/v2/devices"
 DELAY_SECONDS = 2  # Respectful delay between requests
 CHUNK_DAYS = 7     # Pull one week at a time
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+LICOR_DIR = REPO_ROOT / "data" / "raw" / "licor"
+
 
 def get_token():
     token = os.environ.get("HC_CS_PEIPCWX_PROD_RO", "")
@@ -29,6 +35,7 @@ def get_token():
         print("ERROR: HC_CS_PEIPCWX_PROD_RO environment variable not set", file=sys.stderr)
         sys.exit(1)
     return token
+
 
 def fetch_data(device, start_ms, end_ms, token, sensor=None):
     """Fetch timeseries data for a device within a time range."""
@@ -47,9 +54,10 @@ def fetch_data(device, start_ms, end_ms, token, sensor=None):
     except HTTPError as e:
         return {"error": e.code, "message": str(e)}
 
+
 def fetch_devices(token):
     """Fetch list of devices."""
-    url = "https://api.licor.cloud/v2/devices?includeSensors=true"
+    url = f"{DEVICES_API}?includeSensors=true"
     req = Request(url, headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
@@ -60,51 +68,22 @@ def fetch_devices(token):
     except HTTPError as e:
         return {"error": e.code, "message": str(e)}
 
+
 def dt_to_ms(dt_str):
     """Convert ISO date string to unix milliseconds."""
     dt = datetime.strptime(dt_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     return int(dt.timestamp() * 1000)
 
+
 def ms_to_date(ms):
     """Convert unix milliseconds to date string."""
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
 
-def main():
-    parser = argparse.ArgumentParser(description="Fetch PEINP station data from Licor Cloud API (read-only)")
-    parser.add_argument("--device", required=True, help="Device serial number")
-    parser.add_argument("--start", required=True, help="Start date (YYYY-MM-DD)")
-    parser.add_argument("--end", required=True, help="End date (YYYY-MM-DD)")
-    parser.add_argument("--sensors-only", action="store_true", help="Only list sensors, don't fetch data")
-    parser.add_argument("--sensor", help="Optional: fetch specific sensor only")
-    parser.add_argument("--output-dir", default=None, help="Output directory (default: data/raw/licor/<device>/)")
-    parser.add_argument("--chunk-days", type=int, default=CHUNK_DAYS, help="Days per request chunk")
-    parser.add_argument("--delay", type=float, default=DELAY_SECONDS, help="Delay between requests")
-    args = parser.parse_args()
 
-    token = get_token()
-
-    # Setup output directory
-    repo_root = Path(__file__).resolve().parent.parent
-    output_dir = Path(args.output_dir) if args.output_dir else repo_root / "data" / "raw" / "licor" / args.device
+def fetch_range(args, token):
+    """Fetch a specific date range for a single device (original behavior)."""
+    output_dir = Path(args.output_dir) if args.output_dir else LICOR_DIR / args.device
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    if args.sensors_only:
-        print(f"Fetching device info for {args.device}...")
-        result = fetch_devices(token)
-        if "error" in result:
-            print(f"ERROR: {result['message']}", file=sys.stderr)
-            sys.exit(1)
-        for dev in result.get("devices", []):
-            if dev["deviceSerialNumber"] == args.device:
-                print(f"Device: {dev['deviceName']} ({dev['deviceSerialNumber']})")
-                print(f"  Product: {dev['productCode']}")
-                print(f"  Last connection: {dev['lastConnectionTime']}")
-                print("  Sensors:")
-                for s in dev.get("sensors", []):
-                    print(f"    {s['sensorSerialNumber']}: {s['measurementType']} ({s['units']})")
-                return
-        print("Device not found", file=sys.stderr)
-        sys.exit(1)
 
     start_ms = dt_to_ms(args.start)
     end_ms = dt_to_ms(args.end)
@@ -151,9 +130,12 @@ def main():
 
         current = chunk_end
 
+    if not all_chunks:
+        print(f"\nNo data fetched ({chunk_num} chunks, {errors} errors)")
+        return
+
     # Save combined result
     combined_file = output_dir / f"{args.start}_{args.end}_combined.json"
-    # Merge sensors across chunks
     merged = {"source": "licor_cache.py", "device": args.device,
               "start": args.start, "end": args.end, "chunks": chunk_num,
               "errors": errors, "fetchTime": datetime.now(timezone.utc).isoformat(),
@@ -191,6 +173,88 @@ def main():
     total = sum(s["totalRecords"] for s in merged["sensors"].values())
     print(f"\nDone: {chunk_num} chunks, {errors} errors, {total} total records")
     print(f"Combined file: {combined_file}")
+
+
+def fetch_incremental(args, token):
+    """Incremental fetch: pull new data since last cache for all devices."""
+    # Use LicorAdapter if available
+    try:
+        from pea_met_network.licor_adapter import LicorAdapter
+        adapter = LicorAdapter(token=token)
+    except ImportError:
+        print("ERROR: pea_met_network not installed. Run: pip install -e .", file=sys.stderr)
+        sys.exit(1)
+
+    devices = adapter._devices
+    total_files = 0
+
+    for station_key, info in devices["stations"].items():
+        serial = info["device_serial"]
+        device_dir = LICOR_DIR / serial
+        print(f"  {station_key} ({serial})...", end=" ", flush=True)
+        try:
+            n = adapter.fetch_and_cache(serial, device_dir)
+            if n:
+                print(f"{n} new file(s)")
+            else:
+                print("up to date")
+            total_files += n
+        except Exception as e:
+            print(f"ERROR: {e}")
+
+    print(f"\nIncremental fetch: {total_files} total new file(s)")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch PEINP station data from Licor Cloud API (read-only)")
+    parser.add_argument("--device", help="Device serial number")
+    parser.add_argument("--start", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--end", help="End date (YYYY-MM-DD)")
+    parser.add_argument("--sensors-only", action="store_true", help="Only list sensors, don't fetch data")
+    parser.add_argument("--sensor", help="Optional: fetch specific sensor only")
+    parser.add_argument("--output-dir", default=None, help="Output directory (default: data/raw/licor/<device>/)")
+    parser.add_argument("--chunk-days", type=int, default=CHUNK_DAYS, help="Days per request chunk")
+    parser.add_argument("--delay", type=float, default=DELAY_SECONDS, help="Delay between requests")
+    parser.add_argument("--all", action="store_true", help="Incremental fetch all devices since last cache")
+    args = parser.parse_args()
+
+    token = get_token()
+
+    # --all mode: incremental fetch using LicorAdapter
+    if args.all:
+        fetch_incremental(args, token)
+        return
+
+    # Sensors-only mode
+    if args.sensors_only:
+        if not args.device:
+            print("ERROR: --device required with --sensors-only", file=sys.stderr)
+            sys.exit(1)
+        print(f"Fetching device info for {args.device}...")
+        result = fetch_devices(token)
+        if "error" in result:
+            print(f"ERROR: {result['message']}", file=sys.stderr)
+            sys.exit(1)
+        for dev in result.get("devices", []):
+            if dev["deviceSerialNumber"] == args.device:
+                print(f"Device: {dev['deviceName']} ({dev['deviceSerialNumber']})")
+                print(f"  Product: {dev['productCode']}")
+                print(f"  Last connection: {dev['lastConnectionTime']}")
+                print("  Sensors:")
+                for s in dev.get("sensors", []):
+                    print(f"    {s['sensorSerialNumber']}: {s['measurementType']} ({s['units']})")
+                return
+        print("Device not found", file=sys.stderr)
+        sys.exit(1)
+
+    # Original range mode: --device --start --end
+    if not args.device or not args.start or not args.end:
+        print("ERROR: provide --device --start --end, or --all for incremental", file=sys.stderr)
+        parser.print_help()
+        sys.exit(1)
+
+    fetch_range(args, token)
+
 
 if __name__ == "__main__":
     main()

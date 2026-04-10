@@ -1040,6 +1040,7 @@ def run_pipeline(
     stations: list[str],
     force: bool = False,
     fwi_mode: str = "hourly",
+    no_fetch: bool = False,
 ) -> None:
     """Execute the full pipeline for given stations.
 
@@ -1051,6 +1052,13 @@ def run_pipeline(
       Topologically ordered serial processing with parquet staging.
     """
     print(f"Pipeline: {len(stations)} stations")
+
+    # Pre-fetch new Licor data (unless --no-fetch)
+    if not no_fetch:
+        prefetch_licor_data()
+        prefetch_eccc_data()
+        # Auto-compact if any device has too many chunk files
+        _auto_compact_licor_cache()
 
     station_files = discover_raw_files()
 
@@ -1558,6 +1566,76 @@ def run_pipeline(
     print("Done.")
 
 
+def prefetch_licor_data() -> int:
+    """Fetch new Licor data since last cache. Returns files written."""
+    try:
+        from pea_met_network.licor_adapter import LicorAdapter
+        adapter = LicorAdapter()
+        devices = adapter._devices
+    except Exception as e:
+        print(f"  Licor pre-fetch skipped: {e}", file=sys.stderr)
+        return 0
+
+    total = 0
+    for station_key, info in devices["stations"].items():
+        serial = info["device_serial"]
+        device_dir = RAW_DIR / "licor" / serial
+        try:
+            n = adapter.fetch_and_cache(serial, device_dir)
+        except Exception as e:
+            print(f"  Licor pre-fetch {station_key}: {e}", file=sys.stderr)
+            continue
+        if n:
+            print(f"  Licor pre-fetch: {station_key} → {n} new file(s)")
+        total += n
+
+    if total:
+        print(f"  Licor pre-fetch: {total} total new file(s)")
+    return total
+
+
+def prefetch_eccc_data() -> bool:
+    """Refresh Stanhope ECCC data from MSC GeoMet API. Returns True if refreshed."""
+    try:
+        from pea_met_network.stanhope_cache import fetch_stanhope_hourly_month
+        from datetime import date
+        today = date.today()
+        # Refresh current month and previous (in case of month boundary)
+        fetch_stanhope_hourly_month(today.year, today.month)
+        prev = today.month - 1 or 12
+        prev_year = today.year if today.month > 1 else today.year - 1
+        fetch_stanhope_hourly_month(prev_year, prev)
+        return True
+    except Exception as e:
+        print(f"  ECCC pre-fetch skipped: {e}", file=sys.stderr)
+        return False
+
+
+def _auto_compact_licor_cache(threshold: int = 8) -> int:
+    """Compact device cache dirs that exceed chunk count threshold.
+
+    Returns total chunk files removed.
+    """
+    try:
+        from pea_met_network.licor_cache_manager import should_compact, compact_device_cache
+    except ImportError:
+        return 0
+
+    licor_dir = RAW_DIR / "licor"
+    if not licor_dir.exists():
+        return 0
+
+    total = 0
+    for entry in sorted(licor_dir.iterdir()):
+        if entry.is_dir() and entry.name != "devices.json":
+            if should_compact(entry, threshold=threshold):
+                n = compact_device_cache(entry)
+                if n:
+                    print(f"  Cache compacted: {entry.name} → {n} old chunks removed")
+                total += n
+    return total
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="PEA Met Network cleaning pipeline"
@@ -1588,6 +1666,12 @@ def main() -> None:
         default="hourly",
         help="FWI calculation mode (default: hourly, use 'compliant' for noon-only Van Wagner daily)",
     )
+    parser.add_argument(
+        "--no-fetch",
+        action="store_true",
+        default=False,
+        help="Skip Licor data pre-fetch (use cached data only)",
+    )
     args = parser.parse_args()
 
     if args.stations.lower() == "all":
@@ -1613,7 +1697,7 @@ def main() -> None:
         print(f"Total: {total} file(s) across {len(target)} station(s)")
         return
 
-    run_pipeline(target, force=args.force, fwi_mode=args.fwi_mode)
+    run_pipeline(target, force=args.force, fwi_mode=args.fwi_mode, no_fetch=args.no_fetch)
 
 
 if __name__ == "__main__":
