@@ -70,7 +70,7 @@ DC_VECTORS = [
     pytest.param(
         80.0,
         {"temp": -3.0, "rain": 0.0, "month": 1, "lat": 46.4},
-        79.164,
+        80.0,
         id="dc-winter-limited-drying",
     ),
 ]

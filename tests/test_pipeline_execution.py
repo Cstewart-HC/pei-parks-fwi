@@ -102,7 +102,7 @@ class TestAC_PIPE_3_ImputationReport:
 
     def test_imputation_report_in_manifest(self):
         m = _load_manifest()
-        types = [a["type"] for a in m["artifacts"] if "type" in a]
+        types = [a["artifact_type"] for a in m["artifacts"] if "artifact_type" in a]
         assert "imputation_report" in types, (
             "Manifest must track imputation_report artifact"
         )
@@ -171,7 +171,7 @@ class TestAC_PIPE_7_Manifest:
         m = _load_manifest()
         for a in m["artifacts"]:
             if "station" in a:
-                assert "type" in a, f"Artifact missing 'type': {a}"
+                assert "artifact_type" in a, f"Artifact missing 'artifact_type': {a}"
                 assert "path" in a, f"Artifact missing 'path': {a}"
                 assert "rows" in a, f"Artifact missing 'rows': {a}"
                 assert "timestamp" in a, f"Artifact missing 'timestamp': {a}"

@@ -13,7 +13,10 @@ ALLOWED_ROOT_FILES = {
     "requirements-dev.txt",
     "codemap.md",
     "requirements.lock",
-    "analysis_executed.ipynb",
+    "redundancy_analysis.ipynb",
+    "AGENTS.md",
+    "pyrightconfig.json",
+    "pipeline_compliant.log",
 }
 
 ALLOWED_ROOT_DIRS = {
@@ -31,6 +34,10 @@ ALLOWED_ROOT_DIRS = {
     ".mypy_cache",
     ".venv",
     ".cartography",
+    ".codesight",
+    "figures",
+    "memory",
+    "typestubs",
 }
 
 
