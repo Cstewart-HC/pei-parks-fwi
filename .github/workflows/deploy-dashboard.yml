@@ -4,11 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'data/processed/**'
-      - 'scripts/build_dashboard.py'
       - 'dashboard/**'
-      - 'src/**'
-      - 'pyproject.toml'
+      - '.github/workflows/deploy-dashboard.yml'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -29,19 +26,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install project
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-
-      - name: Build dashboard data
-        run: python scripts/build_dashboard.py
 
       - name: Verify dashboard files exist
         run: |

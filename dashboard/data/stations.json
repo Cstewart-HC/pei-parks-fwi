@@ -1,0 +1,38 @@
+{
+  "stanhope": {
+    "display_name": "Stanhope",
+    "lat": 46.42,
+    "lon": -63.08,
+    "group": "west"
+  },
+  "cavendish": {
+    "display_name": "Cavendish",
+    "lat": 46.491,
+    "lon": -63.379,
+    "group": "central"
+  },
+  "greenwich": {
+    "display_name": "Greenwich",
+    "lat": 46.449,
+    "lon": -62.442,
+    "group": "east"
+  },
+  "north_rustico": {
+    "display_name": "North Rustico",
+    "lat": 46.451,
+    "lon": -63.33,
+    "group": "central"
+  },
+  "stanley_bridge": {
+    "display_name": "Stanley Bridge",
+    "lat": 46.446,
+    "lon": -63.349,
+    "group": "central"
+  },
+  "tracadie": {
+    "display_name": "Tracadie",
+    "lat": 46.385,
+    "lon": -62.233,
+    "group": "east"
+  }
+}

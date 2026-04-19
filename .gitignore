@@ -48,6 +48,6 @@ notebooks/figures/
 # Codesight
 .codesight/
 
-# Dashboard generated data (rebuilt by CI)
-dashboard/data/fwi_daily.json
-dashboard/data/stations.json
+# Dashboard generated data (rebuilt locally, committed to repo)
+# dashboard/data/fwi_daily.json
+# dashboard/data/stations.json
