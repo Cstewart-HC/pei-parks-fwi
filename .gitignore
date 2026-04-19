@@ -44,3 +44,10 @@ memory/
 -e 
 # Notebook output
 notebooks/figures/
+
+# Codesight
+.codesight/
+
+# Dashboard generated data (rebuilt by CI)
+dashboard/data/fwi_daily.json
+dashboard/data/stations.json

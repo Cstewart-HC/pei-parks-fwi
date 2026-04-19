@@ -574,5 +574,53 @@
     "station_identifier": "8300590",
     "status": "downloaded",
     "year": 2025
+  },
+  {
+    "climate_identifier": "1108299",
+    "coverage_period": "2026-01",
+    "interval": "hourly",
+    "local_cache_path": "data/raw/eccc/stanhope/stanhope_hourly_2026_01.csv",
+    "month": 1,
+    "retrieved_at_utc": "2026-04-07T00:09:22.217236+00:00",
+    "source_url": "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?format=csv&stationID=6545&Year=2026&Month=1&Day=1&timeframe=1&submit=Download+Data",
+    "station_identifier": "8300590",
+    "status": "downloaded",
+    "year": 2026
+  },
+  {
+    "climate_identifier": "1108299",
+    "coverage_period": "2026-02",
+    "interval": "hourly",
+    "local_cache_path": "data/raw/eccc/stanhope/stanhope_hourly_2026_02.csv",
+    "month": 2,
+    "retrieved_at_utc": "2026-04-07T00:09:23.506895+00:00",
+    "source_url": "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?format=csv&stationID=6545&Year=2026&Month=2&Day=1&timeframe=1&submit=Download+Data",
+    "station_identifier": "8300590",
+    "status": "downloaded",
+    "year": 2026
+  },
+  {
+    "climate_identifier": "1108299",
+    "coverage_period": "2026-03",
+    "interval": "hourly",
+    "local_cache_path": "data/raw/eccc/stanhope/stanhope_hourly_2026_03.csv",
+    "month": 3,
+    "retrieved_at_utc": "2026-04-07T00:09:24.796389+00:00",
+    "source_url": "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?format=csv&stationID=6545&Year=2026&Month=3&Day=1&timeframe=1&submit=Download+Data",
+    "station_identifier": "8300590",
+    "status": "downloaded",
+    "year": 2026
+  },
+  {
+    "climate_identifier": "1108299",
+    "coverage_period": "2026-04",
+    "interval": "hourly",
+    "local_cache_path": "data/raw/eccc/stanhope/stanhope_hourly_2026_04.csv",
+    "month": 4,
+    "retrieved_at_utc": "2026-04-07T00:09:26.176910+00:00",
+    "source_url": "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?format=csv&stationID=6545&Year=2026&Month=4&Day=1&timeframe=1&submit=Download+Data",
+    "station_identifier": "8300590",
+    "status": "downloaded",
+    "year": 2026
   }
 ]

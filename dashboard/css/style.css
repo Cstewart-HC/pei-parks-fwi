@@ -1,0 +1,247 @@
+/* ============================================================
+   PEI National Park FWI Dashboard — Styles
+   ============================================================ */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #2c3e50;
+    background: #f5f5f5;
+}
+
+/* --- Header --- */
+#site-header {
+    background: #1a5276;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    z-index: 1000;
+    position: relative;
+}
+
+#site-header h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+#site-header .subtitle {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    margin-top: 0.15rem;
+}
+
+/* --- Map --- */
+#map {
+    width: 100%;
+    height: calc(100vh - 80px);  /* header + footer */
+    min-height: 400px;
+}
+
+/* --- Footer --- */
+#site-footer {
+    background: #1a5276;
+    color: #fff;
+    text-align: center;
+    font-size: 0.7rem;
+    padding: 0.35rem 1rem;
+    z-index: 1000;
+    position: relative;
+}
+
+#site-footer a {
+    color: #aed6f1;
+    text-decoration: none;
+}
+
+#site-footer a:hover {
+    text-decoration: underline;
+}
+
+/* --- Date Slider Control --- */
+.date-slider-control {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    padding: 8px 14px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    min-width: 300px;
+}
+
+.date-slider-control .date-label {
+    display: block;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1a5276;
+    margin-bottom: 4px;
+}
+
+.date-slider-control input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #1a5276;
+}
+
+.date-slider-control .btn-today {
+    display: block;
+    margin: 4px auto 0;
+    padding: 2px 14px;
+    font-size: 0.75rem;
+    background: #1a5276;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.date-slider-control .btn-today:hover {
+    background: #2471a3;
+}
+
+/* --- Legend Control --- */
+.fwi-legend {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    line-height: 1.6;
+}
+
+.fwi-legend h4 {
+    margin: 0 0 6px 0;
+    font-size: 0.85rem;
+    color: #1a5276;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+}
+
+.fwi-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+
+.fwi-legend .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.fwi-legend .legend-range {
+    color: #666;
+    font-size: 0.72rem;
+}
+
+/* --- Popup Styling --- */
+.fwi-popup {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-width: 200px;
+}
+
+.fwi-popup .popup-header {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1a5276;
+    margin-bottom: 2px;
+}
+
+.fwi-popup .popup-date {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.fwi-popup table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+
+.fwi-popup table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #888;
+    font-weight: 600;
+    padding: 2px 6px 2px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.fwi-popup table td {
+    text-align: right;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    padding: 2px 0;
+}
+
+.fwi-popup .fwi-value-row td {
+    font-weight: 700;
+    border-top: 2px solid #1a5276;
+    padding-top: 4px;
+}
+
+.fwi-popup .fwi-class-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.fwi-popup .sparkline-container {
+    margin-top: 6px;
+    border-top: 1px solid #eee;
+    padding-top: 6px;
+}
+
+.fwi-popup .sparkline-label {
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.fwi-popup svg.sparkline {
+    width: 100%;
+    height: 40px;
+}
+
+/* --- No-data marker pulse --- */
+.marker-no-data {
+    animation: pulse-grey 2s ease-in-out infinite;
+}
+
+@keyframes pulse-grey {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+    #site-header h1 {
+        font-size: 1rem;
+    }
+
+    #site-header .subtitle {
+        font-size: 0.7rem;
+    }
+
+    .date-slider-control {
+        min-width: 220px;
+    }
+
+    .fwi-popup {
+        min-width: 170px;
+    }
+}
