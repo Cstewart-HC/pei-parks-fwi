@@ -1,6 +1,6 @@
-# pea-met-network
+# PEI National Park FWI
 
-Weather-station analytics pipeline for Parks Canada Agency (PEI Field Unit).
+Fire Weather Index pipeline for Parks Canada Agency (PEI Field Unit).
 
 This project determines weather-station redundancy across Prince Edward
 Island National Park and automates Canadian Fire Weather Index (FWI)
@@ -79,7 +79,7 @@ make check
 ## Repository Structure
 
 ```text
-pea-met-network/
+pei-parks-fwi/
 ├── .github/workflows/        # CI/CD (dashboard deploy)
 ├── analysis.ipynb            # Analytical narrative notebook
 ├── dashboard/                # FWI geospatial dashboard (Phase 16)
