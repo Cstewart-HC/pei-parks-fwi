@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Build script for FWI Geospatial Dashboard.
 
-Reads pipeline outputs (station_daily.csv) and generates dashboard data files:
-  - stations.json   (static station metadata)
-  - fwi_daily.json  (daily FWI time series keyed by date)
+Reads pipeline outputs (station_daily.csv) and forecast CSVs to generate
+dashboard data files:
+  - stations.json        (static station metadata)
+  - fwi_daily.json       (historical daily FWI keyed by date)
+  - fwi_forecast.json    (10-day forecast daily FWI keyed by date)
+  - forecast_meta.json   (forecast run metadata and staleness)
 
 Usage:
-    python scripts/build_dashboard.py [--output-dir dashboard/data]
+    python scripts/build_dashboard.py [--output-dir dashboard/data] [--no-forecast]
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -45,6 +49,14 @@ def find_processed_dir() -> Path:
         print(f"ERROR: processed data directory not found: {d}", file=sys.stderr)
         sys.exit(1)
     return d
+
+
+def find_forecast_dir() -> Path | None:
+    """Locate the data/forecasts directory. Returns None if missing."""
+    d = PROJECT_ROOT / "data" / "forecasts"
+    if d.is_dir():
+        return d
+    return None
 
 
 def read_station_csv(path: Path, station: str) -> pd.DataFrame:
@@ -133,6 +145,131 @@ def build_stations_json() -> dict:
     }
 
 
+def build_fwi_forecast(forecast_dir: Path) -> tuple[dict, dict]:
+    """Build fwi_forecast.json and forecast_meta.json from forecast CSVs.
+
+    Reads hourly forecast CSVs, aggregates to daily noon (14:00 UTC) snapshot,
+    or nearest available hour if 14:00 is missing.
+
+    Returns (fwi_forecast_dict, meta_dict).
+    """
+    NOON_HOUR = 14
+    FORECAST_COLS = ["timestamp_utc", "FFMC", "DMC", "DC", "ISI", "BUI", "FWI"]
+    # Map forecast CSV column names (uppercase) to lowercase
+    COL_MAP = {"timestamp_utc": "timestamp_utc", "FFMC": "ffmc", "DMC": "dmc",
+               "DC": "dc", "ISI": "isi", "BUI": "bui", "FWI": "fwi"}
+
+    all_frames: list[pd.DataFrame] = []
+    station_counts: dict[str, int] = {}
+    newest_mtime: float = 0.0
+
+    for station_id in STATIONS:
+        csv_path = forecast_dir / f"{station_id}_fwi_forecast.csv"
+        if not csv_path.exists():
+            print(f"  WARNING: {csv_path.name} not found, skipping {station_id}", file=sys.stderr)
+            station_counts[station_id] = 0
+            continue
+
+        # Track newest mtime for staleness
+        mtime = csv_path.stat().st_mtime
+        if mtime > newest_mtime:
+            newest_mtime = mtime
+
+        df = pd.read_csv(csv_path, parse_dates=["timestamp_utc"])
+        # Keep only columns that exist
+        available = [c for c in FORECAST_COLS if c in df.columns]
+        df = df[available].copy()
+
+        # Add station column
+        df["station"] = station_id
+
+        # Extract date and hour for noon selection
+        df["date"] = pd.to_datetime(df["timestamp_utc"]).dt.date
+        df["hour"] = pd.to_datetime(df["timestamp_utc"]).dt.hour
+
+        # Prefer 14:00 UTC, else closest hour per day
+        df["_dist"] = (df["hour"] - NOON_HOUR).abs()
+        # Sort: noon rows first (dist=0), then by distance to noon
+        df = df.sort_values(["date", "_dist", "hour"])
+        # Keep first row per date (closest to noon)
+        daily = df.drop_duplicates(subset=["date"], keep="first")
+        daily = daily.drop(columns=["hour", "_dist"], errors="ignore")
+
+        # Drop rows where FWI is NaN
+        before = len(daily)
+        if "FWI" in daily.columns:
+            daily = daily[daily["FWI"].notna()]
+        after = len(daily)
+        station_counts[station_id] = after
+
+        if before - after > 0:
+            print(f"  {station_id} forecast: dropped {before - after} rows with NaN FWI")
+
+        all_frames.append(daily)
+
+    if not all_frames:
+        print("  WARNING: No forecast data loaded from any station.", file=sys.stderr)
+        return {}, _empty_meta()
+
+    combined = pd.concat(all_frames, ignore_index=True)
+
+    # Convert date column to string before building output
+    combined["date"] = combined["date"].astype(str)
+
+    # Drop timestamp_utc before building records (it's a Timestamp, not a number)
+    combined = combined.drop(columns=["timestamp_utc"], errors="ignore")
+
+    # Build output dict: {date: [station_records...]}
+    fwi_forecast: dict[str, list[dict]] = {}
+    for _, row in combined.iterrows():
+        date_str = row["date"]
+        record = {"station": row["station"]}
+        for src, dst in COL_MAP.items():
+            if src == "timestamp_utc":
+                continue
+            if src in row.index:
+                val = row[src]
+                record[dst] = round(float(val), 2) if pd.notna(val) else None
+        fwi_forecast.setdefault(date_str, []).append(record)
+
+    fwi_forecast = dict(sorted(fwi_forecast.items()))
+
+    # Build meta
+    generated_at = datetime.fromtimestamp(newest_mtime, tz=timezone.utc).isoformat()
+    stations_full = [s for s, c in station_counts.items() if c > 0]
+    stations_partial = [s for s, c in station_counts.items() if c == 0 and f"{s}_fwi_forecast.csv" in os.listdir(forecast_dir)]
+
+    meta = {
+        "generated_at": generated_at,
+        "forecast_hours": 240,
+        "data_sources": {
+            "licor": "0-6h (5 park stations)",
+            "owm": "0-48h (all 6 stations)",
+            "gdps": "48-240h (3-hourly)",
+        },
+        "stations_with_data": stations_full,
+        "stations_missing": [s for s in STATIONS if station_counts.get(s, 0) == 0],
+        "partial_note": (
+            "Stanley Bridge and Tracadie lack RH sensors — FWI may be incomplete for some hours"
+            if stations_partial else None
+        ),
+    }
+
+    return fwi_forecast, meta
+
+
+def _empty_meta() -> dict:
+    """Return an empty forecast metadata dict."""
+    return {
+        "generated_at": None,
+        "forecast_hours": 0,
+        "data_sources": {},
+        "stations_with_data": [],
+        "stations_missing": list(STATIONS.keys()),
+        "partial_note": None,
+    }
+
+
 def print_summary(fwi_daily: dict, counts: dict[str, int]) -> None:
     """Print a summary of the built data."""
     dates = sorted(fwi_daily.keys())
@@ -141,12 +278,12 @@ def print_summary(fwi_daily: dict, counts: dict[str, int]) -> None:
         return
 
     print(f"\n{'='*50}")
-    print(f"Dashboard build summary")
+    print("Dashboard build summary")
     print(f"{'='*50}")
     print(f"  Date range: {dates[0]} to {dates[-1]}")
     print(f"  Total dates: {len(dates)}")
     print(f"  Total records: {sum(len(v) for v in fwi_daily.values())}")
-    print(f"\n  Records per station:")
+    print("\n  Records per station:")
     for station_id, count in counts.items():
         display = STATIONS[station_id]["display_name"]
         print(f"    {display:20s} ({station_id:15s}): {count:>5d}")
@@ -158,7 +295,7 @@ def print_summary(fwi_daily: dict, counts: dict[str, int]) -> None:
             s = rec["station"]
             all_station_dates.setdefault(s, set()).add(date)
 
-    print(f"\n  Date coverage per station:")
+    print("\n  Date coverage per station:")
     for station_id in STATIONS:
         s_dates = all_station_dates.get(station_id, set())
         if s_dates:
@@ -177,6 +314,11 @@ def main() -> None:
         type=str,
         default="dashboard/data",
         help="Output directory for generated JSON files (default: dashboard/data)",
+    )
+    parser.add_argument(
+        "--no-forecast",
+        action="store_true",
+        help="Skip forecast data processing (only build historical data)",
     )
     args = parser.parse_args()
 
@@ -201,6 +343,40 @@ def main() -> None:
     print(f"  -> {fwi_path} ({size_kb:.0f} KB)")
 
     print_summary(fwi_daily, counts)
+
+    # --- Forecast data ---
+    if not args.no_forecast:
+        forecast_dir = find_forecast_dir()
+        if forecast_dir is not None:
+            print("Building fwi_forecast.json...")
+            fwi_forecast, meta = build_fwi_forecast(forecast_dir)
+            fc_path = output_dir / "fwi_forecast.json"
+            with open(fc_path, "w") as f:
+                json.dump(fwi_forecast, f)
+            fc_kb = fc_path.stat().st_size / 1024
+            print(f"  -> {fc_path} ({fc_kb:.0f} KB)")
+
+            meta_path = output_dir / "forecast_meta.json"
+            with open(meta_path, "w") as f:
+                json.dump(meta, f, indent=2)
+            print(f"  -> {meta_path}")
+
+            fc_dates = sorted(fwi_forecast.keys()) if fwi_forecast else []
+            if fc_dates:
+                print(f"  Forecast range: {fc_dates[0]} to {fc_dates[-1]} ({len(fc_dates)} days)")
+            print(f"  Generated at: {meta['generated_at']}")
+        else:
+            print("  No data/forecasts/ directory found — skipping forecast build.")
+            # Write empty forecast files so dashboard handles gracefully
+            meta = _empty_meta()
+            meta_path = output_dir / "forecast_meta.json"
+            with open(meta_path, "w") as f:
+                json.dump(meta, f, indent=2)
+            with open(output_dir / "fwi_forecast.json", "w") as f:
+                json.dump({}, f)
+    else:
+        print("Forecast build skipped (--no-forecast).")
+
     print("Done.")
 
 

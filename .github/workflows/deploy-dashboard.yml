@@ -35,7 +35,9 @@ jobs:
         run: |
           test -f dashboard/data/stations.json
           test -f dashboard/data/fwi_daily.json
-          echo "Dashboard data files verified."
+          test -f dashboard/data/fwi_forecast.json
+          test -f dashboard/data/forecast_meta.json
+          echo "Dashboard data files verified (historical + forecast)."
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

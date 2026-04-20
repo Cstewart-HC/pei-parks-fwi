@@ -1,5 +1,6 @@
 /* ============================================================
    PEI National Park FWI Dashboard — Application
+   Phase 17: Historical + Forecast dual-mode
    ============================================================ */
 
 (function () {
@@ -26,9 +27,14 @@
     let map;
     let stationsData = {};
     let fwiDaily = {};
-    let dates = [];
+    let fwiForecast = {};
+    let forecastMeta = null;
+    let histDates = [];
+    let fcstDates = [];
+    let allDates = [];
     let markers = {};
-    let currentDateIndex;
+    let currentDateIndex = 0;
+    let currentMode = 'historical'; // 'historical' | 'forecast'
 
     // --- Map Initialization ---
     function initMap() {
@@ -64,10 +70,87 @@
         legend.addTo(map);
     }
 
+    // --- Mode Toggle Control ---
+    function addModeToggle() {
+        const ctrl = L.control({ position: 'topleft' });
+        ctrl.onAdd = function () {
+            const div = L.DomUtil.create('div', 'mode-toggle-control');
+            div.innerHTML = `
+                <button class="mode-btn active" data-mode="historical">📅 Historical</button>
+                <button class="mode-btn" data-mode="forecast">🔮 Forecast</button>
+            `;
+            div.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const mode = this.dataset.mode;
+                    if (mode === currentMode) return;
+                    setMode(mode);
+                    div.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        };
+        ctrl.addTo(map);
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        rebuildDateArrays();
+        currentDateIndex = allDates.length - 1;
+        updateMarkers();
+        updateSliderRange();
+        updateStalenessBanner();
+    }
+
+    function rebuildDateArrays() {
+        histDates = Object.keys(fwiDaily).sort();
+        fcstDates = Object.keys(fwiForecast).sort();
+
+        if (currentMode === 'forecast') {
+            allDates = fcstDates;
+        } else {
+            allDates = histDates;
+        }
+    }
+
+    // --- Staleness Banner ---
+    function updateStalenessBanner() {
+        let banner = document.getElementById('staleness-banner');
+        if (currentMode !== 'forecast') {
+            if (banner) banner.remove();
+            return;
+        }
+        if (!forecastMeta || !forecastMeta.generated_at) {
+            if (banner) banner.remove();
+            return;
+        }
+        const generated = new Date(forecastMeta.generated_at);
+        const now = new Date();
+        const hoursOld = (now - generated) / (1000 * 60 * 60);
+        const stale = hoursOld > 12;
+
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'staleness-banner';
+            document.getElementById('map').insertAdjacentElement('beforebegin', banner);
+        }
+
+        if (stale) {
+            banner.className = 'staleness-banner stale';
+            banner.textContent = `⚠ Forecast data is ${Math.round(hoursOld)}h old (generated ${generated.toISOString().slice(0, 16)} UTC).`;
+        } else {
+            banner.className = 'staleness-banner fresh';
+            banner.textContent = `Forecast generated ${generated.toISOString().slice(0, 16)} UTC.`;
+        }
+    }
+
     // --- Date Slider Control ---
+    let sliderControl;
+
     function addDateSlider() {
-        const slider = L.control({ position: 'bottomleft' });
-        slider.onAdd = function () {
+        sliderControl = L.control({ position: 'bottomleft' });
+        sliderControl.onAdd = function () {
             const div = L.DomUtil.create('div', 'date-slider-control');
 
             const label = document.createElement('span');
@@ -78,18 +161,17 @@
             input.type = 'range';
             input.id = 'date-slider';
             input.min = 0;
-            input.max = dates.length - 1;
-            input.value = dates.length - 1;
+            input.max = 0;
+            input.value = 0;
 
             const btn = document.createElement('button');
             btn.className = 'btn-today';
-            btn.textContent = '⏩ Today';
+            btn.textContent = '⏩ Latest';
 
             div.appendChild(label);
             div.appendChild(input);
             div.appendChild(btn);
 
-            // Prevent map drag when interacting with slider
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
 
@@ -99,14 +181,22 @@
             });
 
             btn.addEventListener('click', function () {
-                currentDateIndex = dates.length - 1;
+                currentDateIndex = allDates.length - 1;
                 input.value = currentDateIndex;
                 updateMarkers();
             });
 
             return div;
         };
-        slider.addTo(map);
+        sliderControl.addTo(map);
+    }
+
+    function updateSliderRange() {
+        const input = document.getElementById('date-slider');
+        if (!input) return;
+        input.min = 0;
+        input.max = Math.max(0, allDates.length - 1);
+        input.value = currentDateIndex;
     }
 
     // --- Station Markers ---
@@ -130,12 +220,18 @@
 
     // --- Update Markers for Current Date ---
     function updateMarkers() {
-        const date = dates[currentDateIndex];
-        const records = fwiDaily[date] || [];
+        if (allDates.length === 0) return;
+        const date = allDates[currentDateIndex];
+        const isForecast = currentMode === 'forecast';
+        const dataSource = isForecast ? fwiForecast : fwiDaily;
+        const records = dataSource[date] || [];
 
         // Update slider label
         const label = document.getElementById('slider-date-label');
-        if (label) label.textContent = date;
+        if (label) {
+            const modeTag = isForecast ? ' [FORECAST]' : '';
+            label.textContent = `${date}${modeTag}`;
+        }
 
         // Build lookup for this date
         const byStation = {};
@@ -147,14 +243,21 @@
             const rec = byStation[stationId];
             const cls = rec ? fwiClass(rec.fwi) : { label: 'N/A', color: '#bdc3c7' };
 
-            marker.setStyle({ fillColor: cls.color });
+            const style = {
+                fillColor: cls.color,
+                color: isForecast ? '#e67e22' : '#2c3e50',
+                weight: isForecast ? 3 : 2,
+                dashArray: isForecast ? '4 3' : null,
+                fillOpacity: 0.85,
+            };
+            marker.setStyle(style);
+
             if (!rec) marker.getElement()?.classList.add('marker-no-data');
             else marker.getElement()?.classList.remove('marker-no-data');
 
-            // Update tooltip with FWI class
             const displayName = stationsData[stationId].display_name;
             const tipText = rec
-                ? `${displayName} — FWI ${rec.fwi.toFixed(1)} (${cls.label})`
+                ? `${displayName} — FWI ${rec.fwi.toFixed(1)} (${cls.label})${isForecast ? ' [FCST]' : ''}`
                 : `${displayName} — No data`;
             marker.setTooltipContent(tipText);
         }
@@ -163,14 +266,18 @@
     // --- Popup with FWI Breakdown + Sparkline ---
     function showPopup(stationId) {
         const marker = markers[stationId];
-        const date = dates[currentDateIndex];
+        const date = allDates[currentDateIndex];
         const meta = stationsData[stationId];
-        const records = fwiDaily[date] || [];
+        const isForecast = currentMode === 'forecast';
+        const dataSource = isForecast ? fwiForecast : fwiDaily;
+        const records = dataSource[date] || [];
         const rec = records.find(r => r.station === stationId);
 
         let html = `<div class="fwi-popup">`;
         html += `<div class="popup-header">📍 ${meta.display_name}</div>`;
-        html += `<div class="popup-date">${date}</div>`;
+        html += `<div class="popup-date">${date}`;
+        if (isForecast) html += ` <span class="fcst-badge">FORECAST</span>`;
+        html += `</div>`;
 
         if (rec) {
             const cls = fwiClass(rec.fwi);
@@ -186,13 +293,23 @@
             html += `<p style="color:#999;font-size:0.85rem;">No data for this date.</p>`;
         }
 
-        // Sparkline — last 30 days of FWI
-        const sparkSvg = buildSparkline(stationId, currentDateIndex, 30);
-        if (sparkSvg) {
-            html += `<div class="sparkline-container">`;
-            html += `<div class="sparkline-label">FWI — Last 30 days</div>`;
-            html += sparkSvg;
-            html += `</div>`;
+        // Sparkline
+        if (isForecast) {
+            const sparkSvg = buildForecastSparkline(stationId, currentDateIndex);
+            if (sparkSvg) {
+                html += `<div class="sparkline-container">`;
+                html += `<div class="sparkline-label">FWI — 10-day Forecast</div>`;
+                html += sparkSvg;
+                html += `</div>`;
+            }
+        } else {
+            const sparkSvg = buildSparkline(stationId, currentDateIndex, 30);
+            if (sparkSvg) {
+                html += `<div class="sparkline-container">`;
+                html += `<div class="sparkline-label">FWI — Last 30 days</div>`;
+                html += sparkSvg;
+                html += `</div>`;
+            }
         }
 
         html += `</div>`;
@@ -214,7 +331,7 @@
         const points = [];
 
         for (let i = startIndex; i <= endIndex; i++) {
-            const date = dates[i];
+            const date = allDates[i];
             const records = fwiDaily[date] || [];
             const rec = records.find(r => r.station === stationId);
             if (rec && rec.fwi != null && !isNaN(rec.fwi)) {
@@ -240,12 +357,50 @@
             return `${x.toFixed(1)},${y.toFixed(1)}`;
         });
 
-        // Color the sparkline by the latest FWI class
         const lastFwi = points[points.length - 1].fwi;
         const cls = fwiClass(lastFwi);
 
         return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
             <polyline fill="none" stroke="${cls.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                points="${coords.join(' ')}" />
+        </svg>`;
+    }
+
+    function buildForecastSparkline(stationId, endIndex) {
+        const points = [];
+
+        for (let i = 0; i <= endIndex && i < fcstDates.length; i++) {
+            const date = fcstDates[i];
+            const records = fwiForecast[date] || [];
+            const rec = records.find(r => r.station === stationId);
+            if (rec && rec.fwi != null && !isNaN(rec.fwi)) {
+                points.push({ index: i, fwi: rec.fwi });
+            }
+        }
+
+        if (points.length < 2) return null;
+
+        const width = 200;
+        const height = 40;
+        const padX = 2;
+        const padY = 4;
+
+        const fwiVals = points.map(p => p.fwi);
+        const minFwi = Math.min(...fwiVals);
+        const maxFwi = Math.max(...fwiVals);
+        const range = maxFwi - minFwi || 1;
+
+        const coords = points.map((p, idx) => {
+            const x = padX + (idx / (points.length - 1)) * (width - 2 * padX);
+            const y = padY + (1 - (p.fwi - minFwi) / range) * (height - 2 * padY);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        });
+
+        const lastFwi = points[points.length - 1].fwi;
+        const cls = fwiClass(lastFwi);
+
+        return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+            <polyline fill="none" stroke="${cls.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 2"
                 points="${coords.join(' ')}" />
         </svg>`;
     }
@@ -273,26 +428,37 @@
     // --- Main ---
     async function main() {
         // Load data
-        const [stationsResp, fwiResp] = await Promise.all([
+        const [stationsResp, fwiResp, fcstResp, metaResp] = await Promise.all([
             fetch('data/stations.json'),
             fetch('data/fwi_daily.json'),
+            fetch('data/fwi_forecast.json').catch(() => null),
+            fetch('data/forecast_meta.json').catch(() => null),
         ]);
 
         stationsData = await stationsResp.json();
         fwiDaily = await fwiResp.json();
 
-        // Build sorted date array
-        dates = Object.keys(fwiDaily).sort();
-        currentDateIndex = dates.length - 1;
+        if (fcstResp && fcstResp.ok) {
+            fwiForecast = await fcstResp.json();
+        }
+        if (metaResp && metaResp.ok) {
+            forecastMeta = await metaResp.json();
+        }
+
+        // Build date arrays
+        rebuildDateArrays();
+        currentDateIndex = allDates.length - 1;
 
         // Initialize map components
         initMap();
         addLegend();
+        addModeToggle();
         createMarkers();
         addDateSlider();
         addParkBoundary();
 
         // Set initial state
+        updateSliderRange();
         updateMarkers();
     }
 

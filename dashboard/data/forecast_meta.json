@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-04-09T23:23:16.601580+00:00",
+  "forecast_hours": 240,
+  "data_sources": {
+    "licor": "0-6h (5 park stations)",
+    "owm": "0-48h (all 6 stations)",
+    "gdps": "48-240h (3-hourly)"
+  },
+  "stations_with_data": [
+    "stanhope",
+    "cavendish",
+    "greenwich",
+    "north_rustico",
+    "stanley_bridge",
+    "tracadie"
+  ],
+  "stations_missing": [],
+  "partial_note": null
+}

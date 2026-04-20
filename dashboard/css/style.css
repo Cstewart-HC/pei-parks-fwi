@@ -105,6 +105,67 @@ html, body {
     background: #2471a3;
 }
 
+/* --- Mode Toggle Control --- */
+.mode-toggle-control {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    padding: 6px 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    display: flex;
+    gap: 4px;
+}
+
+.mode-toggle-control .mode-btn {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mode-toggle-control .mode-btn:hover {
+    background: #f0f0f0;
+}
+
+.mode-toggle-control .mode-btn.active {
+    background: #1a5276;
+    color: #fff;
+    border-color: #1a5276;
+}
+
+/* --- Staleness Banner --- */
+.staleness-banner {
+    background: #d5f5e3;
+    color: #1e8449;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 4px 1rem;
+    font-weight: 600;
+}
+
+.staleness-banner.stale {
+    background: #fadbd8;
+    color: #c0392b;
+}
+
+/* --- Forecast Badge --- */
+.fwi-popup .fcst-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: #e67e22;
+    color: #fff;
+    vertical-align: middle;
+    margin-left: 4px;
+    letter-spacing: 0.05em;
+}
+
 /* --- Legend Control --- */
 .fwi-legend {
     background: rgba(255, 255, 255, 0.95);
