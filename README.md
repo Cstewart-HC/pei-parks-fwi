@@ -31,7 +31,7 @@ This project provides:
 | **7-Day Forecasts** | GDPS-driven FWI projections for all park weather stations |
 | **Redundancy Report** | PCA biplot showing which stations provide overlapping vs. unique coverage |
 | **Cleaned Data** | Quality-controlled hourly and daily weather datasets |
-| **Uncertainty Bounds** | Probabilistic confidence intervals around all FWI calculations |
+| **Uncertainty Bounds** | Probabilistic risk assessment for station removal decisions (KDE-based confidence intervals) |
 
 ### Coverage Area
 
