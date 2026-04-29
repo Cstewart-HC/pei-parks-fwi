@@ -251,4 +251,4 @@ Required themes:
 ---
 
 **License:** See project repository for license information.
-**Contact:** For dashboard issues or questions, contact Parks Canada PEI Field Unit.
+**Contact:** For dashboard issues or questions, contact Cstewart-HC.
