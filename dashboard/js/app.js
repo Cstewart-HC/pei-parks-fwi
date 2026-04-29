@@ -202,16 +202,30 @@
     // --- Station Markers ---
     function createMarkers() {
         for (const [stationId, meta] of Object.entries(stationsData)) {
-            const marker = L.circleMarker([meta.lat, meta.lon], {
-                radius: 12,
-                fillColor: '#bdc3c7',
-                color: '#2c3e50',
+            // Handle stations without coordinates (e.g., Red Head)
+            let lat = meta.lat;
+            let lon = meta.lon;
+            let hasCoords = true;
+            
+            if (lat == null || lon == null) {
+                // Place at center of map with indicator
+                lat = 46.45;
+                lon = -63.0;
+                hasCoords = false;
+            }
+            
+            const marker = L.circleMarker([lat, lon], {
+                radius: hasCoords ? 12 : 8,
+                fillColor: hasCoords ? '#bdc3c7' : '#95a5a6',
+                color: hasCoords ? '#2c3e50' : '#7f8c8d',
                 weight: 2,
-                fillOpacity: 0.85,
+                fillOpacity: hasCoords ? 0.85 : 0.6,
+                dashArray: hasCoords ? null : '4 3',
             }).addTo(map);
 
             marker.stationId = stationId;
-            marker.bindTooltip(meta.display_name, { direction: 'top', offset: [0, -12] });
+            marker.hasCoords = hasCoords;
+            marker.bindTooltip(meta.display_name + (hasCoords ? '' : ' (no GPS)'), { direction: 'top', offset: [0, -12] });
             marker.on('click', function () { showPopup(stationId); });
 
             markers[stationId] = marker;
@@ -275,6 +289,28 @@
 
         let html = `<div class="fwi-popup">`;
         html += `<div class="popup-header">📍 ${meta.display_name}</div>`;
+        
+        // Station metadata
+        html += `<div class="station-meta" style="font-size:0.75rem;color:#666;margin:8px 0;">`;
+        if (meta.lat && meta.lon) {
+            html += `<div>📍 ${meta.lat.toFixed(4)}, ${meta.lon.toFixed(4)}</div>`;
+        } else if (meta.notes) {
+            html += `<div>📍 Coordinates unavailable</div>`;
+        }
+        if (meta.date_established) {
+            html += `<div>📅 Established: ${meta.date_established}</div>`;
+        }
+        if (meta.responsibility) {
+            html += `<div>🏢 ${meta.responsibility}</div>`;
+        }
+        if (meta.transmission) {
+            html += `<div>📡 ${meta.transmission}</div>`;
+        }
+        if (meta.notes && meta.notes.trim()) {
+            html += `<div style="margin-top:4px;font-style:italic;">${meta.notes}</div>`;
+        }
+        html += `</div>`;
+        
         html += `<div class="popup-date">${date}`;
         if (isForecast) html += ` <span class="fcst-badge">FORECAST</span>`;
         html += `</div>`;

@@ -1,38 +1,79 @@
 {
   "stanhope": {
     "display_name": "Stanhope",
-    "lat": 46.42,
-    "lon": -63.08,
-    "group": "west"
+    "lat": 46.415117,
+    "lon": -63.075796,
+    "group": "west",
+    "date_established": "June 12th, 1961",
+    "model": "ECCC standard",
+    "responsibility": "ECCC",
+    "transmission": "Real-time",
+    "notes": ""
   },
   "cavendish": {
-    "display_name": "Cavendish",
-    "lat": 46.491,
-    "lon": -63.379,
-    "group": "central"
+    "display_name": "Cavendish Green Gables",
+    "lat": 46.485349,
+    "lon": -63.387357,
+    "group": "central",
+    "date_established": "October 12th, 2022",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "UPEI - Donald Jardine",
+    "transmission": "Real-time",
+    "notes": "Installation with a Temp/RH sensor"
   },
   "greenwich": {
-    "display_name": "Greenwich",
-    "lat": 46.449,
-    "lon": -62.442,
-    "group": "east"
+    "display_name": "Greenwich PEINP",
+    "lat": 46.442887,
+    "lon": -62.696055,
+    "group": "east",
+    "date_established": "2019",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "UPEI - Donald Jardine",
+    "transmission": "Real-time",
+    "notes": "From 2019 to Oct. 2022, the weather station was a remote Davis Vantage Pro 2. On Oct. 26, 2022 it was replaced by the current setup. On April 11, 2023 the Temperature sensor was replaced by a Temp/RH sensor."
   },
   "north_rustico": {
-    "display_name": "North Rustico",
-    "lat": 46.451,
-    "lon": -63.33,
-    "group": "central"
-  },
-  "stanley_bridge": {
-    "display_name": "Stanley Bridge",
-    "lat": 46.446,
-    "lon": -63.349,
-    "group": "central"
+    "display_name": "North Rustico Wharf",
+    "lat": 46.456373,
+    "lon": -63.307578,
+    "group": "central",
+    "date_established": "November 26th, 2019",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "UPEI - Donald Jardine",
+    "transmission": "Real-time",
+    "notes": "Initially installed by CBCL (Don Jardine) with a HOBO MicroRX 2104 Water level Station. The tidal sensor was reinstalled at a different location by PEINP on August 26, 2022. On April 14 it was replaced by the current setup."
   },
   "tracadie": {
-    "display_name": "Tracadie",
-    "lat": 46.385,
-    "lon": -62.233,
-    "group": "east"
+    "display_name": "Tracadie Wharf",
+    "lat": 46.403285,
+    "lon": -63.028991,
+    "group": "east",
+    "date_established": "2021",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "UPEI - Donald Jardine",
+    "transmission": "Real-time",
+    "notes": "Initially installed by CBCL (Don Jardine) with a Solinst Levelogger 5, model 3001, LT M10. The tidal sensor was reinstalled at a different location by PEINP on June 24, 2022. On July 14, 2023 it was replaced by the current setup. On Sept. 1st, 2023 the water sensor was installed."
+  },
+  "stanley_bridge": {
+    "display_name": "Stanley Bridge Harbour",
+    "lat": 46.46315,
+    "lon": -63.45850,
+    "group": "central",
+    "date_established": "July 10th, 2022",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "UPEI - Donald Jardine",
+    "transmission": "Manual upload",
+    "notes": "Initially installed by PEINP with a Solinst Levelogger 5, model 3001, LT M10. On July 25, 2023 it was replaced by the current setup. On February 19 2024 the water sensor was installed."
+  },
+  "red_head": {
+    "display_name": "Red Head",
+    "lat": null,
+    "lon": null,
+    "group": "central",
+    "date_established": "May 28th, 2020",
+    "model": "Standard setup from UPEI (HOBO)",
+    "responsibility": "MCPEI - Donald Jardine",
+    "transmission": "Real-time",
+    "notes": "GPS coordinates not available"
   }
 }
