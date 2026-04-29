@@ -294,7 +294,7 @@
         html += `<div class="station-meta" style="font-size:0.75rem;color:#666;margin:8px 0;">`;
         if (meta.lat && meta.lon) {
             html += `<div>📍 ${meta.lat.toFixed(4)}, ${meta.lon.toFixed(4)}</div>`;
-        } else if (meta.notes) {
+        } else {
             html += `<div>📍 Coordinates unavailable</div>`;
         }
         if (meta.date_established) {
@@ -305,9 +305,6 @@
         }
         if (meta.transmission) {
             html += `<div>📡 ${meta.transmission}</div>`;
-        }
-        if (meta.notes && meta.notes.trim()) {
-            html += `<div style="margin-top:4px;font-style:italic;">${meta.notes}</div>`;
         }
         html += `</div>`;
         
