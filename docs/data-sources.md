@@ -10,7 +10,6 @@ This project uses multiple data sources for PEI meteorological data and Fire Wea
 |---|---|---|
 | Stanhope | ECCC | ECCC Climate API |
 | Greenwich | UPEI (Donald Jardine) | HOBOlink |
-| Red Head | MCPEI (Donald Jardine) | HOBOlink |
 | Tracadie | UPEI (Donald Jardine) | HOBOlink |
 | North Rustico | UPEI (Donald Jardine) | HOBOlink |
 | Cavendish | UPEI (Donald Jardine) | HOBOlink |
@@ -22,7 +21,7 @@ This project uses multiple data sources for PEI meteorological data and Fire Wea
 - Public URLs available for each station
 - Historical data accessible via HOBOlink web interface
 - API integration potential (Licor Cloud API documented below)
-- Primary source for 5 of 6 PEINP stations
+- Primary source for 5 of 5 PEINP stations
 
 #### ECCC Climate API
 - Stanhope station monitored by ECCC

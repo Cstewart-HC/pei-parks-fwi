@@ -64,16 +64,5 @@
     "responsibility": "UPEI - Donald Jardine",
     "transmission": "Manual upload",
     "notes": "Initially installed by PEINP with a Solinst Levelogger 5, model 3001, LT M10. On July 25, 2023 it was replaced by the current setup. On February 19 2024 the water sensor was installed."
-  },
-  "red_head": {
-    "display_name": "Red Head",
-    "lat": null,
-    "lon": null,
-    "group": "central",
-    "date_established": "May 28th, 2020",
-    "model": "Standard setup from UPEI (HOBO)",
-    "responsibility": "MCPEI - Donald Jardine",
-    "transmission": "Real-time",
-    "notes": "GPS coordinates not available"
   }
 }
